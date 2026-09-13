@@ -1,6 +1,7 @@
 package com.cursovalido.backend.Forum.configuracao;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -17,8 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 import com.cursovalido.backend.Forum.dto.RespostaErro;
 
 @RestControllerAdvice
-public class TratamentoExcecoesForum {
-    private static final Logger log = LoggerFactory.getLogger(TratamentoExcecoesForum.class);
+public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<RespostaErro> tratarExcecaoForum(ResponseStatusException excecao) {
@@ -29,19 +30,21 @@ public class TratamentoExcecoesForum {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<RespostaErro> tratarValidacao(MethodArgumentNotValidException excecao) {
-        Map<String, String> erros = excecao.getBindingResult().getFieldErrors().stream()
-                .collect(Collectors.toMap(
+        Map<String, List<String>> erros = excecao.getBindingResult().getFieldErrors().stream()
+                .collect(Collectors.groupingBy(
                         erro -> erro.getField(),
-                        erro -> erro.getDefaultMessage() == null ? "Valor invalido" : erro.getDefaultMessage(),
-                        (mensagemAtual, mensagemAnterior) -> mensagemAtual,
-                        LinkedHashMap::new));
+                        LinkedHashMap::new,
+                        Collectors.mapping(
+                                erro -> erro.getDefaultMessage() == null ? "Valor invalido" : erro.getDefaultMessage(),
+                                Collectors.toList())));
         log.warn("Falha de validacao no forum: campos={}", erros.keySet());
         return ResponseEntity.badRequest().body(new RespostaErro("Dados invalidos", erros));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<RespostaErro> tratarJsonInvalido(HttpMessageNotReadableException excecao) {
-        log.warn("JSON invalido recebido pelo forum", excecao);
+        Throwable causa = excecao.getMostSpecificCause();
+        log.warn("JSON invalido recebido pelo forum: {}", causa.getMessage(), excecao);
         return ResponseEntity.badRequest().body(new RespostaErro("JSON invalido", Map.of()));
     }
 
