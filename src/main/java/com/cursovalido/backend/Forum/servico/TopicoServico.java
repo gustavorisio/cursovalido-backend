@@ -23,7 +23,12 @@ public class TopicoServico {
     }
 
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho) {
-        return repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho));
+        return listarRecentes(pagina, tamanho, "");
+    }
+
+    public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca) {
+        String termo = busca == null ? "" : busca.trim();
+        return repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho), termo);
     }
 
     public Topico criar(Topico topico, Long idUsuario) {
