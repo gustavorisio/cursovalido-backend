@@ -4,19 +4,21 @@ import com.cursovalido.backend.Forum.entidade.UsuarioForum;
 import com.cursovalido.backend.Forum.repositorio.UsuarioForumRepositorio;
 import com.cursovalido.backend.Forum.excecao.RecursoNaoEncontradoException;
 import com.cursovalido.backend.Forum.excecao.RequisicaoInvalidaException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class UsuarioForumServico {
-    @Autowired
-    private UsuarioForumRepositorio repositorioUsuarios;
+    private final UsuarioForumRepositorio repositorioUsuarios;
+
+    public UsuarioForumServico(UsuarioForumRepositorio repositorioUsuarios) {
+        this.repositorioUsuarios = repositorioUsuarios;
+    }
 
     public UsuarioForum buscarAtivo(Long idUsuario) {
         if (idUsuario == null) {
-            throw new RequisicaoInvalidaException("Informe o usuario no header X-User-Id");
+            throw new RequisicaoInvalidaException("Usuario autenticado nao encontrado");
         }
         return repositorioUsuarios.findById(idUsuario).filter(UsuarioForum::isAtivo)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Usuario nao encontrado"));
