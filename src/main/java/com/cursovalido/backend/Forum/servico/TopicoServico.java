@@ -84,15 +84,13 @@ public class TopicoServico {
     private void verificarAutoriaOuAdministrador(Topico topico, UsuarioForum usuario) {
         boolean ehAutor = topico.getIdAutor() != null && topico.getIdAutor().equals(usuario.getId());
         if (!ehAutor && !servicoUsuarios.ehAdministrador(usuario)) {
-            throw new AcessoNegadoException(
-                    "Somente o autor ou administrador pode alterar o topico");
+            throw new AcessoNegadoException("Somente o autor ou administrador pode alterar o topico");
         }
     }
 
     private void verificarAutoria(Topico topico, UsuarioForum usuario) {
         if (topico.getIdAutor() == null || !topico.getIdAutor().equals(usuario.getId())) {
-            throw new AcessoNegadoException(
-                    "Somente o autor pode editar o topico");
+            throw new AcessoNegadoException("Somente o autor pode editar o topico");
         }
     }
 

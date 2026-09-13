@@ -19,7 +19,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    .requestMatchers("/api/forum/**").permitAll()
+                        .requestMatchers("/api/forum/**").permitAll()
                         .anyRequest().authenticated());
         return http.build();
     }
