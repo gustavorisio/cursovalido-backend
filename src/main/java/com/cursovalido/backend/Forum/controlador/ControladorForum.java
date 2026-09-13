@@ -29,8 +29,9 @@ public class ControladorForum {
     @GetMapping("/topicos")
     public List<TopicoResumoDTO> listarTopicosRecentes(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size) {
-        return servicoTopicos.listarRecentes(page, size);
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "") String busca) {
+        return servicoTopicos.listarRecentes(page, size, busca);
     }
 
     @PostMapping("/topicos")
