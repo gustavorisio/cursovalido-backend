@@ -31,16 +31,5 @@ CREATE TABLE tb_comments (
     CONSTRAINT fk_tb_comments_topic FOREIGN KEY (topic_id) REFERENCES tb_topics (id)
 );
 
-CREATE TABLE tb_forum_history (
-    id BIGSERIAL NOT NULL,
-    user_id BIGINT NOT NULL,
-    action VARCHAR(255) NOT NULL,
-    details VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    CONSTRAINT pk_tb_forum_history PRIMARY KEY (id),
-    CONSTRAINT fk_tb_forum_history_user FOREIGN KEY (user_id) REFERENCES tb_forum_users (id)
-);
-
 CREATE INDEX idx_tb_topics_created_at ON tb_topics (created_at);
 CREATE INDEX idx_tb_comments_topic_id ON tb_comments (topic_id);
-CREATE INDEX idx_tb_forum_history_user_id ON tb_forum_history (user_id);
