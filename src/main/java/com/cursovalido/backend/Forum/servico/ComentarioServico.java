@@ -8,7 +8,6 @@ import com.cursovalido.backend.Forum.excecao.AcessoNegadoException;
 import com.cursovalido.backend.Forum.excecao.ConflitoException;
 import com.cursovalido.backend.Forum.excecao.RecursoNaoEncontradoException;
 import com.cursovalido.backend.Forum.excecao.RequisicaoInvalidaException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,14 +16,16 @@ import java.util.List;
 @Service
 public class ComentarioServico {
 
-    @Autowired
-    private ComentarioRepositorio repositorioComentarios;
+    private final ComentarioRepositorio repositorioComentarios;
+    private final TopicoServico servicoTopicos;
+    private final UsuarioForumServico servicoUsuarios;
 
-    @Autowired
-    private TopicoServico servicoTopicos;
-
-    @Autowired
-    private UsuarioForumServico servicoUsuarios;
+    public ComentarioServico(ComentarioRepositorio repositorioComentarios,
+            TopicoServico servicoTopicos, UsuarioForumServico servicoUsuarios) {
+        this.repositorioComentarios = repositorioComentarios;
+        this.servicoTopicos = servicoTopicos;
+        this.servicoUsuarios = servicoUsuarios;
+    }
 
     public List<Comentario> listarPorTopico(Long idTopico) {
         servicoTopicos.buscarAtivo(idTopico);
@@ -51,10 +52,10 @@ public class ComentarioServico {
     }
 
     public Comentario editar(Long idComentario, Comentario dadosAtualizados, Long idUsuario) {
-        servicoUsuarios.buscarAtivo(idUsuario);
+        UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Comentario comentario = buscar(idComentario);
 
-        if (!idUsuario.equals(comentario.getIdAutor())) {
+        if (!usuario.getId().equals(comentario.getIdAutor())) {
             throw new AcessoNegadoException("Somente o autor pode editar o comentario");
         }
         if (!comentario.isAtivo()) {
@@ -77,7 +78,6 @@ public class ComentarioServico {
             throw new AcessoNegadoException("Somente o autor ou administrador pode apagar");
         }
 
-        comentario.setConteudo("mensagem apagada");
         comentario.setAtivo(false);
         repositorioComentarios.save(comentario);
     }
