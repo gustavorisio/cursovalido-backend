@@ -14,7 +14,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.cursovalido.backend.Forum.controlador.RespostaErro;
+import com.cursovalido.backend.Forum.dto.RespostaErro;
 
 @RestControllerAdvice
 public class TratamentoExcecoesForum {

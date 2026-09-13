@@ -3,6 +3,7 @@ package com.cursovalido.backend.Forum.controlador;
 import com.cursovalido.backend.Forum.entidade.Comentario;
 import com.cursovalido.backend.Forum.entidade.Topico;
 import com.cursovalido.backend.Forum.entidade.UsuarioForum;
+import com.cursovalido.backend.Forum.dto.RespostaUsuariosForum;
 import com.cursovalido.backend.Forum.servico.ComentarioServico;
 import com.cursovalido.backend.Forum.servico.TopicoServico;
 import com.cursovalido.backend.Forum.servico.UsuarioForumServico;

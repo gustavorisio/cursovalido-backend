@@ -6,6 +6,8 @@ import com.cursovalido.backend.Forum.repositorio.ComentarioRepositorio;
 import com.cursovalido.backend.Forum.repositorio.TopicoRepositorio;
 import com.cursovalido.backend.Forum.excecao.AcessoNegadoException;
 import com.cursovalido.backend.Forum.excecao.RecursoNaoEncontradoException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
