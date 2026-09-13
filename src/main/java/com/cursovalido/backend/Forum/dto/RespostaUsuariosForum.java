@@ -1,11 +1,10 @@
-package com.cursovalido.backend.Forum.controlador;
+package com.cursovalido.backend.Forum.dto;
 
 import com.cursovalido.backend.Forum.entidade.UsuarioForum;
 import java.util.List;
 
 public class RespostaUsuariosForum {
     private final List<UsuarioForum> value;
-
     private final int count;
 
     public RespostaUsuariosForum(List<UsuarioForum> value) {
