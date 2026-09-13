@@ -48,3 +48,4 @@ node_modules/
 .DS_Store
 Thumbs.db
 hs_err_pid*
+src/main/resources/application.yaml
