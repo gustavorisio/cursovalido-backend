@@ -26,9 +26,6 @@ public class ComentarioServico {
     @Autowired
     private UsuarioForumServico servicoUsuarios;
 
-    @Autowired
-    private HistoricoForumServico servicoHistorico;
-
     public List<Comentario> listarPorTopico(Long idTopico) {
         servicoTopicos.buscarAtivo(idTopico);
         return repositorioComentarios.listarPorTopicoAtivo(idTopico);
@@ -49,8 +46,52 @@ public class ComentarioServico {
         comentario.setAtivo(true);
 
         Comentario comentarioSalvo = repositorioComentarios.save(comentario);
-        servicoHistorico.registrar(idUsuario, "CRIAR_COMENTARIO", "Comentario " + comentarioSalvo.getId());
 
         return comentarioSalvo;
+    }
+
+    public Comentario editar(Long idComentario, Comentario dadosAtualizados, Long idUsuario) {
+        servicoUsuarios.buscarAtivo(idUsuario);
+        Comentario comentario = buscar(idComentario);
+
+        if (!idUsuario.equals(comentario.getIdAutor())) {
+            throw new AcessoNegadoException("Somente o autor pode editar o comentario");
+        }
+        if (!comentario.isAtivo()) {
+            throw new RequisicaoInvalidaException("Comentario apagado nao pode ser editado");
+        }
+
+        comentario.setConteudo(dadosAtualizados.getConteudo());
+        Comentario comentarioSalvo = repositorioComentarios.save(comentario);
+
+        return comentarioSalvo;
+    }
+
+    public void apagar(Long idComentario, Long idUsuario) {
+        UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
+        Comentario comentario = buscar(idComentario);
+
+        boolean ehAutor = comentario.getIdAutor() != null && comentario.getIdAutor().equals(usuario.getId());
+
+        if (!ehAutor && !servicoUsuarios.ehAdministrador(usuario)) {
+            throw new AcessoNegadoException("Somente o autor ou administrador pode apagar");
+        }
+
+        comentario.setConteudo("mensagem apagada");
+        comentario.setAtivo(false);
+        repositorioComentarios.save(comentario);
+    }
+
+    public void apagarDoTopico(Long idTopico, Long idComentario, Long idUsuario) {
+        Comentario comentario = buscar(idComentario);
+        if (comentario.getTopico() == null || !idTopico.equals(comentario.getTopico().getId())) {
+            throw new RecursoNaoEncontradoException("Comentario nao pertence ao topico");
+        }
+        apagar(idComentario, idUsuario);
+    }
+
+    private Comentario buscar(Long idComentario) {
+        return repositorioComentarios.findById(idComentario)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Comentario nao encontrado"));
     }
 }
