@@ -2,43 +2,28 @@ package com.cursovalido.backend.Forum.servico;
 
 import com.cursovalido.backend.Forum.entidade.UsuarioForum;
 import com.cursovalido.backend.Forum.entidade.Topico;
-import com.cursovalido.backend.Forum.repositorio.ComentarioRepositorio;
+import com.cursovalido.backend.Forum.dto.TopicoResumoDTO;
 import com.cursovalido.backend.Forum.repositorio.TopicoRepositorio;
 import com.cursovalido.backend.Forum.excecao.AcessoNegadoException;
 import com.cursovalido.backend.Forum.excecao.RecursoNaoEncontradoException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class TopicoServico {
-    @Autowired
-    private TopicoRepositorio repositorioTopicos;
-    @Autowired
-    private ComentarioRepositorio repositorioComentarios;
-    @Autowired
-    private UsuarioForumServico servicoUsuarios;
+    private final TopicoRepositorio repositorioTopicos;
+    private final UsuarioForumServico servicoUsuarios;
 
-    public List<Topico> listarRecentes(int pagina, int tamanho) {
-        List<Topico> topicos = repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho));
-        Map<Long, Long> quantidades = new HashMap<>();
-        if (!topicos.isEmpty()) {
-            repositorioComentarios.contarPorTopicos(topicos.stream()
-                    .map(Topico::getId)
-                    .collect(Collectors.toSet()))
-                    .forEach(contagem -> quantidades.put(contagem.getIdTopico(), contagem.getQuantidade()));
-        }
+    public TopicoServico(TopicoRepositorio repositorioTopicos, UsuarioForumServico servicoUsuarios) {
+        this.repositorioTopicos = repositorioTopicos;
+        this.servicoUsuarios = servicoUsuarios;
+    }
 
-        topicos.forEach(topico -> {
-            topico.setQuantidadeRespostas(quantidades.getOrDefault(topico.getId(), 0L));
-        });
-        return topicos;
+    public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho) {
+        return repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho));
     }
 
     public Topico criar(Topico topico, Long idUsuario) {
