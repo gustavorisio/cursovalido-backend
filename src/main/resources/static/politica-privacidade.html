@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Politica de Privacidade - Curso Valido</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            color: #202124;
+            background: #f5f7fa;
+        }
+
+        main {
+            max-width: 860px;
+            margin: 32px auto;
+            padding: 32px;
+            background: #fff;
+        }
+
+        h1 {
+            color: #173b57;
+        }
+
+        h2 {
+            margin-top: 28px;
+            color: #245b7a;
+        }
+
+        a {
+            color: #145d85;
+        }
+
+        .atualizacao {
+            color: #5f6368;
+        }
+
+        .navegacao {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .botao {
+            border: 1px solid #145d85;
+            border-radius: 4px;
+            padding: 10px 16px;
+            color: #145d85;
+            background: #fff;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .botao:hover,
+        .botao:focus {
+            color: #fff;
+            background: #145d85;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #d8dee4;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #eef3f6;
+        }
+
+        @media (max-width: 640px) {
+            main {
+                margin: 0;
+                padding: 20px;
+            }
+
+            table {
+                font-size: .9rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <nav class="navegacao" aria-label="Navegacao do documento">
+            <button class="botao" type="button" onclick="voltar()">Voltar</button>
+            <a class="botao" href="/termos-aceite.html">Termo de Aceite</a>
+        </nav>
+        <h1>Politica de Privacidade do Curso Valido</h1>
+        <p class="atualizacao"><strong>Versao 1.0</strong> | Documento disponivel permanentemente em <a
+                href="/politica-privacidade.html">/politica-privacidade.html</a>.</p>
+
+        <h2>1. Responsavel e abrangencia</h2>
+        <p>Esta politica explica como a administracao do projeto educacional Curso Valido trata dados pessoais de
+            alunos, professores, administradores e pessoas convidadas para criar uma conta. O canal oficial de
+            atendimento da instituicao responsavel pelo curso e utilizado para pedidos de privacidade e direitos do
+            titular.</p>
+
+        <h2>2. Dados pessoais coletados</h2>
+        <p><strong>Dados:</strong> nome completo e e-mail.</p>
+        <p><strong>Origem e funcionalidade:</strong> formulario de cadastro, login, convite e recuperacao de conta.</p>
+        <p><strong>Finalidade e acesso:</strong> identificar a conta e enviar confirmacao, redefinicao de senha e codigo
+            2FA. O e-mail e acessado pela administracao autorizada e pelo servico de envio Resend.</p>
+        <p><strong>Retencao:</strong> enquanto a conta existir e pelo periodo necessario para obrigacoes e auditoria.
+        </p>
+
+        <p><strong>Dados:</strong> CPF, data de nascimento e declaracao de maioridade.</p>
+        <p><strong>Origem e funcionalidade:</strong> formulario de cadastro e validacoes de identidade e idade.</p>
+        <p><strong>Finalidade e acesso:</strong> evitar contas duplicadas, verificar o requisito de 18 anos e atender
+            regras de acesso. Administradores autorizados podem consultar esses dados.</p>
+        <p><strong>Retencao:</strong> enquanto necessarios a conta, seguranca, auditoria ou obrigacao legal.</p>
+
+        <p><strong>Dados:</strong> telefone.</p>
+        <p><strong>Origem e funcionalidade:</strong> formulario de cadastro.</p>
+        <p><strong>Finalidade e acesso:</strong> manter o cadastro e permitir contato institucional quando necessario.
+            Nao e usado para publicidade.</p>
+        <p><strong>Retencao:</strong> enquanto mantido no cadastro ou ate pedido de exclusao, ressalvadas obrigacoes
+            legais.</p>
+
+        <p><strong>Dados:</strong> CEP, logradouro, bairro, cidade e estado.</p>
+        <p><strong>Origem e funcionalidade:</strong> endereco informado no cadastro e consulta do CEP ao ViaCEP.</p>
+        <p><strong>Finalidade e acesso:</strong> completar e validar o endereco do usuario. O ViaCEP recebe o CEP
+            consultado.</p>
+        <p><strong>Retencao:</strong> enquanto fizerem parte do cadastro ou forem necessarios para a finalidade
+            informada.</p>
+
+        <p><strong>Dados:</strong> hash BCrypt da senha.</p>
+        <p><strong>Origem e funcionalidade:</strong> cadastro e login.</p>
+        <p><strong>Finalidade e acesso:</strong> autenticar o usuario. A senha original nao e armazenada; somente os
+            dados criptograficos necessarios a verificacao.</p>
+        <p><strong>Retencao:</strong> enquanto a conta estiver ativa, com exclusao quando deixar de ser necessaria.</p>
+
+        <p><strong>Dados:</strong> matricula, perfil, status, conta ativa e e-mail confirmado.</p>
+        <p><strong>Origem e funcionalidade:</strong> gerados ou atualizados pelo cadastro, aprovacao e administracao.
+        </p>
+        <p><strong>Finalidade e acesso:</strong> aplicar RBAC e liberar as funcionalidades de aluno, professor ou
+            administrador.</p>
+        <p><strong>Retencao:</strong> enquanto a conta e os registros de responsabilizacao forem necessarios.</p>
+
+        <p><strong>Dados:</strong> versao, data e hora do aceite dos termos e da Politica.</p>
+        <p><strong>Origem e funcionalidade:</strong> checkboxes de aceite no cadastro e aceite de nova versao.</p>
+        <p><strong>Finalidade e acesso:</strong> comprovar qual documento foi apresentado e aceito. A administracao
+            consulta esses registros para governanca.</p>
+        <p><strong>Retencao:</strong> pelo tempo necessario para comprovar o aceite e cumprir obrigacoes.</p>
+
+        <p><strong>Dados:</strong> tokens de e-mail e codigo 2FA.</p>
+        <p><strong>Origem e funcionalidade:</strong> confirmacao de e-mail, redefinicao de senha, convite e login em
+            duas etapas.</p>
+        <p><strong>Finalidade e acesso:</strong> validar uma operacao especifica. O banco armazena somente hash do
+            token/codigo, com expiracao e uso unico.</p>
+        <p><strong>Retencao:</strong> ate expiracao, utilizacao ou invalidacao; depois deixam de ser validos.</p>
+
+        <p><strong>Dados:</strong> IP, data, hora, tipo da operacao e detalhes da auditoria.</p>
+        <p><strong>Origem e funcionalidade:</strong> requisicoes de cadastro, login, forum, politicas e operacoes
+            administrativas.</p>
+        <p><strong>Finalidade e acesso:</strong> prevenir fraude, investigar incidentes e demonstrar a integridade das
+            operacoes. Acesso restrito a administradores.</p>
+        <p><strong>Retencao:</strong> pelo prazo necessario para seguranca, auditoria e exercicio regular de direitos.
+        </p>
+
+        <p><strong>Dados:</strong> topicos, comentarios, nome, perfil e identificador do autor.</p>
+        <p><strong>Origem e funcionalidade:</strong> publicacoes realizadas no forum.</p>
+        <p><strong>Finalidade e acesso:</strong> disponibilizar a comunidade de aprendizagem, exibir autoria e permitir
+            moderacao.</p>
+        <p><strong>Retencao:</strong> enquanto a publicacao e os registros de moderacao forem necessarios; exclusoes
+            podem ser logicas.</p>
+        <p>Por ser gratuito, o projeto nao solicita dados de pagamento e nao usa os dados acima para venda de produtos
+            ou
+            publicidade direcionada.</p>
+
+        <h2>3. Finalidades do tratamento</h2>
+        <ul>
+            <li>criar, identificar e administrar contas de usuarios;</li>
+            <li>autenticar o acesso, enviar confirmacoes, redefinicoes de senha e codigo de dupla verificacao;</li>
+            <li>aplicar perfis e permissoes de aluno, professor e administrador;</li>
+            <li>verificar a maioridade obrigatoria, o aceite dos termos e os requisitos de cadastro;</li>
+            <li>disponibilizar o forum e vincular publicacoes aos seus autores;</li>
+            <li>consultar dados de endereco a partir do CEP informado;</li>
+            <li>prevenir uso indevido, investigar incidentes e manter auditoria das operacoes;</li>
+            <li>atender obrigacoes legais e solicitacoes do titular.</li>
+        </ul>
+
+        <h2>4. Bases legais</h2>
+        <p>Conforme a finalidade, o tratamento se apoia na execucao das funcionalidades educacionais solicitadas, no
+            cumprimento de obrigacoes legais, no exercicio regular de direitos, na protecao da seguranca do sistema e,
+            quando aplicavel, no consentimento manifestado pelo aceite. A versao, a data e a hora do aceite sao
+            registradas para comprovar a escolha feita pelo usuario.</p>
+
+        <h2>5. Como o tratamento e realizado</h2>
+        <p>O sistema coleta os dados enviados nos formularios, valida as informacoes, grava os registros no banco
+            PostgreSQL, atualiza o status da conta conforme as regras de aprovacao e usa os dados para executar as
+            funcionalidades descritas nesta politica. A senha nao e gravada em texto puro: o sistema utiliza BCrypt
+            que armazena o hash com o salt incorporado.</p>
+
+        <h2>6. Compartilhamento e servicos externos</h2>
+        <p>O CEP informado pode ser enviado a API publica ViaCEP exclusivamente para retornar logradouro, bairro,
+            cidade e estado. O sistema utiliza o Resend para enviar confirmacao, convite, redefinicao de senha e
+            autenticacao 2FA; para isso, compartilha o e-mail do destinatario e o conteudo da mensagem. O Curso Valido
+            nao vende dados pessoais. Compartilhamentos legais podem ocorrer quando exigidos por autoridade competente.
+        </p>
+
+        <h2>7. Retencao, seguranca e exclusao</h2>
+        <p>Os dados permanecem enquanto a conta e as finalidades do sistema estiverem ativas ou enquanto houver
+            necessidade legal ou de auditoria. O titular pode solicitar a exclusao da conta; quando a exclusao ocorrer,
+            registros necessarios para comprovar o aceite ou a auditoria podem ser preservados ou anonimizados conforme
+            a finalidade e a obrigacao aplicavel. O acesso e protegido por JWT, controle de permissoes e registros de
+            auditoria. Tokens deixam de ser validos quando expiram ou sao utilizados. Dados que nao precisarem ser
+            mantidos serao removidos ou anonimizados quando a conta for excluida.</p>
+
+        <h2>8. Direitos do titular</h2>
+        <p>O titular pode solicitar confirmacao da existencia de tratamento, acesso, correcao, atualizacao,
+            anonimização, bloqueio ou eliminacao quando aplicavel, informacoes sobre compartilhamento, portabilidade
+            quando regulamentada, revogacao do consentimento e revisao de decisoes automatizadas quando aplicavel.
+            A revogacao dos termos pode bloquear o acesso a funcionalidades que dependem do aceite.</p>
+
+        <h2>9. Como exercer os direitos</h2>
+        <p>Solicitacoes devem ser encaminhadas a administracao do Curso Valido pelo canal informado pela instituicao,
+            com identificacao suficiente para evitar atendimento a pessoa incorreta. A solicitacao sera analisada e
+            respondida conforme a legislacao aplicavel.</p>
+
+        <h2>10. Atualizacoes</h2>
+        <p>A versao vigente permanece acessivel nesta pagina. Quando uma alteracao exigir novo aceite, o sistema
+            solicitara a confirmacao antes de liberar as funcionalidades correspondentes.</p>
+
+        <h2>11. Documento relacionado</h2>
+        <p>O aceite de uso da plataforma esta descrito no <a href="/termos-aceite.html">Termo de Aceite do Curso
+                Valido</a>.</p>
+    </main>
+    <script>
+        function voltar() {
+            if (window.history.length > 1) window.history.back();
+            else window.location.href = "/";
+        }
+    </script>
+</body>
+
+</html>
