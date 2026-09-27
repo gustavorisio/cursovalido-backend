@@ -24,20 +24,24 @@ public class TopicoServico {
     @Autowired
     private LogAuditoriaServico auditoria;
 
+    // Lista os topicos mais recentes.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho) {
         return listarRecentes(pagina, tamanho, "");
     }
 
+    // Lista os topicos recentes filtrando pelo texto informado.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca) {
         return listarRecentes(pagina, tamanho, busca, null);
     }
 
+    // Lista os topicos e registra a consulta quando houver usuario.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca, Long idUsuario) {
         String termo = busca == null ? "" : busca.trim();
         registrar(idUsuario, "CONSULTA_TOPICOS", termo);
         return repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho), termo);
     }
 
+    // Cria um novo topico para o usuario informado.
     public Topico criar(Topico topico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         topico.setIdAutor(usuario.getId());
@@ -51,6 +55,7 @@ public class TopicoServico {
         return topicoSalvo;
     }
 
+    // Edita um topico pelo autor ou administrador.
     public Topico editar(Long idTopico, Topico dadosAtualizados, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);
@@ -62,6 +67,7 @@ public class TopicoServico {
         return topicoSalvo;
     }
 
+    // Arquiva um topico sem apagar seus dados.
     public void arquivar(Long idTopico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);
@@ -71,6 +77,7 @@ public class TopicoServico {
         registrar(idUsuario, "ARQUIVAMENTO_TOPICO", "Topico " + idTopico);
     }
 
+    // Apaga logicamente um topico como administrador.
     public void apagar(Long idTopico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         verificarAdministrador(usuario);
@@ -80,6 +87,7 @@ public class TopicoServico {
         registrar(idUsuario, "EXCLUSAO_TOPICO", "Topico " + idTopico);
     }
 
+    // Fecha um topico para novos comentarios.
     public void fechar(Long idTopico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);
@@ -89,6 +97,7 @@ public class TopicoServico {
         registrar(idUsuario, "FECHAMENTO_TOPICO", "Topico " + idTopico);
     }
 
+    // Busca um topico que ainda esta ativo.
     public Topico buscarAtivo(Long idTopico) {
         Topico topico = repositorioTopicos.findById(idTopico)
                 .orElseThrow(RecursoNaoEncontradoException::topicoNaoEncontrado);
