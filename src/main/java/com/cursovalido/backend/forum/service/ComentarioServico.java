@@ -27,16 +27,19 @@ public class ComentarioServico {
     @Autowired
     private LogAuditoriaServico auditoria;
 
+    // Lista os comentarios ativos de um topico.
     public List<Comentario> listarPorTopico(Long idTopico) {
         return listarPorTopico(idTopico, null);
     }
 
+    // Lista comentarios e registra a consulta do usuario.
     public List<Comentario> listarPorTopico(Long idTopico, Long idUsuario) {
         servicoTopicos.buscarAtivo(idTopico);
         registrar(idUsuario, "CONSULTA_COMENTARIOS", "Topico " + idTopico);
         return repositorioComentarios.listarPorTopicoAtivo(idTopico);
     }
 
+    // Cria um comentario em um topico aberto.
     public Comentario criar(Long idTopico, Comentario comentario, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = servicoTopicos.buscarAtivo(idTopico);
@@ -57,6 +60,7 @@ public class ComentarioServico {
         return comentarioSalvo;
     }
 
+    // Edita um comentario somente pelo seu autor.
     public Comentario editar(Long idComentario, Comentario dadosAtualizados, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Comentario comentario = buscar(idComentario);
@@ -75,6 +79,7 @@ public class ComentarioServico {
         return comentarioSalvo;
     }
 
+    // Desativa um comentario pelo autor ou administrador.
     public void apagar(Long idComentario, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Comentario comentario = buscar(idComentario);
@@ -90,6 +95,7 @@ public class ComentarioServico {
         registrar(idUsuario, "EXCLUSAO_COMENTARIO", "Comentario " + idComentario);
     }
 
+    // Confere o topico e desativa o comentario informado.
     public void apagarDoTopico(Long idTopico, Long idComentario, Long idUsuario) {
         Comentario comentario = buscar(idComentario);
         if (comentario.getTopico() == null || !idTopico.equals(comentario.getTopico().getId())) {
