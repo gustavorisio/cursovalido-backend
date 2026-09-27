@@ -1,33 +1,40 @@
-package com.cursovalido.backend.Forum.servico;
+package com.cursovalido.backend.forum.service;
 
-import com.cursovalido.backend.Forum.entidade.UsuarioForum;
-import com.cursovalido.backend.Forum.entidade.Topico;
-import com.cursovalido.backend.Forum.dto.TopicoResumoDTO;
-import com.cursovalido.backend.Forum.repositorio.TopicoRepositorio;
-import com.cursovalido.backend.Forum.excecao.AcessoNegadoException;
-import com.cursovalido.backend.Forum.excecao.RecursoNaoEncontradoException;
+import com.cursovalido.backend.forum.entity.UsuarioForum;
+import com.cursovalido.backend.forum.entity.Topico;
+import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
+import com.cursovalido.backend.forum.repository.TopicoRepositorio;
+import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.forum.exception.AcessoNegadoException;
+import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class TopicoServico {
-    private final TopicoRepositorio repositorioTopicos;
-    private final UsuarioForumServico servicoUsuarios;
-
-    public TopicoServico(TopicoRepositorio repositorioTopicos, UsuarioForumServico servicoUsuarios) {
-        this.repositorioTopicos = repositorioTopicos;
-        this.servicoUsuarios = servicoUsuarios;
-    }
+    @Autowired
+    private TopicoRepositorio repositorioTopicos;
+    @Autowired
+    private UsuarioForumServico servicoUsuarios;
+    @Autowired
+    private LogAuditoriaServico auditoria;
 
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho) {
         return listarRecentes(pagina, tamanho, "");
     }
 
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca) {
+        return listarRecentes(pagina, tamanho, busca, null);
+    }
+
+    public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca, Long idUsuario) {
         String termo = busca == null ? "" : busca.trim();
+        registrar(idUsuario, "CONSULTA_TOPICOS", termo);
         return repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho), termo);
     }
 
@@ -40,6 +47,7 @@ public class TopicoServico {
         topico.setFechado(false);
         Topico topicoSalvo = repositorioTopicos.save(topico);
         topicoSalvo.setQuantidadeRespostas(0);
+        registrar(idUsuario, "CADASTRO_TOPICO", "Topico " + topicoSalvo.getId());
         return topicoSalvo;
     }
 
@@ -50,6 +58,7 @@ public class TopicoServico {
         topico.setTitulo(dadosAtualizados.getTitulo());
         topico.setDescricao(dadosAtualizados.getDescricao());
         Topico topicoSalvo = repositorioTopicos.save(topico);
+        registrar(idUsuario, "EDICAO_TOPICO", "Topico " + idTopico);
         return topicoSalvo;
     }
 
@@ -59,6 +68,7 @@ public class TopicoServico {
         verificarAutoriaOuAdministrador(topico, usuario);
         topico.setAtivo(false);
         repositorioTopicos.save(topico);
+        registrar(idUsuario, "ARQUIVAMENTO_TOPICO", "Topico " + idTopico);
     }
 
     public void apagar(Long idTopico, Long idUsuario) {
@@ -67,6 +77,7 @@ public class TopicoServico {
         Topico topico = buscarAtivo(idTopico);
         topico.setAtivo(false);
         repositorioTopicos.save(topico);
+        registrar(idUsuario, "EXCLUSAO_TOPICO", "Topico " + idTopico);
     }
 
     public void fechar(Long idTopico, Long idUsuario) {
@@ -75,13 +86,14 @@ public class TopicoServico {
         verificarAutoriaOuAdministrador(topico, usuario);
         topico.setFechado(true);
         repositorioTopicos.save(topico);
+        registrar(idUsuario, "FECHAMENTO_TOPICO", "Topico " + idTopico);
     }
 
     public Topico buscarAtivo(Long idTopico) {
         Topico topico = repositorioTopicos.findById(idTopico)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Topico nao encontrado"));
+                .orElseThrow(RecursoNaoEncontradoException::topicoNaoEncontrado);
         if (!topico.isAtivo()) {
-            throw new RecursoNaoEncontradoException("Topico arquivado");
+            throw RecursoNaoEncontradoException.topicoArquivado();
         }
         return topico;
     }
@@ -89,20 +101,24 @@ public class TopicoServico {
     private void verificarAutoriaOuAdministrador(Topico topico, UsuarioForum usuario) {
         boolean ehAutor = topico.getIdAutor() != null && topico.getIdAutor().equals(usuario.getId());
         if (!ehAutor && !servicoUsuarios.ehAdministrador(usuario)) {
-            throw new AcessoNegadoException("Somente o autor ou administrador pode alterar o topico");
+            throw AcessoNegadoException.autorOuAdministradorAlterarTopico();
         }
     }
 
     private void verificarAutoria(Topico topico, UsuarioForum usuario) {
         if (topico.getIdAutor() == null || !topico.getIdAutor().equals(usuario.getId())) {
-            throw new AcessoNegadoException("Somente o autor pode editar o topico");
+            throw AcessoNegadoException.autorEditarTopico();
         }
     }
 
     private void verificarAdministrador(UsuarioForum usuario) {
         if (!servicoUsuarios.ehAdministrador(usuario)) {
-            throw new AcessoNegadoException(
-                    "Somente o administrador pode apagar o topico");
+            throw AcessoNegadoException.administradorApagarTopico();
         }
+    }
+
+    private void registrar(Long idUsuario, String tipo, String detalhes) {
+        if (auditoria != null)
+            auditoria.registrar(idUsuario, tipo, detalhes, null);
     }
 }

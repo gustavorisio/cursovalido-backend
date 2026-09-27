@@ -2,15 +2,12 @@ package com.cursovalido.backend.forum.dto;
 
 import java.time.LocalDateTime;
 
-public record TopicoResumoDTO(
+public record ComentarioResponse(
         Long id,
-        String titulo,
-        String descricao,
+        String conteudo,
         String nomeAutor,
         String papelAutor,
         Long idAutor,
         LocalDateTime criadoEm,
-        long quantidadeRespostas,
-        boolean ativo,
-        boolean fechado) {
+        boolean ativo) {
 }

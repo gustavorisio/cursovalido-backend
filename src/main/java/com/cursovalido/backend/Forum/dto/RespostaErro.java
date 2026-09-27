@@ -1,4 +1,4 @@
-package com.cursovalido.backend.Forum.dto;
+package com.cursovalido.backend.forum.dto;
 
 import java.util.List;
 import java.util.Map;

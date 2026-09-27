@@ -1,4 +1,4 @@
-package com.cursovalido.backend.Forum.configuracao;
+package com.cursovalido.backend.forum.configuration;
 
 import javax.sql.DataSource;
 
@@ -22,4 +22,5 @@ public class FlywayConfig {
         return beanFactory -> beanFactory.getBeanDefinition("entityManagerFactory")
                 .setDependsOn("flyway");
     }
+
 }
