@@ -28,6 +28,24 @@ target/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
+application.yaml
+
+### Dependencias Node locais ###
+node_modules/
+
+### Variaveis de ambiente locais ###
+.env
+.env.*
+!.env.example
 
 ### VS Code ###
 .vscode/
+
+### Logs e arquivos temporarios ###
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+hs_err_pid*
+src/main/resources/application.yaml
