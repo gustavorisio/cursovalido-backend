@@ -8,15 +8,19 @@ import com.cursovalido.backend.authentication.security.CriptografiaDadosConverte
 @Embeddable
 public class Endereco {
     @Convert(converter = CriptografiaDadosConverter.class)
-    @Column(length = 255)
+    @Column(length = 512)
     private String cep;
     @Convert(converter = CriptografiaDadosConverter.class)
+    @Column(length = 512)
     private String logradouro;
     @Convert(converter = CriptografiaDadosConverter.class)
+    @Column(length = 512)
     private String bairro;
     @Convert(converter = CriptografiaDadosConverter.class)
+    @Column(length = 512)
     private String cidade;
     @Convert(converter = CriptografiaDadosConverter.class)
+    @Column(length = 512)
     private String estado;
 
     public Endereco() {
