@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.disable())
                         .addHeaderWriter((request, response) -> {
-                            if (ehDocumentoPublico(request)) {
+                            if (documentoPublico(request)) {
                                 response.setHeader("Content-Security-Policy",
                                         "frame-ancestors " + origensFrontend.replace(',', ' ').trim() + ";");
                             } else {
@@ -89,7 +89,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder codificadorSenha() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
@@ -111,7 +111,7 @@ public class SecurityConfig {
         return origem;
     }
 
-    private boolean ehDocumentoPublico(HttpServletRequest request) {
+    private boolean documentoPublico(HttpServletRequest request) {
         String uri = request.getRequestURI();
         return "/termos-aceite.html".equals(uri) || "/politica-privacidade.html".equals(uri);
     }
