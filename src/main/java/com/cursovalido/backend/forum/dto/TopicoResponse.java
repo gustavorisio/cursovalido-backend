@@ -2,7 +2,7 @@ package com.cursovalido.backend.forum.dto;
 
 import java.time.LocalDateTime;
 
-public record TopicoResumoDTO(
+public record TopicoResponse(
         Long id,
         String titulo,
         String descricao,

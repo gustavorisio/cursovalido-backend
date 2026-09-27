@@ -1,22 +1,9 @@
-package com.cursovalido.backend.Forum.dto;
+package com.cursovalido.backend.forum.dto;
 
-import com.cursovalido.backend.Forum.entidade.UsuarioForum;
 import java.util.List;
 
-public class RespostaUsuariosForum {
-    private final List<UsuarioForum> value;
-    private final int count;
-
-    public RespostaUsuariosForum(List<UsuarioForum> value) {
-        this.value = value;
-        this.count = value.size();
-    }
-
-    public List<UsuarioForum> getValue() {
-        return value;
-    }
-
-    public int getCount() {
-        return count;
+public record RespostaUsuariosForum(List<UsuarioForumResponse> value, int count) {
+    public RespostaUsuariosForum(List<UsuarioForumResponse> value) {
+        this(value, value.size());
     }
 }

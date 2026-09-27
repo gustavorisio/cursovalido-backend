@@ -1,4 +1,4 @@
-package com.cursovalido.backend.Forum.entidade;
+package com.cursovalido.backend.forum.entity;
 
 import jakarta.persistence.*;
 
