@@ -64,7 +64,36 @@ O projeto utiliza as seguintes tecnologias:
      ```bash
      ./mvnw spring-boot:run
      ```
-
+   * **Colocar na variavel de ambiente**
+```
+     # APPLICATION
+SERVER_PORT=8080
+ 
+# POSTGRESQL
+DB_HOST=$DB_HOST
+DB_PORT=$DB_PORT
+DB_NAME=$DB_NAME
+DB_USERNAME=$DB_USERNAME
+DB_PASSWORD=$DB_PASSWORD
+ 
+# JWT
+JWT_SECRET=$JWT_SECRET
+JWT_EXPIRATION=3600000
+ 
+# BCRYPT
+BCRYPT_STRENGTH=12
+ 
+# GMAIL
+GMAIL_USERNAME=
+GMAIL_APP_PASSWORD=
+ 
+# RESEND
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+ 
+# YOUTUBE
+YOUTUBE_API_KEY=
+```
 A API estará disponível na porta configurada, por padrão em `http://localhost:8080`.
 
 ## Contribuição Esperada
