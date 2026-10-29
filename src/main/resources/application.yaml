@@ -1,3 +1,42 @@
 spring:
   application:
-    name: cursovalido-backend
+    name: minha-api
+ 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+ 
+server:
+  port: ${SERVER_PORT:8080}
+ 
+# SECURITY / JWT
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:3600000}
+ 
+  bcrypt:
+    strength: ${BCRYPT_STRENGTH:12}
+ 
+# EXTERNAL APIS
+external:
+  resend:
+    base-url: https://api.resend.com
+    api-key: ${RESEND_API_KEY}
+    from-email: ${RESEND_FROM_EMAIL}
+ 
+  viacep:
+    base-url: https://viacep.com.br/ws
+ 
+  youtube:
+    base-url: https://www.googleapis.com/youtube/v3
+    api-key: ${YOUTUBE_API_KEY}
