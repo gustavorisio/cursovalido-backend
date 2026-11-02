@@ -15,6 +15,8 @@ import com.cursovalido.backend.authentication.service.ContaUsuarioServico;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
@@ -95,6 +97,42 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     @DynamicPropertySource
     static void banco(DynamicPropertyRegistry registry) {
         PostgresTeste.configurar(registry, "aulas_api");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "insert into tb_modulos (titulo, descricao, curso_id, ordem, criado_em) values ('Teste', 'Teste', -1, 1, CURRENT_TIMESTAMP)",
+            "insert into tb_aulas (titulo, descricao, modulo_id, ordem, youtube_video_id, criado_em) values ('Teste', 'Teste', -1, 1, 'M7lc1UVf-VE', CURRENT_TIMESTAMP)",
+            "insert into tb_matriculas (aluno_id, curso_id, matriculado_em) values (-1, -1, CURRENT_TIMESTAMP)",
+            "insert into tb_progresso_aulas (matricula_id, aula_id, posicao_segundos, atualizado_em) values (-1, -1, 0, CURRENT_TIMESTAMP)" })
+    void bancoRejeitaVinculosInexistentes(String sql) {
+        assertThatThrownBy(() -> jdbc.update(sql)).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void bancoRejeitaOrdemZeroMesmoSemValidacaoHttp() {
+        var professor = usuarios.findByEmail("professor@aulas.example.com").orElseThrow();
+        var curso = cursos.criar(new CursoRequest("Java", "Curso"), professor.getId());
+        assertThatThrownBy(() -> jdbc.update(
+                "insert into tb_modulos (titulo, descricao, curso_id, ordem, criado_em) values ('Teste', 'Teste', ?, 0, CURRENT_TIMESTAMP)",
+                curso.getId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void bancoRejeitaProgressoDuplicado() {
+        var professor = usuarios.findByEmail("professor@aulas.example.com").orElseThrow();
+        var curso = cursos.criar(new CursoRequest("Java", "Curso"), professor.getId());
+        var modulo = modulos.criar(curso.getId(), new ModuloRequest("Inicio", "Basico", 1), professor.getId());
+        var aula = aulas.criar(modulo.getId(), new AulaRequest("Java", "Basico", 1,
+                "https://youtu.be/M7lc1UVf-VE"), professor.getId());
+        var aluno = criarProfessor("aluno-progresso");
+        aluno.setPerfil(Perfil.ALUNO);
+        usuarios.saveAndFlush(aluno);
+        var matricula = alunoAulas.matricular(curso.getId(), aluno.getId());
+        progressos.concluir(aula.getId(), aluno.getId());
+        assertThatThrownBy(() -> jdbc.update(
+                "insert into tb_progresso_aulas (matricula_id, aula_id, atualizado_em) values (?, ?, CURRENT_TIMESTAMP)",
+                matricula.getId(), aula.getId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @TestConfiguration

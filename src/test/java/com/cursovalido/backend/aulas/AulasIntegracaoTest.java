@@ -169,6 +169,90 @@ class AulasIntegracaoTest {
     }
 
     @Test
+    void consultasDeGestaoRetornamCursoModuloEAulaComAutoria() throws Exception {
+        long idModulo = prepararModulo();
+        long idAula = criarAula(idModulo);
+        long idCurso = modulos.findById(idModulo).orElseThrow().getIdCurso();
+        mvc.perform(get("/api/cursos").with(comoProfessor(professor)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].idProfessor").value(professor.getId()));
+        mvc.perform(get("/api/cursos/" + idCurso).with(comoProfessor(professor)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(idCurso));
+        mvc.perform(get("/api/modulos/" + idModulo).with(comoProfessor(professor)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.idCurso").value(idCurso));
+        mvc.perform(get("/api/aulas/" + idAula).with(comoProfessor(professor)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.idModulo").value(idModulo));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "curso", "modulo", "aula" })
+    void validarCamposObrigatoriosELimitesNoHttp(String tipo) throws Exception {
+        long idModulo = prepararModulo();
+        long idCurso = modulos.findById(idModulo).orElseThrow().getIdCurso();
+        String rota = "/api/cursos";
+        if (tipo.equals("modulo")) { rota = "/api/cursos/" + idCurso + "/modulos"; }
+        if (tipo.equals("aula")) { rota = "/api/modulos/" + idModulo + "/aulas"; }
+        var dados = new java.util.HashMap<String, Object>();
+        dados.put("titulo", "T".repeat(255));
+        dados.put("descricao", "D".repeat(5000));
+        if (!tipo.equals("curso")) { dados.put("ordem", 1); }
+        if (tipo.equals("aula")) { dados.put("youtubeUrl", "https://youtu.be/M7lc1UVf-VE"); }
+        var json = new com.fasterxml.jackson.databind.ObjectMapper();
+        mvc.perform(post(rota).with(comoProfessor(professor)).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(dados))).andExpect(status().isCreated());
+        long quantidadeCursos = cursos.count();
+        long quantidadeModulos = modulos.count();
+        long quantidadeAulas = aulas.count();
+        for (String titulo : new String[] { " ", "T".repeat(256) }) {
+            dados.put("titulo", titulo);
+            mvc.perform(post(rota).with(comoProfessor(professor)).contentType(MediaType.APPLICATION_JSON)
+                    .content(json.writeValueAsString(dados))).andExpect(status().isBadRequest());
+        }
+        dados.put("titulo", "Valido");
+        for (String descricao : new String[] { " ", "D".repeat(5001) }) {
+            dados.put("descricao", descricao);
+            mvc.perform(post(rota).with(comoProfessor(professor)).contentType(MediaType.APPLICATION_JSON)
+                    .content(json.writeValueAsString(dados))).andExpect(status().isBadRequest());
+        }
+        dados.put("descricao", "Valida");
+        if (!tipo.equals("curso")) {
+            dados.put("ordem", 0);
+            mvc.perform(post(rota).with(comoProfessor(professor)).contentType(MediaType.APPLICATION_JSON)
+                    .content(json.writeValueAsString(dados))).andExpect(status().isBadRequest());
+            dados.remove("ordem");
+            mvc.perform(post(rota).with(comoProfessor(professor)).contentType(MediaType.APPLICATION_JSON)
+                    .content(json.writeValueAsString(dados))).andExpect(status().isBadRequest());
+        }
+        assertThat(cursos.count()).isEqualTo(quantidadeCursos);
+        assertThat(modulos.count()).isEqualTo(quantidadeModulos);
+        assertThat(aulas.count()).isEqualTo(quantidadeAulas);
+    }
+
+    @Test
+    void repositorioOrdenaPorOrdemEIdEFiltraInativos() throws Exception {
+        long idModulo = prepararModulo();
+        var primeira = criarAula(idModulo);
+        var ultima = aulas.findById(primeira).orElseThrow();
+        ultima.setOrdem(3);
+        aulas.saveAndFlush(ultima);
+        long segunda = criarAula(idModulo);
+        long terceira = criarAulaComIdNovo(idModulo);
+        mvc.perform(get("/api/modulos/" + idModulo + "/aulas").with(comoProfessor(professor)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(segunda))
+                .andExpect(jsonPath("$[1].id").value(terceira)).andExpect(jsonPath("$[2].id").value(primeira));
+        mvc.perform(delete("/api/aulas/" + segunda).with(comoProfessor(professor))).andExpect(status().isNoContent());
+        assertThat(aulas.findByIdModuloAndAtivoTrueOrderByOrdemAscIdAsc(idModulo))
+                .extracting(com.cursovalido.backend.aulas.entity.Aula::getId).containsExactly(terceira, primeira);
+    }
+
+    private long criarAulaComIdNovo(long idModulo) throws Exception {
+        mvc.perform(post("/api/modulos/" + idModulo + "/aulas").with(comoProfessor(professor))
+                .contentType(MediaType.APPLICATION_JSON).content(dadosAula("Outra", "https://youtu.be/M7lc1UVf-VE")))
+                .andExpect(status().isCreated());
+        return aulas.findByIdModuloAndAtivoTrueOrderByOrdemAscIdAsc(idModulo).stream()
+                .mapToLong(com.cursovalido.backend.aulas.entity.Aula::getId).max().orElseThrow();
+    }
+
+    @Test
     void matriculaGratuitaLiberaAulasImediatamenteSemDuplicar() throws Exception {
         long idModulo = prepararModulo();
         long idAula = criarAula(idModulo);
