@@ -1,5 +1,7 @@
 package com.cursovalido.backend.forum.service;
 
+import lombok.RequiredArgsConstructor;
+
 import com.cursovalido.backend.forum.entity.Comentario;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.entity.Topico;
@@ -10,33 +12,33 @@ import com.cursovalido.backend.forum.exception.ConflitoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ComentarioServico {
 
-    @Autowired
-    private ComentarioRepositorio repositorioComentarios;
-    @Autowired
-    private TopicoServico servicoTopicos;
-    @Autowired
-    private UsuarioForumServico servicoUsuarios;
-    @Autowired
-    private LogAuditoriaServico auditoria;
+    private final ComentarioRepositorio repositorioComentarios;
+    private final TopicoServico servicoTopicos;
+    private final UsuarioForumServico servicoUsuarios;
+    private final LogAuditoriaServico auditoria;
 
+    // Lista os comentarios ativos de um topico.
     public List<Comentario> listarPorTopico(Long idTopico) {
         return listarPorTopico(idTopico, null);
     }
 
+    // Lista comentarios e registra a consulta do usuario.
     public List<Comentario> listarPorTopico(Long idTopico, Long idUsuario) {
         servicoTopicos.buscarAtivo(idTopico);
         registrar(idUsuario, "CONSULTA_COMENTARIOS", "Topico " + idTopico);
         return repositorioComentarios.listarPorTopicoAtivo(idTopico);
     }
 
+    // Cria um comentario em um topico aberto.
     public Comentario criar(Long idTopico, Comentario comentario, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = servicoTopicos.buscarAtivo(idTopico);
@@ -57,6 +59,8 @@ public class ComentarioServico {
         return comentarioSalvo;
     }
 
+    // Edita um comentario somente pelo seu autor.
+    @Transactional
     public Comentario editar(Long idComentario, Comentario dadosAtualizados, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Comentario comentario = buscar(idComentario);
@@ -75,6 +79,7 @@ public class ComentarioServico {
         return comentarioSalvo;
     }
 
+    // Desativa um comentario pelo autor ou administrador.
     public void apagar(Long idComentario, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Comentario comentario = buscar(idComentario);
@@ -90,6 +95,7 @@ public class ComentarioServico {
         registrar(idUsuario, "EXCLUSAO_COMENTARIO", "Comentario " + idComentario);
     }
 
+    // Confere o topico e desativa o comentario informado.
     public void apagarDoTopico(Long idTopico, Long idComentario, Long idUsuario) {
         Comentario comentario = buscar(idComentario);
         if (comentario.getTopico() == null || !idTopico.equals(comentario.getTopico().getId())) {

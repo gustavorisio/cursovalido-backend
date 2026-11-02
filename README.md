@@ -1,79 +1,198 @@
 # Curso Válido - Back-end
 
-Repositorio FrontEnd
-https://github.com/gustavorisio/cursovalido-frontend
+O Curso Válido é uma plataforma web gratuita de aprendizagem em tecnologia, desenvolvida como Projeto Final de Curso de Engenharia de Software da Universidade de Mogi das Cruzes (UMC).
 
-Repositorio Backend
-https://github.com/gustavorisio/cursovalido-backend
+A ideia surgiu da dificuldade de organizar os estudos quando as videoaulas, as notícias e os espaços para tirar dúvidas estão espalhados em diferentes sites. O projeto propõe reunir esses recursos em um mesmo ambiente, permitindo que o aluno acompanhe os conteúdos e converse com professores e outros alunos durante o aprendizado.
 
-## Visão Geral
-Repositório da API REST do **Curso Válido**, plataforma desenvolvida como Projeto Final de Curso (PFC) de Engenharia de Software na UMC. Esta API é responsável por gerenciar toda a regra de negócio por trás da plataforma de aprendizagem. O sistema foi atualizado para operar em um modelo de acesso totalmente gratuito para os alunos. Além disso, o tratamento de dados pessoais, credenciais e perfis opera sob o escopo da Lei Geral de Proteção de Dados (LGPD), exigindo o aceite formal dos Termos de Uso e da Política de Privacidade durante a etapa de cadastro.
+Este repositório contém a API da plataforma, responsável pelas regras de negócio, autenticação, controle de acesso e armazenamento dos dados. A interface é desenvolvida separadamente em React e Tailwind CSS.
 
-## Objetivo
-O objetivo principal desta API é fornecer uma infraestrutura de back-end robusta e segura para a gestão de cursos, progressão de alunos e interações na comunidade em um ambiente de educação gratuita.
+- [Repositório do back-end](https://github.com/gustavorisio/cursovalido-backend)
+- [Repositório do front-end](https://github.com/gustavorisio/cursovalido-frontend)
+
+## Sobre o projeto
+
+A plataforma é voltada a interessados em aprender sobre tecnologia e programação. Seu escopo está organizado em três partes: aulas, notícias e comunidade.
+
+Os alunos poderão estudar por meio de cursos e videoaulas, acompanhar publicações sobre tecnologia e participar do fórum. Os professores serão responsáveis pela organização dos conteúdos e pela publicação de notícias, além de participar das discussões. Os administradores cuidarão dos acessos e das operações administrativas da plataforma.
+
+O projeto está em desenvolvimento. A versão atual do back-end já possui autenticação, gestão de convites, termos de uso, consulta de CEP e fórum. Os módulos de aulas e notícias serão implementados nas próximas etapas.
 
 ## Funcionalidades
-A plataforma baseia-se em três principais funcionalidades educacionais:
 
-*   **Aulas:**
-    *   O cadastramento de aulas e o upload de vídeos são operações exclusivas para usuários com perfil de Professor.
-    *   Os vídeos hospedados devem estar obrigatoriamente no formato MP4, respeitando limites rigorosos de tamanho definidos pelo sistema para mitigar sobrecargas de I/O no servidor.
-    *   A reprodução (streaming) ocorre diretamente no frontend da aplicação.
-    *   Para a aula ser considerada concluída, o aluno deve atingir um percentual mínimo de visualização do vídeo e registrar de forma explícita a conclusão no ambiente.
-*   **Certificados:**
-    *   Os certificados são emitidos em formato PDF exclusivamente após o aluno cumprir todos os critérios de conclusão exigidos, incluindo progresso de visualização e aprovação nas avaliações.
-    *   Cada certificado contém um identificador único, e o sistema fornece um mecanismo público para que terceiros possam consultar sua autenticidade e validade.
-    *   O documento é de uso exclusivo para comprovar a conclusão dos conteúdos fornecidos pela plataforma Curso Válido.
-*   **Fórum (Comunidade):**
-    *   Alunos, Professores e Administradores possuem acesso total ao fórum para criar tópicos de dúvidas de programação e respostas, gerando uma base de conhecimento.
-    *   Os tópicos e comentários possuem um limite máximo de 5000 caracteres.
-    *   A edição de conteúdo é restrita apenas ao autor original, enquanto o fechamento de um tópico pode ser feito pelo autor ou por um administrador (bloqueando novos comentários, geralmente quando a dúvida foi resolvida).
-    *   A exclusão de tópicos e comentários ocorre sempre de maneira lógica (preservando o banco de dados e alterando o status para inativo), ação que inativa consultas ao conteúdo.
+### Cadastro e acesso
 
-## Funcionamento no Projeto
-*   **Segurança e Controle de Acesso (RBAC):** O sistema isola as permissões com base nos perfis de Administrador, Professor e Aluno. O acesso exige um token JWT válido e todas as senhas são armazenadas de forma segura utilizando o hash BCrypt, garantindo proteção aos dados.
-*   **Liberação de Acesso:** Por ser gratuita, a liberação de acesso ao conteúdo das aulas ocorre de forma imediata após a matrícula do aluno. A revogação do acesso acontece apenas caso a conta do usuário seja inativada, cancelada ou excluída.
-*   **Avaliações e Gamificação:** O conteúdo das aulas engloba avaliações nas quais os alunos devem atingir um percentual mínimo de aproveitamento estipulado pelo curso. A aprovação nestas atividades concede Pontos de Experiência (XP), base do motor de gamificação que permite a evolução de nível do aluno na plataforma.
+O cadastro de aluno exige confirmação de maioridade, aceite dos termos vigentes e confirmação do e-mail. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. Depois dessa confirmação, a API emite o JWT usado nas requisições autenticadas.
 
-## Desenvolvimento
-### Stack e Dependências
-O projeto utiliza as seguintes tecnologias:
-*   **Java 21 (LTS)**
-*   **Spring Boot**: Criação da API RESTful.
-*   **Spring Security & JWT**: Segurança das rotas e autenticação.
-*   **Spring Data JPA / Hibernate**: Mapeamento objeto-relacional.
-*   **PostgreSQL**: Banco de dados relacional para persistência de todo o sistema.
-*   **JUnit, Mockito e JaCoCo**: Para testes unitários e cobertura de código.
+As senhas são armazenadas com BCrypt. Também há recuperação de senha e proteção contra tentativas repetidas de acesso. Professores e administradores entram por convite, com conclusão do cadastro e aprovação administrativa.
 
-### Como instalar e rodar localmente
-1. Clone o repositório:
-   ```bash
-   git clone https://github.com/gustavorisio/cursovalido-backend.git
-   cd cursovalido-backend
-   ```
+### Comunidade
 
-2. Configure o banco de dados:
-   Abra o arquivo `src/main/resources/application.yml` e coloque as credenciais do seu PostgreSQL (URL, usuário e senha).
+O fórum permite criar tópicos sobre dúvidas de programação e responder às discussões de outros usuários. A listagem possui busca e paginação, e a edição de tópicos e comentários respeita a autoria de cada publicação.
 
-3. Rode a aplicação usando o Maven Wrapper nativo:
-   * **No Windows:**
-     ```bash
-     .\mvnw spring-boot:run
-     ```
-   * **No Linux/macOS:**
-     ```bash
-     ./mvnw spring-boot:run
-     ```
+A descrição dos tópicos e o conteúdo dos comentários têm limite de 5.000 caracteres. Também é possível fechar tópicos para novas respostas e retirar conteúdos de circulação conforme as permissões do usuário.
 
-A API estará disponível na porta configurada, por padrão em `http://localhost:8080`.
+### Aulas e cursos - implementação prevista
 
-## Contribuição Esperada
-O projeto foi gerenciado usando a metodologia Kanban via Asana. Espera-se que o desenvolvimento e envio de novas contribuições sigam o fluxo padrão de versionamento estabelecido para o repositório:
-*   `main`: Branch focada na VPS da Hostinger, contendo apenas versões validadas e prontas para o deploy em produção.
-*   `develop`: Branch de integração; todo o código para novas funcionalidades, melhorias no fórum, regras de gamificação ou testes de banco de dados devem ser submetidos para esta branch e revisados antes da release.
+O módulo de aprendizagem permitirá organizar cursos em módulos e aulas. Os professores poderão cadastrar e gerenciar os conteúdos, vinculando vídeos do YouTube às aulas.
 
----
+Os alunos poderão se matricular gratuitamente nos cursos, acessar as videoaulas e acompanhar seu progresso. A reprodução será feita pelo player do YouTube na interface da plataforma, utilizando as resoluções disponíveis no serviço.
 
-Orientador: Lucas Santos da Silva
+### Notícias - implementação prevista
 
-Contribuido e desenvolvido por: Gustavo Di Risio
+Os professores poderão criar, editar e excluir notícias sobre programação e tecnologia. Os alunos terão acesso à listagem e à leitura das publicações, reunindo novidades da área no mesmo ambiente em que estudam.
+
+Esse módulo complementará as aulas com conteúdos sobre ferramentas, linguagens e outros assuntos relacionados à formação em tecnologia.
+
+### Dados pessoais e termos de uso
+
+O sistema registra a versão e a data do aceite dos termos e permite publicar novas políticas, solicitar novo aceite, revogar o consentimento e excluir a conta. A consulta de CEP pelo ViaCEP auxilia no preenchimento do endereço.
+
+Há criptografia de campos pessoais e registro de operações em auditoria, com assinaturas para verificar a integridade dos registros.
+
+## Tecnologias
+
+O back-end utiliza Java 21 com Spring Boot, Spring MVC, Spring Security e Spring Data JPA. Os dados são armazenados no PostgreSQL, com migrações gerenciadas pelo Flyway.
+
+A autenticação utiliza JWT com a biblioteca JJWT, e as entradas são validadas com Jakarta Bean Validation. O Resend é utilizado para envio de e-mails e o ViaCEP para consulta de endereços. Os testes utilizam JUnit, Mockito, Spring Boot Test e H2.
+
+## Como executar
+
+### 1. Preparar o ambiente
+
+Instale o JDK 21, Git e PostgreSQL. Se utilizar o VS Code, instale também o Extension Pack for Java.
+
+Confira a versão do Java:
+
+```powershell
+java -version
+```
+
+O projeto inclui Maven Wrapper. Na primeira execução, é necessário acesso à internet para baixar o Maven e as dependências.
+
+### 2. Clonar o repositório
+
+```powershell
+git clone https://github.com/gustavorisio/cursovalido-backend.git
+cd cursovalido-backend
+```
+
+### 3. Criar o banco
+
+No pgAdmin ou em outro cliente PostgreSQL, crie o banco:
+
+```sql
+CREATE DATABASE cursovalido;
+```
+
+Utilize um usuário com permissão para conectar ao banco e criar os objetos das migrações. O Flyway cria as tabelas na inicialização, a partir dos scripts em `src/main/resources/db/migration`. Depois, o Hibernate valida a estrutura do banco.
+
+### 4. Configurar as variáveis de ambiente
+
+No Windows, pesquise **Editar as variáveis de ambiente do sistema**, clique em **Variáveis de Ambiente** e adicione os valores em **Variáveis de usuário**. Cadastre cada nome e valor separadamente, sem aspas.
+
+Para conectar ao PostgreSQL:
+
+```text
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=cursovalido
+DB_USERNAME=seu_usuario
+DB_PASSWORD=sua_senha
+```
+
+Para autenticação, auditoria e criptografia:
+
+```text
+JWT_SECRET=seu_segredo_jwt
+AUDITORIA_CHAVE=seu_segredo_de_auditoria
+DADOS_CRIPTOGRAFIA_CHAVE=sua_chave_de_32_caracteres
+```
+
+Esses valores são exemplos: gere as chaves com os comandos da próxima seção. O JWT exige pelo menos 32 bytes, e a chave de criptografia deve ter exatamente 32 caracteres ASCII.
+
+Para envio de e-mails e integração com o front-end:
+
+```text
+RESEND_API_KEY=sua_chave_resend
+RESEND_FROM_EMAIL=remetente_autorizado
+APP_URL=http://localhost:3000
+FRONTEND_ORIGINS=http://localhost:3000
+```
+
+Utilize um remetente autorizado na sua conta Resend. Ajuste a URL e a origem para a porta utilizada pelo front-end. Se precisar permitir mais de uma origem, separe os endereços por vírgula, sem espaços.
+
+Também é possível definir `SERVER_PORT`, cujo padrão é `8080`, e `JWT_EXPIRATION`, cujo padrão é `3600000` milissegundos, ou uma hora.
+
+As configurações estão em `src/main/resources/application.properties`. Este procedimento utiliza as variáveis do Windows e dispensa um arquivo `.env`. As referências a Gmail e YouTube presentes nesse arquivo ainda não são utilizadas pelos fluxos implementados.
+
+Depois de salvar as variáveis, feche completamente e reabra o VS Code e os terminais. Se as alterações não forem reconhecidas, saia da sessão do Windows e entre novamente.
+
+### 5. Gerar as chaves
+
+Execute o bloco abaixo no PowerShell uma vez para `JWT_SECRET` e novamente para `AUDITORIA_CHAVE`. Copie cada resultado para sua respectiva variável; utilize valores diferentes.
+
+```powershell
+$bytes = New-Object byte[] 32
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
+$rng.Dispose()
+```
+
+Para gerar `DADOS_CRIPTOGRAFIA_CHAVE` com 32 caracteres ASCII:
+
+```powershell
+$bytes = New-Object byte[] 16
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+[BitConverter]::ToString($bytes).Replace("-", "").ToLowerInvariant()
+$rng.Dispose()
+```
+
+Guarde as chaves e não as publique no repositório. Se já houver dados no banco, preserve as chaves de criptografia e auditoria utilizadas anteriormente. A troca da chave JWT invalida os tokens emitidos.
+
+### 6. Iniciar a aplicação
+
+No PowerShell, na raiz do projeto:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+No Linux ou macOS, com as variáveis configuradas no ambiente:
+
+```bash
+./mvnw spring-boot:run
+```
+
+No VS Code, também é possível executar a classe `com.cursovalido.CursovalidoBackendApplication` pelo depurador Java, herdando as variáveis do Windows.
+
+A API estará disponível em `http://localhost:8080`, ou na porta definida em `SERVER_PORT`. Para conferir a execução, consulte:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/api/politicas/ativas
+```
+
+Para utilizar as telas da plataforma, execute também o front-end seguindo as instruções do seu repositório. O envio de e-mails pelo Resend precisa estar configurado para concluir o cadastro e o login.
+
+## Testes
+
+Execute na raiz do projeto:
+
+```powershell
+.\mvnw.cmd test
+```
+
+O perfil de testes utiliza H2, configurado em `src/test/resources/application-test.properties`. O projeto possui testes unitários e teste de integração do fórum.
+
+## Organização e contexto acadêmico
+
+O back-end segue uma organização em camadas, com controladores, serviços, repositórios, entidades e DTOs. Os pacotes atuais concentram autenticação, endereços e fórum. O desenvolvimento é organizado por Kanban com apoio do Asana e versionamento em Git/GitHub.
+
+**Autor:** Gustavo Di Risio.
+
+**Orientador:** Prof. Lucas Santos da Silva.
+
+**Coorientador:** Prof. Alessandro Aparecido da Silva Horas.
+
+**Instituição:** Universidade de Mogi das Cruzes - Engenharia de Software, 2026.

@@ -1,13 +1,15 @@
 package com.cursovalido.backend.forum.configuration;
 
+import lombok.RequiredArgsConstructor;
+
 import com.cursovalido.backend.authentication.configuration.TokenJwtFiltro;
 import com.cursovalido.backend.authentication.configuration.PermissoesSeguranca;
 import java.util.List;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.DispatcherType;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpMethod;
@@ -25,11 +27,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableConfigurationProperties(PermissoesSeguranca.class)
+@RequiredArgsConstructor
 public class SecurityConfig {
-    @Autowired
-    private TokenJwtFiltro tokenJwtFiltro;
-    @Autowired
-    private PermissoesSeguranca permissoes;
+    private final TokenJwtFiltro tokenJwtFiltro;
+    private final PermissoesSeguranca permissoes;
     @Value("${aplicacao.frontend-origens:http://localhost:3000,http://localhost:5173}")
     private String origensFrontend;
 
@@ -39,7 +40,7 @@ public class SecurityConfig {
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.disable())
                         .addHeaderWriter((request, response) -> {
-                            if (ehDocumentoPublico(request)) {
+                            if (documentoPublico(request)) {
                                 response.setHeader("Content-Security-Policy",
                                         "frame-ancestors " + origensFrontend.replace(',', ' ').trim() + ";");
                             } else {
@@ -48,7 +49,11 @@ public class SecurityConfig {
                         }))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(excecoes -> excecoes
+                        .authenticationEntryPoint((request, response, exception) ->
+                                response.sendError(401, "Autenticacao necessaria")))
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/autenticacao/cadastro", "/api/autenticacao/login",
                                 "/api/autenticacao/confirmar-2fa",
@@ -63,6 +68,15 @@ public class SecurityConfig {
                         .requestMatchers("/api/administracao/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/autenticacao/aceitar-termos-novamente")
                         .hasAuthority("TERMOS_PENDENTES")
+                        .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas").hasRole("ALUNO")
+                        .requestMatchers(HttpMethod.PUT, "/api/aluno/aulas/*/progresso").hasRole("ALUNO")
+                        .requestMatchers(HttpMethod.POST, "/api/aluno/aulas/*/conclusao").hasRole("ALUNO")
+                        .requestMatchers(HttpMethod.GET, "/api/aluno/**").hasRole("ALUNO")
+                        .requestMatchers("/api/aluno", "/api/aluno/**").denyAll()
+                        // As rotas de gestao continuam exclusivas do professor.
+                        .requestMatchers("/api/cursos", "/api/cursos/**", "/api/modulos", "/api/modulos/**",
+                                "/api/aulas", "/api/aulas/**")
+                        .hasRole("PROFESSOR")
                         .requestMatchers(HttpMethod.GET, permissoes.getLeituraAluno().toArray(String[]::new))
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                         .requestMatchers(HttpMethod.GET, permissoes.getLeituraProfessor().toArray(String[]::new))
@@ -89,7 +103,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder codificadorSenha() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
@@ -111,7 +125,7 @@ public class SecurityConfig {
         return origem;
     }
 
-    private boolean ehDocumentoPublico(HttpServletRequest request) {
+    private boolean documentoPublico(HttpServletRequest request) {
         String uri = request.getRequestURI();
         return "/termos-aceite.html".equals(uri) || "/politica-privacidade.html".equals(uri);
     }
