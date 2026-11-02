@@ -2,49 +2,43 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.entity.LogAuditoria;
 import com.cursovalido.backend.authentication.repository.LogAuditoriaRepositorio;
-import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
+import java.util.Objects;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class LogAuditoriaServico {
-    @Autowired
-    private LogAuditoriaRepositorio repositorio;
+    private final LogAuditoriaRepositorio repositorio;
     @Value("${seguranca.auditoria.chave}")
     private String chaveTexto;
+
+    @PostConstruct
+    public void validarChave() {
+        if (chaveTexto == null || chaveTexto.getBytes(StandardCharsets.UTF_8).length < 32)
+            throw new IllegalStateException("AUDITORIA_CHAVE deve ter pelo menos 32 bytes");
+    }
 
     // Registra uma acao e liga o registro ao anterior.
     public synchronized void registrar(Long usuarioId, String tipoAcao, String detalhes, String enderecoIp) {
         String hashAnterior = repositorio.findTopByOrderByIdDesc()
                 .map(LogAuditoria::getAssinatura)
                 .orElse(null);
-        LocalDateTime dataHora = LocalDateTime.now();
+        LocalDateTime dataHora = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         String assinatura = assinar(hashAnterior, tipoAcao, detalhes, enderecoIp, dataHora);
-        repositorio.save(new LogAuditoria(usuarioId, tipoAcao, detalhes, enderecoIp,
-                hashAnterior, assinatura));
-    }
-
-    @PostConstruct
-    // Protege registros antigos que ainda nao possuem assinatura.
-    public synchronized void protegerRegistrosAnteriores() {
-        String hashAnterior = null;
-        for (LogAuditoria log : repositorio.findAllByOrderByIdAsc()) {
-            if (log.getAssinatura() == null) {
-                String assinatura = assinar(hashAnterior, log.getTipoAcao(), log.getDetalhes(),
-                        log.getEnderecoIp(), log.getDataHora());
-                log.proteger(hashAnterior, assinatura);
-                repositorio.save(log);
-            }
-            hashAnterior = log.getAssinatura();
-        }
+        LogAuditoria log = new LogAuditoria(usuarioId, tipoAcao, detalhes, enderecoIp, hashAnterior, assinatura);
+        log.setDataHora(dataHora);
+        repositorio.save(log);
     }
 
     // Confere se os registros de auditoria continuam inteiros.
@@ -53,11 +47,11 @@ public class LogAuditoriaServico {
         for (LogAuditoria log : repositorio.findAllByOrderByIdAsc()) {
             if (log.getAssinatura() == null)
                 return false;
-            if (!java.util.Objects.equals(hashAnterior, log.getHashAnterior()))
+            if (!Objects.equals(hashAnterior, log.getHashAnterior()))
                 return false;
             String assinatura = assinar(log.getHashAnterior(), log.getTipoAcao(), log.getDetalhes(),
                     log.getEnderecoIp(), log.getDataHora());
-            if (!java.util.Objects.equals(assinatura, log.getAssinatura()))
+            if (!Objects.equals(assinatura, log.getAssinatura()))
                 return false;
             hashAnterior = log.getAssinatura();
         }
