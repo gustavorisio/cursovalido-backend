@@ -1,7 +1,7 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.dto.PoliticaResposta;
 import com.cursovalido.backend.authentication.dto.PoliticaRequisicao;
+import com.cursovalido.backend.authentication.dto.PoliticaResposta;
 import com.cursovalido.backend.authentication.entity.AceiteTermoArquivado;
 import com.cursovalido.backend.authentication.entity.Politica;
 import com.cursovalido.backend.authentication.entity.Usuario;
@@ -9,20 +9,17 @@ import com.cursovalido.backend.authentication.repository.AceiteTermoArquivadoRep
 import com.cursovalido.backend.authentication.repository.PoliticaRepositorio;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import java.util.List;
-import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class PoliticaServico {
-    @Autowired
-    private PoliticaRepositorio repositorio;
-    @Autowired
-    private UsuarioRepositorio usuarios;
-    @Autowired
-    private AceiteTermoArquivadoRepositorio aceitesArquivados;
-    @Autowired
-    private LogAuditoriaServico auditoria;
+    private final PoliticaRepositorio repositorio;
+    private final UsuarioRepositorio usuarios;
+    private final AceiteTermoArquivadoRepositorio aceitesArquivados;
+    private final LogAuditoriaServico auditoria;
 
     // Lista as politicas que estao ativas no momento.
     public List<PoliticaResposta> listarAtivas() {

@@ -2,9 +2,14 @@ package com.cursovalido.backend.authentication.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "tb_aceites_termos_arquivados")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AceiteTermoArquivado {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,9 +29,6 @@ public class AceiteTermoArquivado {
 
     @Column(nullable = false, length = 40)
     private String motivo;
-
-    protected AceiteTermoArquivado() {
-    }
 
     public AceiteTermoArquivado(Long usuarioIdOriginal, String versao,
             LocalDateTime dataHoraAceite, String motivo) {

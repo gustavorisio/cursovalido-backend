@@ -1,21 +1,21 @@
 package com.cursovalido.backend.authentication.controller;
 
-import com.cursovalido.backend.authentication.dto.PoliticaResposta;
 import com.cursovalido.backend.authentication.dto.PoliticaRequisicao;
-import com.cursovalido.backend.authentication.service.PoliticaServico;
+import com.cursovalido.backend.authentication.dto.PoliticaResposta;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import com.cursovalido.backend.authentication.service.PoliticaServico;
 import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import java.util.List;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/politicas")
+@RequiredArgsConstructor
 public class PoliticaControlador {
-    @Autowired
-    private PoliticaServico servico;
+    private final PoliticaServico servico;
 
     @GetMapping("/ativas")
     public List<PoliticaResposta> listarAtivas() {

@@ -3,19 +3,17 @@ package com.cursovalido.backend.authentication.service;
 import java.net.IDN;
 import java.util.regex.Pattern;
 import javax.naming.NamingException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@RequiredArgsConstructor
 public class ValidacaoEmailServico {
     private static final Pattern LOCAL = Pattern.compile(
             "[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*");
     private final DominioEmailServico dominios;
-
-    public ValidacaoEmailServico(DominioEmailServico dominios) {
-        this.dominios = dominios;
-    }
 
     public void validar(String email) {
         if (email == null || email.length() > 254)
