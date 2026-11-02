@@ -6,14 +6,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.repository.TopicoRepositorio;
 import com.cursovalido.backend.forum.repository.UsuarioForumRepositorio;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
@@ -35,7 +36,7 @@ class ForumIntegracaoTest {
     void deveCriarTopicoPelaApiEPersistirNoBanco() throws Exception {
         usuarios.save(new UsuarioForum(7L, "Aluno", "aluno@teste.com", "ALUNO"));
         UsuarioAutenticado principal = new UsuarioAutenticado(
-                7L, "aluno@teste.com", "senha", "ALUNO", true, true, true);
+                7L, "aluno@teste.com", "senha", Perfil.ALUNO, true, true, true);
         var autenticacao = new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities());
 

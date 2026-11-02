@@ -3,11 +3,14 @@ package com.cursovalido.backend.forum;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
+
 import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.service.EmailServico;
+import com.cursovalido.backend.authentication.service.ValidacaoEmailServico;
 import com.cursovalido.backend.forum.dto.*;
+import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.repository.*;
 import com.cursovalido.backend.forum.support.PostgresTeste;
 import java.time.LocalDate;
@@ -24,13 +27,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.*;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
 
 /** HTTP real, seguranca e persistencia reais. Apenas o envio externo de email e mockado. */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "seguranca.limite-requisicoes=10000")
 @ActiveProfiles("test")
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -45,6 +49,7 @@ class ForumHttpIntegracaoTest {
     @Autowired private UsuarioRepositorio usuarios;
     @Autowired private PoliticaRepositorio politicas;
     @MockitoBean private EmailServico emails;
+    @MockitoBean private ValidacaoEmailServico validacaoEmail;
     private final Map<String, String> confirmacoes = new ConcurrentHashMap<>();
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
     private RestClient cliente;
@@ -231,7 +236,7 @@ class ForumHttpIntegracaoTest {
 
     @Test
     void listarUsuarios_comAtivosEInativos_deveRetornarSomenteAtivosComContagem() {
-        var inativo = new com.cursovalido.backend.forum.entity.UsuarioForum(999999L, "Inativo", "inativo@example.com", "ALUNO");
+        var inativo = new UsuarioForum(999999L, "Inativo", "inativo@example.com", "ALUNO");
         inativo.setAtivo(false);
         usuariosForum.save(inativo);
         var resposta = enviar(HttpMethod.GET, "/api/forum/users", autor.token(), null, RespostaUsuariosForum.class);
