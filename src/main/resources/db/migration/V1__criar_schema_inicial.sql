@@ -36,31 +36,48 @@ CREATE INDEX idx_tb_comments_topic_id ON tb_comments (topic_id);
 
 CREATE TABLE tb_usuarios (
     id BIGSERIAL NOT NULL,
-    nome_completo VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    nome_completo VARCHAR(120) NOT NULL,
+    email VARCHAR(254) NOT NULL,
     senha VARCHAR(60) NOT NULL,
-    cpf VARCHAR(11) NOT NULL,
-    data_nascimento DATE NOT NULL,
-    telefone VARCHAR(30) NOT NULL,
+    cpf VARCHAR(52),
+    cpf_hash VARCHAR(64),
+    data_nascimento DATE,
+    telefone VARCHAR(64),
     matricula VARCHAR(50) NOT NULL,
-    cep VARCHAR(512) NOT NULL,
-    logradouro VARCHAR(512) NOT NULL,
-    bairro VARCHAR(512) NOT NULL,
-    cidade VARCHAR(512) NOT NULL,
-    estado VARCHAR(512) NOT NULL,
+    cep VARCHAR(48),
+    logradouro VARCHAR(440),
+    bairro VARCHAR(280),
+    cidade VARCHAR(360),
+    estado VARCHAR(44),
     declarou_maior_idade BOOLEAN NOT NULL,
     aceitou_termos_lgpd BOOLEAN NOT NULL,
-    data_hora_aceite TIMESTAMP NOT NULL,
-    versao_termos VARCHAR(30) NOT NULL,
+    data_hora_aceite TIMESTAMP,
+    versao_termos VARCHAR(30),
     perfil VARCHAR(30) NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     email_confirmado BOOLEAN NOT NULL DEFAULT FALSE,
     status_aprovacao VARCHAR(20) NOT NULL DEFAULT 'APROVADO',
     CONSTRAINT pk_tb_usuarios PRIMARY KEY (id),
     CONSTRAINT uk_tb_usuarios_email UNIQUE (email),
-    CONSTRAINT uk_tb_usuarios_cpf UNIQUE (cpf),
-    CONSTRAINT uk_tb_usuarios_matricula UNIQUE (matricula)
+    CONSTRAINT uk_tb_usuarios_cpf UNIQUE (cpf_hash),
+    CONSTRAINT uk_tb_usuarios_matricula UNIQUE (matricula),
+    CONSTRAINT ck_tb_usuarios_dados_cadastro CHECK (
+        perfil = 'ADMINISTRADOR' OR (
+            cpf IS NOT NULL AND cpf_hash IS NOT NULL AND data_nascimento IS NOT NULL AND telefone IS NOT NULL
+            AND cep IS NOT NULL AND logradouro IS NOT NULL AND bairro IS NOT NULL
+            AND cidade IS NOT NULL AND estado IS NOT NULL
+            AND data_hora_aceite IS NOT NULL AND versao_termos IS NOT NULL
+        )
+    )
 );
+
+CREATE TABLE tb_sessoes (
+    id VARCHAR(36) PRIMARY KEY,
+    usuario_id BIGINT NOT NULL REFERENCES tb_usuarios(id),
+    expira_em TIMESTAMP NOT NULL,
+    revogada BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE INDEX idx_tb_sessoes_usuario ON tb_sessoes(usuario_id);
 
 CREATE TABLE tb_logs_auditoria (
     id BIGSERIAL NOT NULL,
