@@ -2,6 +2,8 @@ package com.cursovalido.backend.aulas;
 
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.aulas.service.AlunoAulasService;
+import com.cursovalido.backend.aulas.service.YoutubeClient;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
@@ -20,6 +22,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -37,6 +41,8 @@ class AulasIntegracaoTest {
     @Autowired private AulaRepository aulas;
     @Autowired private MatriculaRepository matriculas;
     @Autowired private AlunoAulasService alunoAulas;
+    @Autowired private ProgressoAulaRepository progressos;
+    @MockitoBean private YoutubeClient youtubeClient;
     private Usuario professor;
 
     @BeforeEach
@@ -59,6 +65,25 @@ class AulasIntegracaoTest {
         mvc.perform(get("/api/aulas/" + id).with(comoProfessor(professor)))
                 .andExpect(status().isNotFound());
         assertThat(aulas.findById(id).orElseThrow().isAtivo()).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 400, 502, 503 })
+    void falhaDoYoutubeNaoCriaNemAlteraAula(int status) throws Exception {
+        long idModulo = prepararModulo();
+        long id = criarAula(idModulo);
+        doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.valueOf(status), "Falha controlada"))
+                .when(youtubeClient).validarVideo("abcdefghijk");
+        mvc.perform(post("/api/modulos/" + idModulo + "/aulas").with(comoProfessor(professor))
+                .contentType(MediaType.APPLICATION_JSON).content(dadosAula("Nova", "https://youtu.be/abcdefghijk")))
+                .andExpect(status().is(status));
+        mvc.perform(put("/api/aulas/" + id).with(comoProfessor(professor))
+                .contentType(MediaType.APPLICATION_JSON).content(dadosAula("Alterada", "https://youtu.be/abcdefghijk")))
+                .andExpect(status().is(status));
+        var existentes = aulas.findByIdModuloAndAtivoTrueOrderByOrdemAscIdAsc(idModulo);
+        assertThat(existentes).hasSize(1);
+        assertThat(existentes.getFirst().getTitulo()).isEqualTo("Java");
+        assertThat(existentes.getFirst().getYoutubeVideoId()).isEqualTo("M7lc1UVf-VE");
     }
 
     @Test
@@ -263,6 +288,80 @@ class AulasIntegracaoTest {
         Usuario aluno = criarProfessor("aluno");
         aluno.setPerfil(Perfil.ALUNO);
         return usuarios.saveAndFlush(aluno);
+    }
+
+    @Test
+    void retomarAulaEConcluirManualmenteSemPercentualMinimo() throws Exception {
+        long idModulo = prepararModulo();
+        long idAula = criarAula(idModulo);
+        Usuario aluno = criarAluno();
+        var matricula = alunoAulas.matricular(modulos.findById(idModulo).orElseThrow().getIdCurso(), aluno.getId());
+        String rota = "/api/aluno/aulas/" + idAula;
+        mvc.perform(get(rota + "/progresso").with(comoAluno(aluno)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.posicaoSegundos").value(0))
+                .andExpect(jsonPath("$.concluida").value(false));
+        assertThat(progressos.findByIdMatriculaAndIdAula(matricula.getId(), idAula)).isEmpty();
+        mvc.perform(put(rota + "/progresso").with(comoAluno(aluno)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"posicaoSegundos\":120}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.posicaoSegundos").value(120));
+        mvc.perform(get(rota + "/progresso").with(comoAluno(aluno)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.posicaoSegundos").value(120));
+        mvc.perform(post(rota + "/conclusao").with(comoAluno(aluno)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.concluida").value(true));
+        var concluido = progressos.findByIdMatriculaAndIdAula(matricula.getId(), idAula).orElseThrow();
+        var dataConclusao = concluido.getConcluidaEm();
+        mvc.perform(post(rota + "/conclusao").with(comoAluno(aluno))).andExpect(status().isOk());
+        assertThat(progressos.findByIdMatriculaAndIdAula(matricula.getId(), idAula).orElseThrow().getConcluidaEm())
+                .isEqualTo(dataConclusao);
+        mvc.perform(put(rota + "/progresso").with(comoAluno(aluno)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"posicaoSegundos\":30}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.posicaoSegundos").value(30))
+                .andExpect(jsonPath("$.concluida").value(true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "{\"posicaoSegundos\":-1}", "{}", "{\"posicaoSegundos\":null}" })
+    void rejeitarPosicaoInvalida(String corpo) throws Exception {
+        long idModulo = prepararModulo();
+        long idAula = criarAula(idModulo);
+        Usuario aluno = criarAluno();
+        var matricula = alunoAulas.matricular(modulos.findById(idModulo).orElseThrow().getIdCurso(), aluno.getId());
+        mvc.perform(put("/api/aluno/aulas/" + idAula + "/progresso").with(comoAluno(aluno))
+                .contentType(MediaType.APPLICATION_JSON).content(corpo)).andExpect(status().isBadRequest());
+        assertThat(progressos.findByIdMatriculaAndIdAula(matricula.getId(), idAula)).isEmpty();
+    }
+
+    @Test
+    void progressoEConclusaoExigemMatriculaEConteudoAtivo() throws Exception {
+        long idModulo = prepararModulo();
+        long idAula = criarAula(idModulo);
+        Usuario aluno = criarAluno();
+        String rota = "/api/aluno/aulas/" + idAula;
+        mvc.perform(get(rota + "/progresso").with(comoAluno(aluno))).andExpect(status().isForbidden());
+        mvc.perform(put(rota + "/progresso").with(comoAluno(aluno)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"posicaoSegundos\":10}")).andExpect(status().isForbidden());
+        mvc.perform(post(rota + "/conclusao").with(comoAluno(aluno))).andExpect(status().isForbidden());
+        mvc.perform(post(rota + "/conclusao").with(comoProfessor(professor))).andExpect(status().isForbidden());
+        mvc.perform(get(rota + "/progresso")).andExpect(status().isUnauthorized());
+        alunoAulas.matricular(modulos.findById(idModulo).orElseThrow().getIdCurso(), aluno.getId());
+        mvc.perform(delete("/api/modulos/" + idModulo).with(comoProfessor(professor))).andExpect(status().isNoContent());
+        mvc.perform(post(rota + "/conclusao").with(comoAluno(aluno))).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void concluirSemEnviarPosicaoEReiniciarProgressoAoTrocarVideo() throws Exception {
+        long idModulo = prepararModulo();
+        long idAula = criarAula(idModulo);
+        Usuario aluno = criarAluno();
+        alunoAulas.matricular(modulos.findById(idModulo).orElseThrow().getIdCurso(), aluno.getId());
+        mvc.perform(post("/api/aluno/aulas/" + idAula + "/conclusao").with(comoAluno(aluno)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.posicaoSegundos").value(0))
+                .andExpect(jsonPath("$.concluida").value(true));
+        mvc.perform(put("/api/aulas/" + idAula).with(comoProfessor(professor)).contentType(MediaType.APPLICATION_JSON)
+                .content(dadosAula("Novo video", "https://youtu.be/abcdefghijk"))).andExpect(status().isOk());
+        mvc.perform(get("/api/aluno/aulas/" + idAula + "/progresso").with(comoAluno(aluno)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.concluida").value(false))
+                .andExpect(jsonPath("$.posicaoSegundos").value(0));
     }
 
     private RequestPostProcessor comoAluno(Usuario usuario) {

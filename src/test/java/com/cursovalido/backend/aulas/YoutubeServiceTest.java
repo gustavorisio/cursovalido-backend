@@ -1,6 +1,8 @@
 package com.cursovalido.backend.aulas;
 
 import com.cursovalido.backend.aulas.service.YoutubeService;
+import com.cursovalido.backend.aulas.service.YoutubeClient;
+import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -9,7 +11,21 @@ import org.springframework.web.server.ResponseStatusException;
 import static org.assertj.core.api.Assertions.*;
 
 class YoutubeServiceTest {
-    private final YoutubeService servico = new YoutubeService();
+    private final YoutubeClient cliente = mock(YoutubeClient.class);
+    private final YoutubeService servico = new YoutubeService(cliente);
+
+    @Test
+    void consultarApiAposExtrairId() {
+        assertThat(servico.validarVideo("https://youtu.be/M7lc1UVf-VE")).isEqualTo("M7lc1UVf-VE");
+        verify(cliente).validarVideo("M7lc1UVf-VE");
+    }
+
+    @Test
+    void linkInvalidoNaoConsomeApi() {
+        assertThatThrownBy(() -> servico.validarVideo("https://outro.com/video"))
+                .isInstanceOf(ResponseStatusException.class);
+        verifyNoInteractions(cliente);
+    }
 
     @ParameterizedTest
     @ValueSource(strings = {

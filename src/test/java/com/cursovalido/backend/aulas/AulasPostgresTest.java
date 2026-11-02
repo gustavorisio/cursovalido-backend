@@ -4,6 +4,11 @@ import com.cursovalido.backend.forum.support.PostgresTeste;
 import com.cursovalido.backend.aulas.dto.CursoRequest;
 import com.cursovalido.backend.aulas.service.CursoService;
 import com.cursovalido.backend.aulas.service.AlunoAulasService;
+import com.cursovalido.backend.aulas.service.ModuloService;
+import com.cursovalido.backend.aulas.service.AulaService;
+import com.cursovalido.backend.aulas.service.ProgressoAulaService;
+import com.cursovalido.backend.aulas.dto.ModuloRequest;
+import com.cursovalido.backend.aulas.dto.AulaRequest;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import com.cursovalido.backend.authentication.service.ContaUsuarioServico;
@@ -34,6 +39,9 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     @Autowired private ContaUsuarioServico contas;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private AlunoAulasService alunoAulas;
+    @Autowired private ModuloService modulos;
+    @Autowired private AulaService aulas;
+    @Autowired private ProgressoAulaService progressos;
 
     @Test
     void excluirContaDoAlunoRemoveMatriculaEPreservaCurso() {
@@ -43,12 +51,18 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         aluno.setPerfil(Perfil.ALUNO);
         usuarios.saveAndFlush(aluno);
         alunoAulas.matricular(curso.getId(), aluno.getId());
+        var modulo = modulos.criar(curso.getId(), new ModuloRequest("Inicio", "Basico", 1), professor.getId());
+        var aula = aulas.criar(modulo.getId(), new AulaRequest("Java", "Introducao", 1,
+                "https://youtu.be/M7lc1UVf-VE"), professor.getId());
+        progressos.concluir(aula.getId(), aluno.getId());
         contas.excluirConta(aluno.getId());
         usuarios.flush();
         assertThat(jdbc.queryForObject("select count(*) from tb_matriculas where aluno_id = ?", Long.class, aluno.getId()))
                 .isZero();
         assertThat(jdbc.queryForObject("select count(*) from tb_cursos where id = ?", Long.class, curso.getId()))
                 .isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from tb_progresso_aulas where aula_id = ?", Long.class, aula.getId()))
+                .isZero();
     }
 
     @Test
