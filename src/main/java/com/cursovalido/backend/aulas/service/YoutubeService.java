@@ -4,12 +4,22 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@RequiredArgsConstructor
 public class YoutubeService {
+    private final YoutubeClient cliente;
+
+    public String validarVideo(String url) {
+        String videoId = extrairVideoId(url);
+        cliente.validarVideo(videoId);
+        return videoId;
+    }
+
     // Valida o link e guarda somente o ID usado pelo player do YouTube.
     public String extrairVideoId(String url) {
         if (url == null) {

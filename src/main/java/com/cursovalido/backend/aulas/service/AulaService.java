@@ -3,6 +3,7 @@ package com.cursovalido.backend.aulas.service;
 import com.cursovalido.backend.aulas.dto.AulaRequest;
 import com.cursovalido.backend.aulas.entity.Aula;
 import com.cursovalido.backend.aulas.repository.AulaRepository;
+import com.cursovalido.backend.aulas.repository.ProgressoAulaRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,6 +20,7 @@ public class AulaService {
     private final ModuloService modulos;
     private final YoutubeService youtube;
     private final LogAuditoriaServico auditoria;
+    private final ProgressoAulaRepository progressos;
 
     public List<Aula> listar(Long idModulo, Long idProfessor) {
         modulos.buscarAtivo(idModulo, idProfessor);
@@ -50,7 +52,11 @@ public class AulaService {
     @Transactional
     public Aula editar(Long id, AulaRequest dados, Long idProfessor) {
         Aula aula = buscarAtivo(id, idProfessor);
+        String videoAnterior = aula.getYoutubeVideoId();
         preencher(aula, dados);
+        if (!videoAnterior.equals(aula.getYoutubeVideoId())) {
+            progressos.deleteByIdAula(id);
+        }
         repositorio.save(aula);
         auditoria.registrar(idProfessor, "EDICAO_AULA", "Aula " + id, null);
         return aula;
@@ -65,7 +71,7 @@ public class AulaService {
     }
 
     private void preencher(Aula aula, AulaRequest dados) {
-        String videoId = youtube.extrairVideoId(dados.youtubeUrl());
+        String videoId = youtube.validarVideo(dados.youtubeUrl());
         aula.setTitulo(dados.titulo().trim());
         aula.setDescricao(dados.descricao().trim());
         aula.setOrdem(dados.ordem());
