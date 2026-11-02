@@ -1,24 +1,24 @@
 package com.cursovalido.backend.forum.configuration;
 
-import lombok.RequiredArgsConstructor;
-
-import com.cursovalido.backend.authentication.configuration.TokenJwtFiltro;
+import com.cursovalido.backend.authentication.configuration.HttpsFiltro;
+import com.cursovalido.backend.authentication.configuration.LimiteRequisicoesFiltro;
 import com.cursovalido.backend.authentication.configuration.PermissoesSeguranca;
-import java.util.List;
-import jakarta.servlet.http.HttpServletRequest;
+import com.cursovalido.backend.authentication.configuration.TokenJwtFiltro;
 import jakarta.servlet.DispatcherType;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -33,6 +33,12 @@ public class SecurityConfig {
     private final PermissoesSeguranca permissoes;
     @Value("${aplicacao.frontend-origens:http://localhost:3000,http://localhost:5173}")
     private String origensFrontend;
+    @Value("${seguranca.https-obrigatorio:false}")
+    private boolean httpsObrigatorio;
+    @Value("${security.bcrypt.strength:12}")
+    private int custoSenha;
+    @Value("${seguranca.limite-requisicoes:30}")
+    private int limiteRequisicoes;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -97,13 +103,19 @@ public class SecurityConfig {
                         .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
                         .requestMatchers(permissoes.getAdministrador().toArray(String[]::new)).hasRole("ADMINISTRADOR")
                         .anyRequest().authenticated())
-                .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new HttpsFiltro(httpsObrigatorio),
+                        TokenJwtFiltro.class)
+                .addFilterBefore(new LimiteRequisicoesFiltro(limiteRequisicoes),
+                        TokenJwtFiltro.class);
         return http.build();
     }
 
     @Bean
     public PasswordEncoder codificadorSenha() {
-        return new BCryptPasswordEncoder(12);
+        if (custoSenha < 10 || custoSenha > 16)
+            throw new IllegalStateException("BCRYPT_STRENGTH deve estar entre 10 e 16");
+        return new BCryptPasswordEncoder(custoSenha);
     }
 
     @Bean
