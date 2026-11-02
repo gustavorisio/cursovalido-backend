@@ -137,6 +137,15 @@
 							<includes><include>com/cursovalido/backend/forum/**</include></includes>
 						</configuration>
 					</execution>
+					<execution>
+						<id>relatorio-aulas</id>
+						<phase>test</phase>
+						<goals><goal>report</goal></goals>
+						<configuration>
+							<outputDirectory>${project.reporting.outputDirectory}/jacoco-aulas</outputDirectory>
+							<includes><include>com/cursovalido/backend/aulas/**</include></includes>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 			<plugin>
