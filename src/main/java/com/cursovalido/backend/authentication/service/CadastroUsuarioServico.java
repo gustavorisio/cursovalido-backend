@@ -38,11 +38,14 @@ public class CadastroUsuarioServico {
     private TokenEmailServico tokensEmail;
     @Autowired
     private EmailServico emails;
+    @Autowired
+    private ValidacaoEmailServico validacaoEmail;
     private final SecureRandom geradorRa = new SecureRandom();
 
     @Transactional
     // Cria uma conta de aluno e envia a confirmacao de e-mail.
     public Usuario cadastrar(CadastroUsuarioRequisicao requisicao, String enderecoIp) {
+        validacaoEmail.validar(requisicao.email());
         if (!politicas.versaoAtiva(requisicao.versaoTermos()))
             throw new TermosNaoDisponiveisException();
         if (Period.between(requisicao.dataNascimento(), LocalDate.now()).getYears() < 18) {

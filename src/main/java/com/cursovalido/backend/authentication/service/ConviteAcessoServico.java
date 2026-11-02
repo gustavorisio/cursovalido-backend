@@ -36,6 +36,8 @@ public class ConviteAcessoServico {
     @Autowired
     private EmailServico emails;
     @Autowired
+    private ValidacaoEmailServico validacaoEmail;
+    @Autowired
     private LogAuditoriaServico auditoria;
     @Autowired
     private UsuarioForumServico usuariosForum;
@@ -44,6 +46,7 @@ public class ConviteAcessoServico {
     @Transactional
     // Cria um convite de acesso para um novo usuario.
     public void criar(String email, Perfil perfil, Long administradorId) {
+        validacaoEmail.validar(email);
         String endereco = email.trim().toLowerCase();
         if (perfil == Perfil.ALUNO || usuarios.existsByEmail(endereco)) {
             throw new IllegalArgumentException("E-mail ja utilizado");
@@ -73,6 +76,7 @@ public class ConviteAcessoServico {
     @Transactional
     // Completa o cadastro e deixa o usuario aguardando aprovacao.
     public void completar(String token, CadastroUsuarioRequisicao cadastro) {
+        validacaoEmail.validar(cadastro.email());
         ConviteAcesso convite = localizar(token);
         if (expirado(convite))
             throw new IllegalArgumentException("Convite expirado");

@@ -39,8 +39,22 @@ class CadastroUsuarioServicoTest {
     private TokenEmailServico tokensEmail;
     @Mock
     private EmailServico emails;
+    @Mock
+    private ValidacaoEmailServico validacaoEmail;
     @InjectMocks
     private CadastroUsuarioServico servico;
+
+    @Test
+    void deveInterromperCadastroAntesDeSalvarQuandoEmailForInvalido() {
+        var requisicao = requisicaoPadrao();
+        org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST, "E-mail invalido"))
+                .when(validacaoEmail).validar(requisicao.email());
+
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> servico.cadastrar(requisicao, "127.0.0.1"));
+        org.mockito.Mockito.verifyNoInteractions(repositorio, emails, tokensEmail, codificadorSenha, politicas);
+    }
 
     @Test
     void deveCadastrarUsuarioMaiorDeIdade() {
