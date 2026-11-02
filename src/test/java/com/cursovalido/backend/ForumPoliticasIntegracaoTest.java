@@ -48,7 +48,8 @@ class ForumPoliticasIntegracaoTest {
     private PoliticaRepositorio repositorioPoliticas;
     @Autowired
     private UsuarioForumRepositorio repositorioUsuariosForum;
-    // Impede o envio pela Resend; o código 2FA ainda é gerado e validado pela aplicação.
+    // Impede o envio pela Resend; o código 2FA ainda é gerado e validado pela
+    // aplicação.
     @MockitoBean
     private EmailServico servicoEmail;
     private final JsonMapper leitorJson = JsonMapper.builder().build();
@@ -60,14 +61,16 @@ class ForumPoliticasIntegracaoTest {
 
     @BeforeEach
     void configurarClienteHttpEAutenticarProfessorEAdministrador() {
-        // A porta aleatória permite executar estes testes com a aplicação aberta na porta 8080.
+        // A porta aleatória permite executar estes testes com a aplicação aberta na
+        // porta 8080.
         clienteHttp = RestClient.builder()
                 .baseUrl("http://localhost:" + portaServidor)
                 .defaultStatusHandler(status -> true, (requisicao, resposta) -> {
                     // Respostas 400, 401, 403, 404 e 409 serão conferidas nas asserções dos testes.
                 })
                 .build();
-        // O primeiro cadastro precisa de uma política vigente antes de existir um administrador autenticado.
+        // O primeiro cadastro precisa de uma política vigente antes de existir um
+        // administrador autenticado.
         versaoPoliticaCadastro = "cadastro-" + UUID.randomUUID().toString().substring(0, 20);
         repositorioPoliticas.saveAndFlush(new Politica("Politica de privacidade do Curso Valido",
                 versaoPoliticaCadastro, "Os dados identificam os participantes do forum."));
@@ -95,7 +98,8 @@ class ForumPoliticasIntegracaoTest {
                 "aceitouTermosLgpd", true,
                 "versaoTermos", versaoPoliticaCadastro);
 
-        // O cadastro e a confirmação do e-mail passam pelos mesmos endpoints usados pelo aluno.
+        // O cadastro e a confirmação do e-mail passam pelos mesmos endpoints usados
+        // pelo aluno.
         clearInvocations(servicoEmail);
         ResponseEntity<String> respostaCadastro = enviarRequisicao(HttpMethod.POST,
                 "/api/autenticacao/cadastro", null, cadastro);
@@ -106,13 +110,15 @@ class ForumPoliticasIntegracaoTest {
                 "/api/autenticacao/confirmar-email", null, Map.of("token", tokenConfirmacao.getValue()));
         assertThat(respostaConfirmacaoEmail.getStatusCode().value()).isEqualTo(200);
 
-        // O cadastro público cria ALUNO. Não existe uma rota pública para promover professor ou administrador.
+        // O cadastro público cria ALUNO. Não existe uma rota pública para promover
+        // professor ou administrador.
         Usuario usuario = repositorioUsuarios.findByEmail(email).orElseThrow();
         assertThat(usuario.isEmailConfirmado()).isTrue();
         usuario.setPerfil(perfil);
         repositorioUsuarios.saveAndFlush(usuario);
 
-        // Captura o código destinado a este login, sem depender de uma caixa de e-mail real.
+        // Captura o código destinado a este login, sem depender de uma caixa de e-mail
+        // real.
         clearInvocations(servicoEmail);
         ArgumentCaptor<String> codigoEnviadoPorEmail = ArgumentCaptor.forClass(String.class);
         ResponseEntity<String> respostaLogin = enviarRequisicao(HttpMethod.POST, "/api/autenticacao/login", null,
@@ -127,7 +133,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(respostaConfirmacao2fa.getStatusCode().value()).isEqualTo(200);
         String token = lerCorpoJson(respostaConfirmacao2fa).path("token").asText();
         assertThat(token).isNotBlank();
-        // A confirmação do cadastro insere o aluno no fórum; o 2FA atualiza o mesmo registro com o novo perfil.
+        // A confirmação do cadastro insere o aluno no fórum; o 2FA atualiza o mesmo
+        // registro com o novo perfil.
         assertThat(repositorioUsuariosForum.findById(usuario.getId()).orElseThrow().getPerfil())
                 .isEqualTo(perfil.name());
         return token;
@@ -138,7 +145,8 @@ class ForumPoliticasIntegracaoTest {
         for (int posicao = 0; posicao < 9; posicao++) {
             cpf.append(geradorDigitosCpf.nextInt(10));
         }
-        // Calcula os dois dígitos verificadores para enviar um CPF com formato válido ao cadastro.
+        // Calcula os dois dígitos verificadores para enviar um CPF com formato válido
+        // ao cadastro.
         for (int quantidadeDigitos = 9; quantidadeDigitos <= 10; quantidadeDigitos++) {
             int soma = 0;
             for (int posicao = 0; posicao < quantidadeDigitos; posicao++) {
@@ -154,7 +162,8 @@ class ForumPoliticasIntegracaoTest {
         return cpf.toString();
     }
 
-    private ResponseEntity<String> enviarRequisicao(HttpMethod metodo, String rota, String token, Object corpoRequisicao) {
+    private ResponseEntity<String> enviarRequisicao(HttpMethod metodo, String rota, String token,
+            Object corpoRequisicao) {
         RestClient.RequestBodySpec requisicao = clienteHttp.method(metodo).uri(rota)
                 .contentType(MediaType.APPLICATION_JSON);
         if (token != null) {
@@ -195,7 +204,8 @@ class ForumPoliticasIntegracaoTest {
     }
 
     private Map<String, String> montarPoliticaPrivacidade() {
-        // A versão fica abaixo do limite de 30 caracteres e não repete publicações anteriores.
+        // A versão fica abaixo do limite de 30 caracteres e não repete publicações
+        // anteriores.
         return Map.of("nome", "Politica de privacidade do Curso Valido",
                 "versao", UUID.randomUUID().toString().substring(0, 25),
                 "conteudo", "Os dados de cadastro identificam o autor de topicos e comentarios.");
@@ -206,7 +216,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(lerCorpoJson(resposta).toString()).contains(mensagemEsperada);
     }
 
-    // O tópico precisa continuar ativo e guardar o autor depois que a requisição de criação termina.
+    // O tópico precisa continuar ativo e guardar o autor depois que a requisição de
+    // criação termina.
     @Test
     void criarTopico_comTituloEDescricao_devePersistirAutorEConteudo() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -216,7 +227,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(topicoPersistido.isAtivo()).isTrue();
     }
 
-    // A busca usa o título único do tópico para não encontrar dúvidas criadas por outros testes.
+    // A busca usa o título único do tópico para não encontrar dúvidas criadas por
+    // outros testes.
     @Test
     void listarTopicos_comBusca_deveRetornarTopicoCriado() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -228,7 +240,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(lerCorpoJson(resposta).get(0).path("titulo").asText()).isEqualTo(titulo);
     }
 
-    // A edição feita pelo autor precisa aparecer na resposta e na consulta ao banco.
+    // A edição feita pelo autor precisa aparecer na resposta e na consulta ao
+    // banco.
     @Test
     void editarTopico_comAutor_deveRetornarEPersistirNovoTitulo() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -242,7 +255,8 @@ class ForumPoliticasIntegracaoTest {
                 .isEqualTo("Como consultar o topico salvo no H2?");
     }
 
-    // O arquivamento preserva o registro do tópico e altera somente seu estado ativo.
+    // O arquivamento preserva o registro do tópico e altera somente seu estado
+    // ativo.
     @Test
     void arquivarTopico_comAdministrador_deveDesativarSemExcluir() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -264,7 +278,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(repositorioTopicos.findById(idTopico).orElseThrow().isFechado()).isTrue();
     }
 
-    // A exclusão pelo administrador é lógica: o tópico continua salvo com ativo igual a false.
+    // A exclusão pelo administrador é lógica: o tópico continua salvo com ativo
+    // igual a false.
     @Test
     void apagarTopico_comAdministrador_deveDesativarSemExcluir() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -275,7 +290,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(repositorioTopicos.findById(idTopico).orElseThrow().isAtivo()).isFalse();
     }
 
-    // A resposta deve aparecer na listagem do tópico ao qual foi vinculada no banco.
+    // A resposta deve aparecer na listagem do tópico ao qual foi vinculada no
+    // banco.
     @Test
     void listarComentarios_comTopicoEResposta_deveRetornarRelacionamento() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -289,7 +305,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(repositorioComentarios.findById(idComentario).orElseThrow().getTopico().getId()).isEqualTo(idTopico);
     }
 
-    // O comentário criado pela API precisa guardar o mesmo conteúdo na tabela de comentários.
+    // O comentário criado pela API precisa guardar o mesmo conteúdo na tabela de
+    // comentários.
     @Test
     void adicionarComentario_comRespostaSobreH2_devePersistirConteudo() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -298,13 +315,15 @@ class ForumPoliticasIntegracaoTest {
                 .isEqualTo("Consulte o topico pelo repositorio depois da requisicao HTTP.");
     }
 
-    // O autor altera seu comentário e o texto atualizado precisa permanecer no banco.
+    // O autor altera seu comentário e o texto atualizado precisa permanecer no
+    // banco.
     @Test
     void editarComentario_comAutor_deveRetornarEPersistirConteudo() {
         long idTopico = criarTopicoSobreTestesIntegracao();
         long idComentario = criarComentarioNoTopico(idTopico);
         ResponseEntity<String> resposta = enviarRequisicao(
-                HttpMethod.PUT, "/api/forum/comentarios/" + idComentario, tokenProfessor, Map.of("conteudo", "Use findById com o identificador retornado pela API."));
+                HttpMethod.PUT, "/api/forum/comentarios/" + idComentario, tokenProfessor,
+                Map.of("conteudo", "Use findById com o identificador retornado pela API."));
         assertThat(resposta.getStatusCode().value()).isEqualTo(200);
         assertThat(lerCorpoJson(resposta).path("conteudo").asText())
                 .isEqualTo("Use findById com o identificador retornado pela API.");
@@ -312,7 +331,8 @@ class ForumPoliticasIntegracaoTest {
                 .isEqualTo("Use findById com o identificador retornado pela API.");
     }
 
-    // A exclusão do comentário pelo autor preserva o registro para manter o histórico do fórum.
+    // A exclusão do comentário pelo autor preserva o registro para manter o
+    // histórico do fórum.
     @Test
     void apagarComentario_comAutor_deveDesativarSemExcluir() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -324,13 +344,15 @@ class ForumPoliticasIntegracaoTest {
         assertThat(repositorioComentarios.findById(idComentario).orElseThrow().isAtivo()).isFalse();
     }
 
-    // A exclusão pela rota do tópico só deve desativar o comentário que pertence a ele.
+    // A exclusão pela rota do tópico só deve desativar o comentário que pertence a
+    // ele.
     @Test
     void apagarComentarioDoTopico_comVinculoCorreto_deveDesativar() {
         long idTopico = criarTopicoSobreTestesIntegracao();
         long idComentario = criarComentarioNoTopico(idTopico);
         ResponseEntity<String> resposta = enviarRequisicao(
-                HttpMethod.DELETE, "/api/forum/topicos/" + idTopico + "/comentarios/" + idComentario, tokenAdministrador, null);
+                HttpMethod.DELETE, "/api/forum/topicos/" + idTopico + "/comentarios/" + idComentario,
+                tokenAdministrador, null);
         assertThat(resposta.getStatusCode().value()).isEqualTo(200);
         assertThat(resposta.getBody()).isNullOrEmpty();
         assertThat(repositorioComentarios.findById(idComentario).orElseThrow().isAtivo()).isFalse();
@@ -358,7 +380,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(repositorioTopicos.count()).isEqualTo(quantidadeTopicosAntes);
     }
 
-    // Um identificador sem tópico correspondente deve produzir 404 com a mensagem de recurso ausente.
+    // Um identificador sem tópico correspondente deve produzir 404 com a mensagem
+    // de recurso ausente.
     @Test
     void listarComentarios_comTopicoInexistente_deveRetornar404() {
         long idTopicoInexistente = Long.MAX_VALUE;
@@ -368,7 +391,8 @@ class ForumPoliticasIntegracaoTest {
         conferirErro(resposta, 404, "Topico nao encontrado");
     }
 
-    // O tópico é fechado antes da tentativa de resposta; a recusa não pode gravar um comentário.
+    // O tópico é fechado antes da tentativa de resposta; a recusa não pode gravar
+    // um comentário.
     @Test
     void adicionarComentario_comTopicoFechado_deveRetornar409SemPersistir() {
         long idTopico = criarTopicoSobreTestesIntegracao();
@@ -384,7 +408,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(repositorioComentarios.count()).isEqualTo(quantidadeComentariosAntes);
     }
 
-    // A exclusão informa outro tópico na URL; o comentário deve continuar ativo no tópico de origem.
+    // A exclusão informa outro tópico na URL; o comentário deve continuar ativo no
+    // tópico de origem.
     @Test
     void apagarComentarioDoTopico_comVinculoIncorreto_deveRetornar404SemAlterar() {
         long idTopicoDoComentario = criarTopicoSobreTestesIntegracao();
@@ -398,7 +423,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(repositorioComentarios.findById(idComentario).orElseThrow().isAtivo()).isTrue();
     }
 
-    // A publicação exige administrador e deve devolver a versão e o conteúdo que foram persistidos.
+    // A publicação exige administrador e deve devolver a versão e o conteúdo que
+    // foram persistidos.
     @Test
     void publicarPolitica_comAdministrador_deveRetornar201EPersistir() {
         Map<String, String> dadosPolitica = montarPoliticaPrivacidade();
@@ -411,7 +437,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(repositorioPoliticas.findByVersao(dadosPolitica.get("versao"))).isPresent();
     }
 
-    // A política recém-publicada deve estar disponível para leitura sem um token JWT.
+    // A política recém-publicada deve estar disponível para leitura sem um token
+    // JWT.
     @Test
     void listarPoliticas_comPublicacao_deveRetornarVersaoAtivaSemToken() {
         Map<String, String> dadosPolitica = montarPoliticaPrivacidade();
@@ -424,7 +451,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(lerCorpoJson(resposta).get(0).path("conteudo").asText()).isEqualTo(dadosPolitica.get("conteudo"));
     }
 
-    // A publicação de políticas exige autenticação mesmo quando os campos enviados são válidos.
+    // A publicação de políticas exige autenticação mesmo quando os campos enviados
+    // são válidos.
     @Test
     void publicarPolitica_semToken_deveRetornar401() {
         ResponseEntity<String> resposta = enviarRequisicao(
@@ -432,7 +460,8 @@ class ForumPoliticasIntegracaoTest {
         assertThat(resposta.getStatusCode().value()).isEqualTo(401);
     }
 
-    // O professor está autenticado, mas seu perfil não permite publicar políticas de privacidade.
+    // O professor está autenticado, mas seu perfil não permite publicar políticas
+    // de privacidade.
     @Test
     void publicarPolitica_comProfessor_deveRetornar403SemPersistir() {
         Map<String, String> dadosPolitica = montarPoliticaPrivacidade();

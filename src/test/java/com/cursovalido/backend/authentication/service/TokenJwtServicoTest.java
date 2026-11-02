@@ -30,7 +30,7 @@ class TokenJwtServicoTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"aluno@teste.com", "professor@teste.com"})
+    @ValueSource(strings = { "aluno@teste.com", "professor@teste.com" })
     void deveGerarTokenComEmailInformado(String email) {
         usuario.setEmail(email);
         String token = servico.gerar(usuario);
