@@ -37,3 +37,15 @@ CREATE TABLE tb_matriculas (
     CONSTRAINT uk_matricula_aluno_curso UNIQUE (aluno_id, curso_id)
 );
 CREATE INDEX idx_matriculas_curso ON tb_matriculas(curso_id);
+
+CREATE TABLE tb_progresso_aulas (
+    id BIGSERIAL PRIMARY KEY,
+    matricula_id BIGINT NOT NULL REFERENCES tb_matriculas(id) ON DELETE CASCADE,
+    aula_id BIGINT NOT NULL REFERENCES tb_aulas(id) ON DELETE CASCADE,
+    posicao_segundos BIGINT NOT NULL DEFAULT 0 CHECK (posicao_segundos >= 0),
+    concluida BOOLEAN NOT NULL DEFAULT FALSE,
+    concluida_em TIMESTAMP,
+    atualizado_em TIMESTAMP NOT NULL,
+    CONSTRAINT uk_progresso_matricula_aula UNIQUE (matricula_id, aula_id)
+);
+CREATE INDEX idx_progresso_aula ON tb_progresso_aulas(aula_id);

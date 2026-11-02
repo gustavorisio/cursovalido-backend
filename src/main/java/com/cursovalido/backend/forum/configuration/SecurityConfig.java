@@ -69,6 +69,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/autenticacao/aceitar-termos-novamente")
                         .hasAuthority("TERMOS_PENDENTES")
                         .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas").hasRole("ALUNO")
+                        .requestMatchers(HttpMethod.PUT, "/api/aluno/aulas/*/progresso").hasRole("ALUNO")
+                        .requestMatchers(HttpMethod.POST, "/api/aluno/aulas/*/conclusao").hasRole("ALUNO")
                         .requestMatchers(HttpMethod.GET, "/api/aluno/**").hasRole("ALUNO")
                         .requestMatchers("/api/aluno", "/api/aluno/**").denyAll()
                         // As rotas de gestao continuam exclusivas do professor.
