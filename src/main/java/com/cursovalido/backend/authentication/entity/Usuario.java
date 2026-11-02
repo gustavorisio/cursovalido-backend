@@ -16,11 +16,11 @@ public class Usuario {
     private String email;
     @Column(nullable = false, length = 60)
     private String senha;
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String cpf;
-    @Column(name = "data_nascimento", nullable = false)
+    @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
-    @Column(nullable = false)
+    @Column
     private String telefone;
     @Column(nullable = false, unique = true)
     private String matricula;
@@ -30,9 +30,9 @@ public class Usuario {
     private Boolean declarouMaiorIdade;
     @Column(name = "aceitou_termos_lgpd", nullable = false)
     private Boolean aceitouTermosLgpd;
-    @Column(name = "data_hora_aceite", nullable = false)
+    @Column(name = "data_hora_aceite")
     private LocalDateTime dataHoraAceite;
-    @Column(name = "versao_termos", nullable = false)
+    @Column(name = "versao_termos")
     private String versaoTermos;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
