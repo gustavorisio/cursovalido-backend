@@ -6,41 +6,38 @@ import com.cursovalido.backend.authentication.entity.ConviteAcesso;
 import com.cursovalido.backend.authentication.entity.Endereco;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
+import com.cursovalido.backend.authentication.entity.StatusConvite;
 import com.cursovalido.backend.authentication.entity.Usuario;
+import com.cursovalido.backend.authentication.exception.MenorDeIdadeException;
 import com.cursovalido.backend.authentication.repository.ConviteAcessoRepositorio;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import com.cursovalido.backend.forum.service.UsuarioForumServico;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
+@RequiredArgsConstructor
 public class ConviteAcessoServico {
-    private static final String PENDENTE = "PENDENTE";
-    @Autowired
-    private ConviteAcessoRepositorio convites;
-    @Autowired
-    private UsuarioRepositorio usuarios;
-    @Autowired
-    private PasswordEncoder codificadorSenha;
-    @Autowired
-    private PoliticaServico politicas;
-    @Autowired
-    private EmailServico emails;
-    @Autowired
-    private ValidacaoEmailServico validacaoEmail;
-    @Autowired
-    private LogAuditoriaServico auditoria;
-    @Autowired
-    private UsuarioForumServico usuariosForum;
+    private static final StatusConvite PENDENTE = StatusConvite.PENDENTE;
+    private final ConviteAcessoRepositorio convites;
+    private final UsuarioRepositorio usuarios;
+    private final PasswordEncoder codificadorSenha;
+    private final PoliticaServico politicas;
+    private final EmailServico emails;
+    private final ValidacaoEmailServico validacaoEmail;
+    private final LogAuditoriaServico auditoria;
+    private final UsuarioForumServico usuariosForum;
     private final SecureRandom aleatorio = new SecureRandom();
 
     @Transactional
@@ -77,6 +74,9 @@ public class ConviteAcessoServico {
     // Completa o cadastro e deixa o usuario aguardando aprovacao.
     public void completar(String token, CadastroUsuarioRequisicao cadastro) {
         validacaoEmail.validar(cadastro.email());
+        if (Period.between(cadastro.dataNascimento(), LocalDate.now()).getYears() < 18
+                || !Boolean.TRUE.equals(cadastro.declarouMaiorIdade()))
+            throw new MenorDeIdadeException();
         ConviteAcesso convite = localizar(token);
         if (expirado(convite))
             throw new IllegalArgumentException("Convite expirado");
@@ -113,7 +113,7 @@ public class ConviteAcessoServico {
         usuario.setAtivo(false);
         usuario.setStatusAprovacao(StatusAprovacao.PENDENTE_APROVACAO);
         usuarios.save(usuario);
-        convite.setStatus("CONCLUIDO");
+        convite.setStatus(StatusConvite.CONCLUIDO);
         convites.save(convite);
         auditoria.registrar(usuario.getId(), "CADASTRO_PENDENTE_APROVACAO", convite.getPerfil().name(), null);
     }
@@ -195,8 +195,11 @@ public class ConviteAcessoServico {
     }
 
     private ConviteAcesso localizar(String token) {
-        return convites.findByTokenHash(hash(token))
+        ConviteAcesso convite = convites.findByTokenHash(hash(token))
                 .orElseThrow(() -> new IllegalArgumentException("Convite invalido"));
+        if (!PENDENTE.equals(convite.getStatus()))
+            throw new IllegalArgumentException("Convite indisponivel");
+        return convite;
     }
 
     private boolean expirado(ConviteAcesso convite) {
