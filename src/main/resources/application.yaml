@@ -1,3 +1,61 @@
 spring:
   application:
-    name: cursovalido-backend
+    name: minha-api
+ 
+  # POSTGRESQL
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:minha_api}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+ 
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+ 
+  # GMAIL SMTP
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_APP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+ 
+# SERVER
+server:
+  port: ${SERVER_PORT:8080}
+ 
+# SECURITY / JWT / BCRYPT
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:3600000}
+ 
+  bcrypt:
+    strength: ${BCRYPT_STRENGTH:12}
+ 
+# EXTERNAL APIS
+external:
+  resend:
+    base-url: https://api.resend.com
+    api-key: ${RESEND_API_KEY}
+    from-email: ${RESEND_FROM_EMAIL}
+ 
+  viacep:
+    base-url: https://viacep.com.br/ws
+ 
+  youtube:
+    base-url: https://www.googleapis.com/youtube/v3
+    api-key: ${YOUTUBE_API_KEY}
