@@ -216,6 +216,146 @@ class ForumPoliticasIntegracaoTest {
         assertThat(lerCorpoJson(resposta).toString()).contains(mensagemEsperada);
     }
 
+    // A descrição é obrigatória; a recusa não pode deixar um tópico incompleto no banco.
+    @Test
+    void criarTopico_comDescricaoVazia_deveRetornar400SemPersistir() {
+        long quantidadeTopicosAntes = repositorioTopicos.count();
+        ResponseEntity<String> resposta = enviarRequisicao(HttpMethod.POST, "/api/forum/topicos",
+                tokenProfessor, Map.of("titulo", "Como consultar comentarios do forum?", "descricao", ""));
+
+        conferirErro(resposta, 400, "Bad Request");
+        assertThat(repositorioTopicos.count()).isEqualTo(quantidadeTopicosAntes);
+    }
+
+    // O limite da descrição é 5000 caracteres, portanto 5001 devem ser rejeitados.
+    @Test
+    void criarTopico_comDescricaoAcimaDe5000Caracteres_deveRetornar400SemPersistir() {
+        long quantidadeTopicosAntes = repositorioTopicos.count();
+        String descricaoAcimaDoLimite = "Explicacao sobre a consulta de comentarios. ".repeat(150).substring(0, 5001);
+        assertThat(descricaoAcimaDoLimite.length()).isGreaterThan(5000);
+        ResponseEntity<String> resposta = enviarRequisicao(HttpMethod.POST, "/api/forum/topicos",
+                tokenProfessor, Map.of("titulo", "Como paginar os comentarios?", "descricao", descricaoAcimaDoLimite));
+
+        conferirErro(resposta, 400, "Bad Request");
+        assertThat(repositorioTopicos.count()).isEqualTo(quantidadeTopicosAntes);
+    }
+
+    // Um comentário vazio não deve aumentar a quantidade de respostas persistidas.
+    @Test
+    void adicionarComentario_comConteudoVazio_deveRetornar400SemPersistir() {
+        long idTopico = criarTopicoSobreTestesIntegracao();
+        long quantidadeComentariosAntes = repositorioComentarios.count();
+        ResponseEntity<String> resposta = enviarRequisicao(HttpMethod.POST,
+                "/api/forum/topicos/" + idTopico + "/comentarios", tokenProfessor, Map.of("conteudo", ""));
+
+        conferirErro(resposta, 400, "Bad Request");
+        assertThat(repositorioComentarios.count()).isEqualTo(quantidadeComentariosAntes);
+    }
+
+    // O conteúdo do comentário tem o mesmo limite de 5000 caracteres da descrição do tópico.
+    @Test
+    void adicionarComentario_comConteudoAcimaDe5000Caracteres_deveRetornar400SemPersistir() {
+        long idTopico = criarTopicoSobreTestesIntegracao();
+        long quantidadeComentariosAntes = repositorioComentarios.count();
+        String conteudoAcimaDoLimite = "Consulte os comentarios pelo identificador do topico. ".repeat(150).substring(0, 5001);
+        assertThat(conteudoAcimaDoLimite.length()).isGreaterThan(5000);
+        ResponseEntity<String> resposta = enviarRequisicao(HttpMethod.POST,
+                "/api/forum/topicos/" + idTopico + "/comentarios", tokenProfessor,
+                Map.of("conteudo", conteudoAcimaDoLimite));
+
+        conferirErro(resposta, 400, "Bad Request");
+        assertThat(repositorioComentarios.count()).isEqualTo(quantidadeComentariosAntes);
+    }
+
+    // O administrador pode excluir tópicos, mas a edição do texto continua restrita ao autor.
+    @Test
+    void editarTopico_comAdministradorQueNaoEAutor_deveRetornar403SemAlterar() {
+        long idTopico = criarTopicoSobreTestesIntegracao();
+        String tituloOriginal = repositorioTopicos.findById(idTopico).orElseThrow().getTitulo();
+        String descricaoOriginal = repositorioTopicos.findById(idTopico).orElseThrow().getDescricao();
+        ResponseEntity<String> resposta = enviarRequisicao(HttpMethod.PUT, "/api/forum/topicos/" + idTopico,
+                tokenAdministrador, Map.of("titulo", "Titulo alterado pelo administrador",
+                        "descricao", "Tentativa de editar a duvida de outra pessoa."));
+
+        conferirErro(resposta, 403, "Somente o autor pode editar o topico");
+        Topico topicoPersistido = repositorioTopicos.findById(idTopico).orElseThrow();
+        assertThat(topicoPersistido.getTitulo()).isEqualTo(tituloOriginal);
+        assertThat(topicoPersistido.getDescricao()).isEqualTo(descricaoOriginal);
+    }
+
+    // O perfil de administrador não permite modificar o conteúdo de uma resposta de outro autor.
+    @Test
+    void editarComentario_comAdministradorQueNaoEAutor_deveRetornar403SemAlterar() {
+        long idTopico = criarTopicoSobreTestesIntegracao();
+        long idComentario = criarComentarioNoTopico(idTopico);
+        String conteudoOriginal = repositorioComentarios.findById(idComentario).orElseThrow().getConteudo();
+        ResponseEntity<String> resposta = enviarRequisicao(HttpMethod.PUT, "/api/forum/comentarios/" + idComentario,
+                tokenAdministrador, Map.of("conteudo", "Tentativa de substituir a resposta do professor."));
+
+        conferirErro(resposta, 403, "Somente o autor pode editar o comentario");
+        assertThat(repositorioComentarios.findById(idComentario).orElseThrow().getConteudo())
+                .isEqualTo(conteudoOriginal);
+    }
+
+    // A edição de um tópico ausente precisa retornar 404 sem criar um registro substituto.
+    @Test
+    void editarTopico_comIdentificadorInexistente_deveRetornar404SemPersistir() {
+        long quantidadeTopicosAntes = repositorioTopicos.count();
+        ResponseEntity<String> resposta = enviarRequisicao(HttpMethod.PUT, "/api/forum/topicos/" + Long.MAX_VALUE,
+                tokenProfessor, Map.of("titulo", "Como listar minhas duvidas?", "descricao", "Consulta de topicos por autor."));
+
+        conferirErro(resposta, 404, "Topico nao encontrado");
+        assertThat(repositorioTopicos.count()).isEqualTo(quantidadeTopicosAntes);
+    }
+
+    // Informar um comentário inexistente no PUT não pode cadastrar uma nova resposta.
+    @Test
+    void editarComentario_comIdentificadorInexistente_deveRetornar404SemPersistir() {
+        long quantidadeComentariosAntes = repositorioComentarios.count();
+        ResponseEntity<String> resposta = enviarRequisicao(HttpMethod.PUT,
+                "/api/forum/comentarios/" + Long.MAX_VALUE, tokenProfessor,
+                Map.of("conteudo", "Esta resposta ainda nao existe no forum."));
+
+        conferirErro(resposta, 404, "Comentario nao encontrado");
+        assertThat(repositorioComentarios.count()).isEqualTo(quantidadeComentariosAntes);
+    }
+
+    // O tópico arquivado permanece salvo, mas suas respostas não ficam disponíveis para consulta.
+    @Test
+    void listarComentarios_comTopicoArquivado_deveRetornar404SemExcluirResposta() {
+        long idTopico = criarTopicoSobreTestesIntegracao();
+        long idComentario = criarComentarioNoTopico(idTopico);
+        ResponseEntity<String> respostaArquivamento = enviarRequisicao(HttpMethod.PUT,
+                "/api/forum/topicos/" + idTopico + "/arquivar", tokenAdministrador, null);
+        assertThat(respostaArquivamento.getStatusCode().value()).isEqualTo(200);
+
+        ResponseEntity<String> respostaConsulta = enviarRequisicao(HttpMethod.GET,
+                "/api/forum/topicos/" + idTopico + "/comentarios", tokenProfessor, null);
+
+        conferirErro(respostaConsulta, 404, "Topico arquivado");
+        assertThat(repositorioTopicos.findById(idTopico).orElseThrow().isAtivo()).isFalse();
+        assertThat(repositorioComentarios.findById(idComentario).orElseThrow().isAtivo()).isTrue();
+    }
+
+    // A publicação substitui a política vigente e a versão anterior deixa a listagem pública.
+    @Test
+    void publicarPolitica_comNovaVersao_deveDesativarAnteriorEListarSomenteAtual() {
+        Map<String, String> novaPolitica = montarPoliticaPrivacidade();
+        ResponseEntity<String> respostaPublicacao = enviarRequisicao(HttpMethod.POST, "/api/politicas",
+                tokenAdministrador, novaPolitica);
+        assertThat(respostaPublicacao.getStatusCode().value()).isEqualTo(201);
+        assertThat(lerCorpoJson(respostaPublicacao).path("versao").asText()).isEqualTo(novaPolitica.get("versao"));
+
+        ResponseEntity<String> respostaConsulta = enviarRequisicao(HttpMethod.GET, "/api/politicas/ativas", null, null);
+
+        assertThat(respostaConsulta.getStatusCode().value()).isEqualTo(200);
+        assertThat(lerCorpoJson(respostaConsulta).size()).isEqualTo(1);
+        assertThat(lerCorpoJson(respostaConsulta).get(0).path("versao").asText())
+                .isEqualTo(novaPolitica.get("versao"));
+        assertThat(repositorioPoliticas.findByVersao(versaoPoliticaCadastro).orElseThrow().isAtiva()).isFalse();
+        assertThat(repositorioPoliticas.findByVersao(novaPolitica.get("versao")).orElseThrow().isAtiva()).isTrue();
+    }
+
     // O tópico precisa continuar ativo e guardar o autor depois que a requisição de
     // criação termina.
     @Test
