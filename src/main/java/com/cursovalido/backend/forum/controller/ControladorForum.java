@@ -1,5 +1,7 @@
 package com.cursovalido.backend.forum.controller;
 
+import lombok.RequiredArgsConstructor;
+
 import com.cursovalido.backend.forum.entity.Comentario;
 import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
@@ -16,20 +18,17 @@ import com.cursovalido.backend.forum.service.UsuarioForumServico;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/forum")
+@RequiredArgsConstructor
 public class ControladorForum {
-    @Autowired
-    private TopicoServico servicoTopicos;
-    @Autowired
-    private ComentarioServico servicoComentarios;
-    @Autowired
-    private UsuarioForumServico servicoUsuarios;
+    private final TopicoServico servicoTopicos;
+    private final ComentarioServico servicoComentarios;
+    private final UsuarioForumServico servicoUsuarios;
 
     @GetMapping("/topicos")
     public List<TopicoResumoDTO> listarTopicosRecentes(

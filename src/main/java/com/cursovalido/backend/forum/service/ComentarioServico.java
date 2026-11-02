@@ -1,5 +1,7 @@
 package com.cursovalido.backend.forum.service;
 
+import lombok.RequiredArgsConstructor;
+
 import com.cursovalido.backend.forum.entity.Comentario;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.entity.Topico;
@@ -10,22 +12,18 @@ import com.cursovalido.backend.forum.exception.ConflitoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ComentarioServico {
 
-    @Autowired
-    private ComentarioRepositorio repositorioComentarios;
-    @Autowired
-    private TopicoServico servicoTopicos;
-    @Autowired
-    private UsuarioForumServico servicoUsuarios;
-    @Autowired
-    private LogAuditoriaServico auditoria;
+    private final ComentarioRepositorio repositorioComentarios;
+    private final TopicoServico servicoTopicos;
+    private final UsuarioForumServico servicoUsuarios;
+    private final LogAuditoriaServico auditoria;
 
     // Lista os comentarios ativos de um topico.
     public List<Comentario> listarPorTopico(Long idTopico) {
