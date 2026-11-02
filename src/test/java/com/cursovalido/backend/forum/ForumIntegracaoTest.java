@@ -18,10 +18,13 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+// O tópico e o aluno deste teste são removidos pelo rollback ao final da execução.
+@Transactional
 class ForumIntegracaoTest {
 
     @Autowired
@@ -32,25 +35,31 @@ class ForumIntegracaoTest {
     private TopicoRepositorio topicos;
 
     @Test
-    void deveCriarTopicoPelaApiEPersistirNoBanco() throws Exception {
-        usuarios.save(new UsuarioForum(7L, "Aluno", "aluno@teste.com", "ALUNO"));
+    void criarTopico_comAlunoAutenticado_devePersistirNoBanco() throws Exception {
+        // O aluno Gustavo recebe um identificador próprio para esta execução.
+        long idUsuario = System.nanoTime();
+        String email = idUsuario + "@teste.local";
+        usuarios.save(new UsuarioForum(idUsuario, "Gustavo", email, "ALUNO"));
+        // O principal usa o perfil ALUNO exigido pela rota de criação de tópicos.
         UsuarioAutenticado principal = new UsuarioAutenticado(
-                7L, "aluno@teste.com", "senha", "ALUNO", true, true, true);
-        var autenticacao = new UsernamePasswordAuthenticationToken(
+                idUsuario, email, "SenhaAluno123!", "ALUNO", true, true, true);
+        UsernamePasswordAuthenticationToken autenticacao = new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities());
 
-        // A requisição valida segurança, controlador, serviço e persistência.
+        // O aluno publica uma dúvida sobre a consulta de tópicos, passando pelos filtros de segurança.
         mockMvc.perform(post("/api/forum/topicos")
                 .with(authentication(autenticacao))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"titulo":"Fluxo completo","descricao":"Criado pela API"}
+                        {"titulo":"Como consultar meu topico no forum?","descricao":"Quero encontrar minha duvida na listagem de topicos."}
                         """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.titulo").value("Fluxo completo"))
-                .andExpect(jsonPath("$.idAutor").value(7));
+                .andExpect(jsonPath("$.titulo").value("Como consultar meu topico no forum?"))
+                .andExpect(jsonPath("$.idAutor").value(idUsuario));
 
-        assertEquals(1, topicos.count());
-        assertEquals("Fluxo completo", topicos.findAll().getFirst().getTitulo());
+        // A consulta pelo autor confirma que a dúvida foi persistida com o aluno correto.
+        var topicosDoAluno = topicos.findByIdAutor(idUsuario);
+        assertEquals(1, topicosDoAluno.size());
+        assertEquals("Como consultar meu topico no forum?", topicosDoAluno.getFirst().getTitulo());
     }
 }
