@@ -4,24 +4,23 @@ import com.cursovalido.backend.authentication.dto.ConviteAcessoRequisicao;
 import com.cursovalido.backend.authentication.dto.ConviteAcessoResposta;
 import com.cursovalido.backend.authentication.dto.ConviteResumoResposta;
 import com.cursovalido.backend.authentication.entity.Usuario;
+import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.ConviteAcessoServico;
 import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
-import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/administracao/convites")
+@RequiredArgsConstructor
 public class AdministracaoControlador {
-    @Autowired
-    private ConviteAcessoServico convites;
-    @Autowired
-    private LogAuditoriaServico auditoria;
+    private final ConviteAcessoServico convites;
+    private final LogAuditoriaServico auditoria;
 
     @GetMapping("/auditoria/integridade")
     public Map<String, Boolean> verificarIntegridadeAuditoria() {
