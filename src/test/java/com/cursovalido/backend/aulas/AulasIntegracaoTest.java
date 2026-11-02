@@ -452,6 +452,55 @@ class AulasIntegracaoTest {
                 .andExpect(jsonPath("$.posicaoSegundos").value(0));
     }
 
+    @Test
+    void administradorConsultaCursosEAulasSemMatricula() throws Exception {
+        long idModulo = prepararModulo();
+        long idAula = criarAula(idModulo);
+        long idCurso = modulos.findById(idModulo).orElseThrow().getIdCurso();
+        Usuario administrador = criarProfessor("adminLeitura");
+        administrador.setPerfil(Perfil.ADMINISTRADOR);
+        usuarios.saveAndFlush(administrador);
+        var principal = new UsuarioAutenticado(administrador.getId(), administrador.getEmail(), "senha",
+                Perfil.ADMINISTRADOR, true, true, true);
+        var acesso = authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+        mvc.perform(get("/api/administracao/cursos").with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(idCurso));
+        mvc.perform(get("/api/administracao/cursos/" + idCurso).with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(idCurso));
+        mvc.perform(get("/api/administracao/cursos/" + idCurso + "/modulos").with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(idModulo));
+        mvc.perform(get("/api/administracao/modulos/" + idModulo + "/aulas").with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(idAula));
+        mvc.perform(get("/api/administracao/aulas/" + idAula).with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.youtubeVideoId").value("M7lc1UVf-VE"));
+        assertThat(matriculas.count()).isZero();
+        assertThat(progressos.count()).isZero();
+        mvc.perform(post("/api/cursos").with(acesso).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(put("/api/aulas/" + idAula).with(acesso).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(delete("/api/aulas/" + idAula).with(acesso)).andExpect(status().isForbidden());
+        mvc.perform(post("/api/aluno/aulas/" + idAula + "/conclusao").with(acesso)).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/modulos/" + idModulo).with(comoProfessor(professor))).andExpect(status().isNoContent());
+        mvc.perform(get("/api/administracao/aulas/" + idAula).with(acesso)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void leituraAdministrativaExigeAdministradorAtivoEAutenticado() throws Exception {
+        mvc.perform(get("/api/administracao/cursos")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/administracao/cursos").with(comoProfessor(professor))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/administracao/cursos").with(comoAluno(criarAluno()))).andExpect(status().isForbidden());
+        Usuario administrador = criarProfessor("adminInativo");
+        administrador.setPerfil(Perfil.ADMINISTRADOR);
+        administrador.setAtivo(false);
+        usuarios.saveAndFlush(administrador);
+        var principal = new UsuarioAutenticado(administrador.getId(), administrador.getEmail(), "senha",
+                Perfil.ADMINISTRADOR, true, true, true);
+        var acesso = authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+        mvc.perform(get("/api/administracao/cursos").with(acesso)).andExpect(status().isForbidden());
+    }
+
+
     private RequestPostProcessor comoAluno(Usuario usuario) {
         var principal = new UsuarioAutenticado(usuario.getId(), usuario.getEmail(), "senha", Perfil.ALUNO, true, true, true);
         return authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));

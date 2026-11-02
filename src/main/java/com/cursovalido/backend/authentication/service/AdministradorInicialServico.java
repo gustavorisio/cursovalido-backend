@@ -7,6 +7,7 @@ import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdministradorInicialServico {
     public static final String EMAIL = "cursovalido@gmail.com";
     private final UsuarioRepositorio usuarios;
@@ -28,8 +30,10 @@ public class AdministradorInicialServico {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void criar() {
-        if (senha.isEmpty())
+        if (senha.isEmpty()) {
+            log.warn("ADMIN_PASSWORD nao foi recebida pela aplicacao. O administrador inicial nao sera criado ou atualizado.");
             return;
+        }
         if (senha.isBlank() || senha.length() < 8 || senha.getBytes(StandardCharsets.UTF_8).length > 72)
             throw new IllegalStateException("ADMIN_PASSWORD deve ter pelo menos 8 caracteres e no maximo 72 bytes.");
         var existente = usuarios.findByEmail(EMAIL);
@@ -42,7 +46,12 @@ public class AdministradorInicialServico {
                 sessoes.revogarPorUsuario(administrador.getId());
                 tokensEmail.invalidarAcessos(administrador);
                 usuarios.save(administrador);
+                log.info("Senha do administrador inicial sincronizada com ADMIN_PASSWORD.");
+            } else {
+                log.info("Senha do administrador inicial conferida com ADMIN_PASSWORD.");
             }
+            if (!administrador.isAtivo())
+                log.warn("O administrador inicial esta desativado. A sincronizacao da senha nao reativa a conta.");
             return;
         }
 
@@ -56,5 +65,6 @@ public class AdministradorInicialServico {
         administrador.setDeclarouMaiorIdade(false);
         administrador.setAceitouTermosLgpd(false);
         usuarios.save(administrador);
+        log.info("Administrador inicial criado. O primeiro acesso exige aceite dos termos.");
     }
 }
