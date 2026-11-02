@@ -11,6 +11,7 @@ import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +55,7 @@ public class TopicoServico {
     }
 
     // Edita um topico pelo autor ou administrador.
+    @Transactional
     public Topico editar(Long idTopico, Topico dadosAtualizados, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);

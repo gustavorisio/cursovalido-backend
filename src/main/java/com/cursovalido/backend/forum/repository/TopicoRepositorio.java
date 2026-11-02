@@ -3,6 +3,7 @@ package com.cursovalido.backend.forum.repository;
 import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,10 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TopicoRepositorio extends JpaRepository<Topico, Long> {
+    @Override
+    @EntityGraph(attributePaths = "usuarioAutor")
+    Optional<Topico> findById(Long id);
+
     List<Topico> findByIdAutor(Long idAutor);
 
     @Query("SELECT new com.cursovalido.backend.forum.dto.TopicoResumoDTO(" +

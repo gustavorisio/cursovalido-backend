@@ -12,6 +12,7 @@ import com.cursovalido.backend.forum.exception.ConflitoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -59,6 +60,7 @@ public class ComentarioServico {
     }
 
     // Edita um comentario somente pelo seu autor.
+    @Transactional
     public Comentario editar(Long idComentario, Comentario dadosAtualizados, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Comentario comentario = buscar(idComentario);
