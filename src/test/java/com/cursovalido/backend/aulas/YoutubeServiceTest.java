@@ -47,6 +47,8 @@ class YoutubeServiceTest {
             "https://evil.com@youtube.com/watch?v=M7lc1UVf-VE",
             "https://youtube.com:443/watch?v=M7lc1UVf-VE",
             "https://www.youtube.com/watch?list=teste", "https://youtu.be/curto",
+            "https:///watch?v=M7lc1UVf-VE", "https://youtube.com/shorts/M7lc1UVf-VE",
+            "https://youtube.com/watch", "https://youtube.com/watch?v",
             "https://youtu.be/M7lc1UVf-VE/extra",
             "https://youtube.com/watch?v=M7lc1UVf-VE&v=M7lc1UVf-VE",
             "<iframe src='https://youtube.com/embed/M7lc1UVf-VE'></iframe>" })

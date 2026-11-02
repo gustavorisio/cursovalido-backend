@@ -49,7 +49,11 @@ class YoutubeClientTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "{}", "{\"items\":[null]}", "{\"items\":[{\"id\":\"outro\"}]}",
+    @ValueSource(strings = { "{}", "{\"items\":[null]}", "{\"items\":[{},{}]}",
+            "{\"items\":[{\"id\":\"M7lc1UVf-VE\"}]}",
+            "{\"items\":[{\"id\":\"M7lc1UVf-VE\",\"status\":{\"embeddable\":true}}]}",
+            "{\"items\":[{\"id\":\"M7lc1UVf-VE\",\"status\":{\"embeddable\":true,\"privacyStatus\":\"public\"}}]}",
+            "{\"items\":[{\"id\":\"outro\"}]}",
             "{\"items\":[{\"id\":\"M7lc1UVf-VE\",\"status\":{}}]}", "json quebrado" })
     void tratarRespostaInvalida(String corpo) {
         servidor.expect(requestTo(URL)).andRespond(withSuccess(corpo, MediaType.APPLICATION_JSON));
