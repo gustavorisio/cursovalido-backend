@@ -1,14 +1,14 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.entity.ConviteAcesso;
+import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestClient;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Service
 public class EmailServico {
@@ -75,7 +75,7 @@ public class EmailServico {
                     .body(new EmailRequisicao(enderecoRemetente, List.of(destinatario), assunto, conteudo))
                     .retrieve()
                     .toBodilessEntity();
-        } catch (RestClientResponseException excecao) {
+        } catch (RestClientException excecao) {
             throw new ServicoEmailIndisponivelException();
         }
     }
