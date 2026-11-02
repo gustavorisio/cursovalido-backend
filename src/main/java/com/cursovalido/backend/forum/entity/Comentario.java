@@ -2,10 +2,16 @@ package com.cursovalido.backend.forum.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "tb_comments")
 public class Comentario {
@@ -39,78 +45,12 @@ public class Comentario {
     @JsonIgnore
     private Topico topico;
 
-    public Comentario() {
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getConteudo() {
-        return conteudo;
-    }
-
-    public void setConteudo(String conteudo) {
-        this.conteudo = conteudo;
-    }
-
     public String getNomeAutor() {
         return usuarioAutor != null ? usuarioAutor.getNome() : nomeAutor;
-    }
-
-    public void setNomeAutor(String nomeAutor) {
-        this.nomeAutor = nomeAutor;
     }
 
     public String getPapelAutor() {
         return usuarioAutor != null ? usuarioAutor.getPerfil() : papelAutor;
     }
 
-    public void setPapelAutor(String papelAutor) {
-        this.papelAutor = papelAutor;
-    }
-
-    public Long getIdAutor() {
-        return idAutor;
-    }
-
-    public void setIdAutor(Long idAutor) {
-        this.idAutor = idAutor;
-    }
-
-    public UsuarioForum getUsuarioAutor() {
-        return usuarioAutor;
-    }
-
-    public void setUsuarioAutor(UsuarioForum usuarioAutor) {
-        this.usuarioAutor = usuarioAutor;
-    }
-
-    public LocalDateTime getCriadoEm() {
-        return criadoEm;
-    }
-
-    public void setCriadoEm(LocalDateTime criadoEm) {
-        this.criadoEm = criadoEm;
-    }
-
-    public boolean isAtivo() {
-        return ativo;
-    }
-
-    public void setAtivo(boolean ativo) {
-        this.ativo = ativo;
-    }
-
-    public Topico getTopico() {
-        return topico;
-    }
-
-    public void setTopico(Topico topico) {
-        this.topico = topico;
-    }
 }

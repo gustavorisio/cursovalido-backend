@@ -1,5 +1,7 @@
 package com.cursovalido.backend.forum.service;
 
+import lombok.RequiredArgsConstructor;
+
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
@@ -8,21 +10,18 @@ import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class TopicoServico {
-    @Autowired
-    private TopicoRepositorio repositorioTopicos;
-    @Autowired
-    private UsuarioForumServico servicoUsuarios;
-    @Autowired
-    private LogAuditoriaServico auditoria;
+    private final TopicoRepositorio repositorioTopicos;
+    private final UsuarioForumServico servicoUsuarios;
+    private final LogAuditoriaServico auditoria;
 
     // Lista os topicos mais recentes.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho) {
@@ -56,6 +55,7 @@ public class TopicoServico {
     }
 
     // Edita um topico pelo autor ou administrador.
+    @Transactional
     public Topico editar(Long idTopico, Topico dadosAtualizados, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);

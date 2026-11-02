@@ -1,22 +1,21 @@
 package com.cursovalido.backend.forum.service;
 
+import lombok.RequiredArgsConstructor;
+
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.repository.UsuarioForumRepositorio;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioForumServico {
-    @Autowired
-    private UsuarioForumRepositorio repositorioUsuarios;
+    private final UsuarioForumRepositorio repositorioUsuarios;
 
-    public UsuarioForumServico() {
-    }
 
     // Busca um usuario ativo para as operacoes do forum.
     public UsuarioForum buscarAtivo(Long idUsuario) {

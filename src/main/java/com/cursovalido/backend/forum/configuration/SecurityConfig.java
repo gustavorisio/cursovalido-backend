@@ -1,13 +1,15 @@
 package com.cursovalido.backend.forum.configuration;
 
+import lombok.RequiredArgsConstructor;
+
 import com.cursovalido.backend.authentication.configuration.TokenJwtFiltro;
 import com.cursovalido.backend.authentication.configuration.PermissoesSeguranca;
 import java.util.List;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.DispatcherType;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpMethod;
@@ -25,11 +27,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableConfigurationProperties(PermissoesSeguranca.class)
+@RequiredArgsConstructor
 public class SecurityConfig {
-    @Autowired
-    private TokenJwtFiltro tokenJwtFiltro;
-    @Autowired
-    private PermissoesSeguranca permissoes;
+    private final TokenJwtFiltro tokenJwtFiltro;
+    private final PermissoesSeguranca permissoes;
     @Value("${aplicacao.frontend-origens:http://localhost:3000,http://localhost:5173}")
     private String origensFrontend;
 
@@ -48,7 +49,11 @@ public class SecurityConfig {
                         }))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(excecoes -> excecoes
+                        .authenticationEntryPoint((request, response, exception) ->
+                                response.sendError(401, "Autenticacao necessaria")))
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/autenticacao/cadastro", "/api/autenticacao/login",
                                 "/api/autenticacao/confirmar-2fa",
