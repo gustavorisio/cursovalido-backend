@@ -68,6 +68,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/administracao/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/autenticacao/aceitar-termos-novamente")
                         .hasAuthority("TERMOS_PENDENTES")
+                        .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas").hasRole("ALUNO")
+                        .requestMatchers(HttpMethod.GET, "/api/aluno/**").hasRole("ALUNO")
+                        .requestMatchers("/api/aluno", "/api/aluno/**").denyAll()
+                        // As rotas de gestao continuam exclusivas do professor.
+                        .requestMatchers("/api/cursos", "/api/cursos/**", "/api/modulos", "/api/modulos/**",
+                                "/api/aulas", "/api/aulas/**")
+                        .hasRole("PROFESSOR")
                         .requestMatchers(HttpMethod.GET, permissoes.getLeituraAluno().toArray(String[]::new))
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                         .requestMatchers(HttpMethod.GET, permissoes.getLeituraProfessor().toArray(String[]::new))
