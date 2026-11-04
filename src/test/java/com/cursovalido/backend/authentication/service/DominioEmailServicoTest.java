@@ -24,6 +24,7 @@ class DominioEmailServicoTest {
         when(contexto.getAttributes(eq("gmail.com"), any(String[].class)))
                 .thenReturn(new BasicAttributes("MX", "10 smtp.gmail.com."));
         assertTrue(servico().aceitaEmail("gmail.com"));
+        verify(contexto).getAttributes("gmail.com", new String[] { "MX" });
         verify(contexto).close();
     }
 
@@ -37,9 +38,29 @@ class DominioEmailServicoTest {
 
     @Test
     void aceitaEnderecoSemMx() throws Exception {
-        when(contexto.getAttributes(anyString(), any(String[].class)))
+        when(contexto.getAttributes("example.com", new String[] { "MX" })).thenReturn(new BasicAttributes());
+        when(contexto.getAttributes("example.com", new String[] { "A" })).thenReturn(new BasicAttributes());
+        when(contexto.getAttributes("example.com", new String[] { "AAAA" }))
                 .thenReturn(new BasicAttributes("AAAA", "2001:db8::1"));
         assertTrue(servico().aceitaEmail("example.com"));
+    }
+
+    @Test
+    void consultaMxEspecificoMesmoQuandoAnyNaoRetornaRegistros() throws Exception {
+        when(contexto.getAttributes(anyString(), any(String[].class))).thenReturn(new BasicAttributes());
+        when(contexto.getAttributes("gmail.com", new String[] { "MX" }))
+                .thenReturn(new BasicAttributes("MX", "5 gmail-smtp-in.l.google.com."));
+        assertTrue(servico().aceitaEmail("gmail.com"));
+        verify(contexto, never()).getAttributes("gmail.com", new String[] { "MX", "A", "AAAA" });
+    }
+
+    @Test
+    void aceitaIpv4NaAusenciaDeMxSemConsultarIpv6() throws Exception {
+        when(contexto.getAttributes("example.com", new String[] { "MX" })).thenReturn(new BasicAttributes());
+        when(contexto.getAttributes("example.com", new String[] { "A" }))
+                .thenReturn(new BasicAttributes("A", "192.0.2.1"));
+        assertTrue(servico().aceitaEmail("example.com"));
+        verify(contexto, never()).getAttributes("example.com", new String[] { "AAAA" });
     }
 
     @Test

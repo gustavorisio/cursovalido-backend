@@ -29,7 +29,9 @@ public class DominioEmailServico {
     }
 
     private boolean consultar(InitialDirContext contexto, String dominio) throws NamingException {
-        var atributos = contexto.getAttributes(dominio, new String[] { "MX", "A", "AAAA" });
+        // O provedor JNDI transforma varios tipos em uma consulta DNS ANY.
+        // Resolvedores podem responder ANY sem registros mesmo para dominios validos.
+        var atributos = contexto.getAttributes(dominio, new String[] { "MX" });
         Attribute mx = atributos.get("MX");
         if (mx != null && mx.size() > 0) {
             for (int i = 0; i < mx.size(); i++) {
@@ -40,6 +42,9 @@ public class DominioEmailServico {
             return false; // Null MX: o dominio declara que nao recebe e-mails.
         }
         // Na ausencia de MX, SMTP permite entrega ao endereco do proprio dominio.
-        return atributos.get("A") != null || atributos.get("AAAA") != null;
+        Attribute ipv4 = contexto.getAttributes(dominio, new String[] { "A" }).get("A");
+        if (ipv4 != null && ipv4.size() > 0) return true;
+        Attribute ipv6 = contexto.getAttributes(dominio, new String[] { "AAAA" }).get("AAAA");
+        return ipv6 != null && ipv6.size() > 0;
     }
 }
