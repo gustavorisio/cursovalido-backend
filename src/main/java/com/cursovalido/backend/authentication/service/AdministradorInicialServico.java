@@ -1,10 +1,14 @@
 package com.cursovalido.backend.authentication.service;
 
+import com.cursovalido.backend.authentication.dto.ConviteAcessoRequisicao;
+import com.cursovalido.backend.authentication.entity.InicializacaoAdministrador;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.repository.SessaoRepositorio;
+import com.cursovalido.backend.authentication.repository.InicializacaoAdministradorRepositorio;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
+import jakarta.validation.Validator;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,52 +23,62 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class AdministradorInicialServico {
-    public static final String EMAIL = "cursovalido@gmail.com";
     private final UsuarioRepositorio usuarios;
     private final PasswordEncoder senhas;
+    private final InicializacaoAdministradorRepositorio inicializacao;
+    private final Validator validador;
+    @Value("${aplicacao.admin.email:}")
+    private String email;
     @Value("${aplicacao.admin.senha:}")
     private String senha;
-    private final SessaoRepositorio sessoes;
-    private final TokenEmailServico tokensEmail;
 
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void criar() {
-        if (senha.isEmpty()) {
-            log.warn("ADMIN_PASSWORD nao foi recebida pela aplicacao. O administrador inicial nao sera criado ou atualizado.");
+        // A migracao cria a linha unica; o fallback atende bancos temporarios com ddl-auto.
+        var registro = inicializacao.buscarParaAtualizar()
+                .orElseGet(() -> inicializacao.saveAndFlush(new InicializacaoAdministrador()));
+        if (registro.isConcluida()) return;
+        if (usuarios.existsByPerfil(Perfil.ADMINISTRADOR)) {
+            registro.concluir(null);
+            inicializacao.save(registro);
+            log.warn("Ja existem administradores. A criacao inicial foi encerrada sem promover outra conta.");
             return;
         }
-        if (senha.isBlank() || senha.length() < 8 || senha.getBytes(StandardCharsets.UTF_8).length > 72)
-            throw new IllegalStateException("ADMIN_PASSWORD deve ter pelo menos 8 caracteres e no maximo 72 bytes.");
-        var existente = usuarios.findByEmail(EMAIL);
-        if (existente.isPresent()) {
-            if (existente.get().getPerfil() != Perfil.ADMINISTRADOR)
-                throw new IllegalStateException("O e-mail do administrador inicial ja pertence a outro perfil.");
-            Usuario administrador = existente.get();
-            if (!senhas.matches(senha, administrador.getSenha())) {
-                administrador.setSenha(senhas.encode(senha));
-                sessoes.revogarPorUsuario(administrador.getId());
-                tokensEmail.invalidarAcessos(administrador);
-                usuarios.save(administrador);
-                log.info("Senha do administrador inicial sincronizada com ADMIN_PASSWORD.");
-            } else {
-                log.info("Senha do administrador inicial conferida com ADMIN_PASSWORD.");
+        if (email.isEmpty()) {
+            if (senha.isEmpty()) {
+                log.info("Defina ADMIN_EMAIL e ADMIN_PASSWORD para criar o primeiro administrador.");
+                return;
             }
-            if (!administrador.isAtivo())
-                log.warn("O administrador inicial esta desativado. A sincronizacao da senha nao reativa a conta.");
-            return;
+        }
+        String endereco = email.trim().toLowerCase(Locale.ROOT);
+        var configuracao = new ConviteAcessoRequisicao(endereco, Perfil.ADMINISTRADOR);
+        if (!validador.validate(configuracao).isEmpty()) {
+            throw new IllegalStateException("Defina ADMIN_EMAIL com um endereco de e-mail valido.");
+        }
+        if (senha.isBlank()) throw senhaInvalida();
+        if (senha.length() < 8) throw senhaInvalida();
+        if (senha.getBytes(StandardCharsets.UTF_8).length > 72) throw senhaInvalida();
+        if (usuarios.existsByEmail(endereco)) {
+            throw new IllegalStateException("ADMIN_EMAIL ja pertence a uma conta. Nenhuma conta sera promovida.");
         }
 
         Usuario administrador = new Usuario();
         administrador.setNomeCompleto("Administrador Curso Valido");
-        administrador.setEmail(EMAIL);
+        administrador.setEmail(endereco);
         administrador.setSenha(senhas.encode(senha));
         administrador.setMatricula("ADMIN-" + UUID.randomUUID());
         administrador.setPerfil(Perfil.ADMINISTRADOR);
         administrador.setEmailConfirmado(true);
         administrador.setDeclarouMaiorIdade(false);
         administrador.setAceitouTermosLgpd(false);
-        usuarios.save(administrador);
-        log.info("Administrador inicial criado. O primeiro acesso exige aceite dos termos.");
+        administrador = usuarios.saveAndFlush(administrador);
+        registro.concluir(administrador.getId());
+        inicializacao.save(registro);
+        log.info("Administrador principal criado. A criacao inicial foi encerrada definitivamente neste banco.");
+    }
+
+    private IllegalStateException senhaInvalida() {
+        return new IllegalStateException("ADMIN_PASSWORD deve ter pelo menos 8 caracteres e no maximo 72 bytes.");
     }
 }

@@ -12,6 +12,10 @@ import com.cursovalido.backend.aulas.dto.AulaRequest;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import com.cursovalido.backend.authentication.service.ContaUsuarioServico;
+import com.cursovalido.backend.authentication.service.AdministradorInicialServico;
+import com.cursovalido.backend.authentication.repository.InicializacaoAdministradorRepositorio;
+import jakarta.persistence.EntityManager;
+import org.springframework.test.util.ReflectionTestUtils;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
@@ -31,14 +35,19 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.*;
 
 // Repete o fluxo HTTP em PostgreSQL temporario, com as migracoes e validacao JPA reais.
-@SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=validate")
+@SpringBootTest(properties = { "spring.jpa.hibernate.ddl-auto=validate", "aplicacao.admin.email=", "aplicacao.admin.senha=" })
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @Import(AulasPostgresTest.MigracaoTeste.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class AulasPostgresTest extends AulasIntegracaoTest {
+    @Autowired private AdministradorInicialServico administradorInicial;
+    @Autowired private InicializacaoAdministradorRepositorio inicializacao;
+    @Autowired private EntityManager entidades;
+    @Autowired private DataSource fonte;
     @Autowired private UsuarioRepositorio usuarios;
     @Autowired private CursoService cursos;
     @Autowired private ContaUsuarioServico contas;
+    @Autowired private com.cursovalido.backend.authentication.service.TokenEmailServico tokensEmail;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private AlunoAulasService alunoAulas;
     @Autowired private ModuloService modulos;
@@ -57,7 +66,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         var aula = aulas.criar(modulo.getId(), new AulaRequest("Java", "Introducao", 1,
                 "https://youtu.be/M7lc1UVf-VE"), professor.getId());
         progressos.concluir(aula.getId(), aluno.getId());
-        contas.excluirConta(aluno.getId());
+        contas.excluirConta(aluno.getId(), tokensEmail.criarExclusao(aluno));
         usuarios.flush();
         assertThat(jdbc.queryForObject("select count(*) from tb_matriculas where aluno_id = ?", Long.class, aluno.getId()))
                 .isZero();
@@ -85,7 +94,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     void excluirContaPreservaCursoSemResponsavel() {
         var professor = usuarios.findByEmail("professor@aulas.example.com").orElseThrow();
         var curso = cursos.criar(new CursoRequest("Java", "Curso preservado"), professor.getId());
-        contas.excluirConta(professor.getId());
+        contas.excluirConta(professor.getId(), tokensEmail.criarExclusao(professor));
         usuarios.flush();
         assertThat(usuarios.findById(professor.getId())).isEmpty();
         assertThat(jdbc.queryForObject("select professor_id from tb_cursos where id = ?", Long.class, curso.getId()))
@@ -135,6 +144,43 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 matricula.getId(), aula.getId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
+    @Test
+    void primeiroAdministradorNaoRecriaDepoisDeExclusaoFisica() {
+        ReflectionTestUtils.setField(administradorInicial, "email", "primeiro@example.com");
+        ReflectionTestUtils.setField(administradorInicial, "senha", "SenhaAdminInicial123!");
+        try {
+            administradorInicial.criar();
+            var administrador = usuarios.findByEmail("primeiro@example.com").orElseThrow();
+            var registro = inicializacao.findById(1L).orElseThrow();
+            assertThat(registro.getIdUsuario()).isEqualTo(administrador.getId());
+            usuarios.delete(administrador);
+            usuarios.flush();
+            entidades.clear();
+            var aposExcluir = inicializacao.findById(1L).orElseThrow();
+            assertThat(aposExcluir.isConcluida()).isTrue();
+            assertThat(aposExcluir.getIdUsuario()).isNull();
+            ReflectionTestUtils.setField(administradorInicial, "email", "novo@example.com");
+            administradorInicial.criar();
+            assertThat(usuarios.findByEmail("primeiro@example.com")).isEmpty();
+            assertThat(usuarios.findByEmail("novo@example.com")).isEmpty();
+        } finally {
+            ReflectionTestUtils.setField(administradorInicial, "email", "");
+            ReflectionTestUtils.setField(administradorInicial, "senha", "");
+        }
+    }
+
+    @Test
+    void v1CriaSchemaCompletoEDocumentosSeparados() {
+        String schema = "v1_" + java.util.UUID.randomUUID().toString().replace("-", "");
+        var flyway = Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("2");
+        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select nome from " + schema + ".tb_politicas_privacidade", String.class)).isEqualTo("Politica de Privacidade");
+        assertThat(jdbc.queryForObject("select concluida from " + schema + ".tb_inicializacao_administrador", Boolean.class)).isFalse();
+        assertThat(flyway.migrate().migrationsExecuted).isZero();
+    }
     @TestConfiguration
     static class MigracaoTeste {
         @Bean(initMethod = "migrate")

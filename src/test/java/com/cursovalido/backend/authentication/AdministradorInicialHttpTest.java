@@ -19,6 +19,7 @@ import org.springframework.web.client.RestClient;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "spring.datasource.url=jdbc:h2:mem:admin_inicio;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "aplicacao.admin.senha=SenhaAdminTeste123!",
+        "aplicacao.admin.email=primeiro-admin@example.com",
         "security.bcrypt.strength=10"
 })
 @ActiveProfiles("test")
@@ -30,14 +31,14 @@ class AdministradorInicialHttpTest {
 
     @Test
     void administradorCriadoNaInicializacaoAceitaSenhaConfigurada() {
-        var administrador = usuarios.findByEmail(AdministradorInicialServico.EMAIL).orElseThrow();
+        var administrador = usuarios.findByEmail("primeiro-admin@example.com").orElseThrow();
         assertEquals(Perfil.ADMINISTRADOR, administrador.getPerfil());
         assertTrue(senhas.matches("SenhaAdminTeste123!", administrador.getSenha()));
 
         var cliente = RestClient.builder().baseUrl("http://localhost:" + porta)
                 .defaultStatusHandler(status -> true, (requisicao, resposta) -> {}).build();
         var resposta = cliente.post().uri("/api/autenticacao/login")
-                .body(Map.of("email", AdministradorInicialServico.EMAIL, "senha", "SenhaAdminTeste123!"))
+                .body(Map.of("email", "primeiro-admin@example.com", "senha", "SenhaAdminTeste123!"))
                 .retrieve().toEntity(Map.class);
 
         assertEquals(403, resposta.getStatusCode().value());
