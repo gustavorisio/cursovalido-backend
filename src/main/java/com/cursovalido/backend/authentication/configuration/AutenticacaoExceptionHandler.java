@@ -6,6 +6,8 @@ import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoExcepti
 import com.cursovalido.backend.authentication.exception.EmailNaoConfirmadoException;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
 import com.cursovalido.backend.authentication.exception.TermosNaoAceitosException;
+import com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException;
+import org.springframework.http.ResponseEntity;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -13,9 +15,35 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @RestControllerAdvice(basePackages = "com.cursovalido.backend.authentication")
 public class AutenticacaoExceptionHandler {
+    @ExceptionHandler(com.cursovalido.backend.authentication.exception.BanimentoException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public RespostaCodigo2faErro banimento(com.cursovalido.backend.authentication.exception.BanimentoException excecao) {
+        return new RespostaCodigo2faErro(excecao.getReason(), "CONTA_SUSPENSA");
+    }
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<RespostaCodigo2faErro> operacaoRecusada(ResponseStatusException excecao) {
+        String motivo = excecao.getReason() == null ? "Operacao recusada" : excecao.getReason();
+        return ResponseEntity.status(excecao.getStatusCode()).headers(excecao.getHeaders())
+                .body(new RespostaCodigo2faErro(motivo, "OPERACAO_RECUSADA"));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public RespostaCodigo2faErro corpoInvalido(HttpMessageNotReadableException excecao) {
+        return new RespostaCodigo2faErro("Corpo JSON invalido. Verifique os campos e os valores informados.",
+                "JSON_INVALIDO");
+    }
+
+    @ExceptionHandler(ConviteAcessoInvalidoException.class)
+    public ResponseEntity<RespostaCodigo2faErro> conviteInvalido(ConviteAcessoInvalidoException excecao) {
+        return ResponseEntity.status(excecao.getStatus())
+                .body(new RespostaCodigo2faErro(excecao.getMessage(), excecao.getCodigo()));
+    }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> camposInvalidos(MethodArgumentNotValidException excecao) {

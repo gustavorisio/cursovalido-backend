@@ -13,6 +13,7 @@ public interface ConviteAcessoRepositorio extends JpaRepository<ConviteAcesso, L
     Optional<ConviteAcesso> findByTokenHash(String tokenHash);
 
     Optional<ConviteAcesso> findByEmail(String email);
+    void deleteByEmail(String email);
 
     List<ConviteAcesso> findByStatusOrderByCriadoEmAsc(StatusConvite status);
 }

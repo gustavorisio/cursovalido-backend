@@ -65,6 +65,14 @@ public class EmailServico {
                         + "O convite expira em 48 horas.");
     }
 
+    public void enviarExclusaoConta(Usuario usuario, String codigo) {
+        enviar(usuario.getEmail(), "Confirme a exclusao da sua conta",
+                "Seu codigo para excluir a conta e: " + codigo
+                + "\nO codigo expira em 10 minutos e so pode ser usado uma vez."
+                + "\nAo confirmar, sua conta sera excluida. Um novo cadastro com o mesmo e-mail ou CPF"
+                + " ficara bloqueado por 15 dias. As punicoes permanecem ate expirar ou serem revogadas.");
+    }
+
     private void enviar(String destinatario, String assunto, String conteudo) {
         if (chaveApi == null || chaveApi.isBlank())
             throw new IllegalStateException("RESEND_API_KEY nao configurada");

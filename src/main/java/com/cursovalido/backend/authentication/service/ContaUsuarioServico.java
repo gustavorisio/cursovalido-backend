@@ -9,6 +9,7 @@ import com.cursovalido.backend.authentication.repository.LogAuditoriaRepositorio
 import com.cursovalido.backend.authentication.repository.SessaoRepositorio;
 import com.cursovalido.backend.authentication.repository.TokenEmailRepositorio;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
+import com.cursovalido.backend.authentication.repository.ConviteAcessoRepositorio;
 import com.cursovalido.backend.forum.repository.ComentarioRepositorio;
 import com.cursovalido.backend.forum.repository.TopicoRepositorio;
 import com.cursovalido.backend.forum.repository.UsuarioForumRepositorio;
@@ -21,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ContaUsuarioServico {
     private final UsuarioRepositorio repositorio;
+    private final IdentidadeExcluidaServico identidades;
+    private final TokenEmailServico tokensEmail;
+    private final EmailServico emails;
     private final TokenEmailRepositorio repositorioTokens;
     private final LogAuditoriaRepositorio repositorioAuditoria;
     private final AceiteTermoArquivadoRepositorio repositorioAceitesArquivados;
@@ -28,6 +32,7 @@ public class ContaUsuarioServico {
     private final TopicoRepositorio topicos;
     private final UsuarioForumRepositorio usuariosForumRepositorio;
     private final SessaoRepositorio sessoes;
+    private final ConviteAcessoRepositorio convites;
 
     @Transactional(readOnly = true)
     public DadosPessoaisResposta consultarDados(Long idUsuario) {
@@ -55,9 +60,17 @@ public class ContaUsuarioServico {
 
     @Transactional
     // Remove a conta e trata os registros ligados ao usuario.
-    public void excluirConta(Long idUsuario) {
+    public void solicitarExclusao(Long idUsuario) {
+        Usuario usuario = repositorio.findById(idUsuario).orElseThrow();
+        emails.enviarExclusaoConta(usuario, tokensEmail.criarExclusao(usuario));
+    }
+
+    @Transactional
+    public void excluirConta(Long idUsuario, String codigo) {
+        tokensEmail.validarExclusao(idUsuario, codigo);
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
+        identidades.registrar(usuario);
         var topicosDoUsuario = topicos.findByIdAutor(idUsuario);
         for (var topico : topicosDoUsuario)
             comentarios.deleteByTopicoId(topico.getId());
@@ -65,6 +78,7 @@ public class ContaUsuarioServico {
         topicosDoUsuario.forEach(topico -> topicos.deleteById(topico.getId()));
         repositorioTokens.deleteByUsuarioId(idUsuario);
         sessoes.deleteByUsuarioId(idUsuario);
+        convites.deleteByEmail(usuario.getEmail());
         if (usuario.getVersaoTermos() != null && usuario.getDataHoraAceite() != null)
             repositorioAceitesArquivados.save(new AceiteTermoArquivado(
                 usuario.getId(), usuario.getVersaoTermos(), usuario.getDataHoraAceite(), "EXCLUSAO_CONTA"));

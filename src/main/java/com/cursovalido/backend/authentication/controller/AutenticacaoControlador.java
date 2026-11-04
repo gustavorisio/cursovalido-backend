@@ -122,9 +122,16 @@ public class AutenticacaoControlador {
         tokens.encerrar(autorizacao.substring(7));
     }
 
+    @PostMapping("/conta/solicitar-exclusao")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void solicitarExclusao(@AuthenticationPrincipal UsuarioAutenticado usuario) {
+        contaUsuarios.solicitarExclusao(usuario.getId());
+    }
+
     @DeleteMapping("/conta")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void excluirConta(@AuthenticationPrincipal UsuarioAutenticado usuario) {
-        contaUsuarios.excluirConta(usuario.getId());
+    public void excluirConta(@AuthenticationPrincipal UsuarioAutenticado usuario,
+            @Valid @RequestBody com.cursovalido.backend.authentication.dto.ExclusaoContaRequisicao requisicao) {
+        contaUsuarios.excluirConta(usuario.getId(), requisicao.codigo());
     }
 }

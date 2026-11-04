@@ -26,7 +26,7 @@ public class LimiteRequisicoesFiltro extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain cadeia)
             throws ServletException, IOException {
         String caminho = request.getRequestURI();
-        if ("POST".equals(request.getMethod())
+        if (("POST".equals(request.getMethod()) || "DELETE".equals(request.getMethod()))
                 && (caminho.startsWith("/api/autenticacao/") || caminho.startsWith("/api/convites/"))) {
             if (!permitir(request.getRemoteAddr() + ":" + caminho)) {
                 response.setHeader("Retry-After", "60");

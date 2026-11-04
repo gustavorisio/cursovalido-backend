@@ -49,4 +49,16 @@ public class ConviteAcesso {
         this.expiraEm = expiraEm;
         this.status = StatusConvite.PENDENTE;
     }
+
+    public void renovar(String novoTokenHash, LocalDateTime novaExpiracao) {
+        tokenHash = novoTokenHash;
+        expiraEm = novaExpiracao;
+        emailConfirmado = false;
+        status = StatusConvite.PENDENTE;
+    }
+
+    public void prepararNovoConvite(Perfil novoPerfil, String novoTokenHash, LocalDateTime novaExpiracao) {
+        perfil = novoPerfil;
+        renovar(novoTokenHash, novaExpiracao);
+    }
 }

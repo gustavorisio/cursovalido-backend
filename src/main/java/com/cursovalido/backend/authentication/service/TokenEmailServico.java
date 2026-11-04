@@ -91,6 +91,31 @@ public class TokenEmailServico {
                 usuario.getId(), CODIGO_2FA, LocalDateTime.now());
     }
 
+    @Transactional
+    public String criarExclusao(Usuario usuario) {
+        verificarLimite(usuario, "EXCLUSAO_CONTA");
+        repositorio.invalidarTokensAtivos(usuario.getId(), "EXCLUSAO_CONTA");
+        String codigo;
+        String protegido;
+        do {
+            codigo = String.format(Locale.ROOT, "%06d", aleatorio.nextInt(1_000_000));
+            protegido = hash("EXCLUSAO_CONTA:" + usuario.getId() + ":" + codigo);
+        } while (repositorio.existsByTokenHash(protegido));
+        repositorio.save(new TokenEmail(protegido, usuario, "EXCLUSAO_CONTA", LocalDateTime.now().plusMinutes(10)));
+        return codigo;
+    }
+
+    @Transactional
+    public void validarExclusao(Long idUsuario, String codigo) {
+        var registro = repositorio.findByTokenHashAndFinalidade(
+                hash("EXCLUSAO_CONTA:" + idUsuario + ":" + codigo), "EXCLUSAO_CONTA")
+                .filter(t -> t.getUsuario().getId().equals(idUsuario))
+                .filter(t -> !t.isUtilizado() && t.getExpiraEm().isAfter(LocalDateTime.now()))
+                .orElseThrow(() -> new IllegalArgumentException("Codigo invalido ou expirado"));
+        registro.setUtilizado(true);
+        repositorio.save(registro);
+    }
+
     private void verificarLimite(Usuario usuario, String finalidade) {
         if (repositorio.countByUsuarioIdAndFinalidadeAndCriadoEmAfter(
                 usuario.getId(), finalidade, LocalDateTime.now().minusMinutes(15)) >= 3)
