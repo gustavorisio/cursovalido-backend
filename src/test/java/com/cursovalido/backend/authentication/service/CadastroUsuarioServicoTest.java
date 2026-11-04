@@ -41,6 +41,8 @@ class CadastroUsuarioServicoTest {
     private EmailServico emails;
     @Mock
     private ValidacaoEmailServico validacaoEmail;
+    @Mock
+    private IdentidadeExcluidaServico identidades;
     @InjectMocks
     private CadastroUsuarioServico servico;
 
