@@ -1,21 +1,19 @@
 package com.cursovalido.backend.authentication.service;
 
+import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioDetalhesServico implements UserDetailsService {
-        @Autowired
-        private UsuarioRepositorio repositorio;
-
-        public UsuarioDetalhesServico() {
-        }
+        private final UsuarioRepositorio repositorio;
 
         @Override
         // Busca o usuario usado pelo Spring Security na autenticacao.
@@ -23,9 +21,10 @@ public class UsuarioDetalhesServico implements UserDetailsService {
                 Usuario usuario = repositorio.findByEmail(email)
                                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
                 return new UsuarioAutenticado(usuario.getId(), usuario.getEmail(), usuario.getSenha(),
-                                usuario.getPerfil().name(), usuario.isEmailConfirmado(),
-                                Boolean.TRUE.equals(usuario.getAceitouTermosLgpd()), usuario.isAtivo()
+                                usuario.getPerfil(), usuario.isEmailConfirmado(),
+                                Boolean.TRUE.equals(usuario.getAceitouTermosLgpd()),
+                                usuario.isAtivo()
                                                 && usuario
-                                                                .getStatusAprovacao() == com.cursovalido.backend.authentication.entity.StatusAprovacao.APROVADO);
+                                                                .getStatusAprovacao() == StatusAprovacao.APROVADO);
         }
 }

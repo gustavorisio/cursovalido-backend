@@ -1,10 +1,17 @@
 package com.cursovalido.backend.aulas;
 
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import com.cursovalido.backend.aulas.entity.Aula;
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.aulas.service.AlunoAulasService;
 import com.cursovalido.backend.aulas.service.YoutubeClient;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.cursovalido.backend.authentication.entity.*;
+import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import java.time.LocalDate;
@@ -19,15 +26,11 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import static org.mockito.Mockito.*;
-import static org.assertj.core.api.Assertions.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -122,7 +125,8 @@ class AulasIntegracaoTest {
     @ParameterizedTest
     @ValueSource(strings = { "ALUNO", "ADMINISTRADOR", "TERMOS_PENDENTES" })
     void impedirRotasParaOutrosPerfis(String perfil) throws Exception {
-        var principal = new UsuarioAutenticado(professor.getId(), "teste@example.com", "senha", perfil,
+        Perfil perfilUsuario = perfil.equals("TERMOS_PENDENTES") ? Perfil.ALUNO : Perfil.valueOf(perfil);
+        var principal = new UsuarioAutenticado(professor.getId(), "teste@example.com", "senha", perfilUsuario,
                 true, !perfil.equals("TERMOS_PENDENTES"), true);
         var acesso = authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
         for (String rota : new String[] { "/api/cursos", "/api/cursos/1/modulos", "/api/modulos/1/aulas", "/api/aulas/1" }) {
@@ -241,7 +245,7 @@ class AulasIntegracaoTest {
                 .andExpect(jsonPath("$[1].id").value(terceira)).andExpect(jsonPath("$[2].id").value(primeira));
         mvc.perform(delete("/api/aulas/" + segunda).with(comoProfessor(professor))).andExpect(status().isNoContent());
         assertThat(aulas.findByIdModuloAndAtivoTrueOrderByOrdemAscIdAsc(idModulo))
-                .extracting(com.cursovalido.backend.aulas.entity.Aula::getId).containsExactly(terceira, primeira);
+                .extracting(Aula::getId).containsExactly(terceira, primeira);
     }
 
     private long criarAulaComIdNovo(long idModulo) throws Exception {
@@ -249,7 +253,7 @@ class AulasIntegracaoTest {
                 .contentType(MediaType.APPLICATION_JSON).content(dadosAula("Outra", "https://youtu.be/M7lc1UVf-VE")))
                 .andExpect(status().isCreated());
         return aulas.findByIdModuloAndAtivoTrueOrderByOrdemAscIdAsc(idModulo).stream()
-                .mapToLong(com.cursovalido.backend.aulas.entity.Aula::getId).max().orElseThrow();
+                .mapToLong(Aula::getId).max().orElseThrow();
     }
 
     @Test
@@ -448,8 +452,57 @@ class AulasIntegracaoTest {
                 .andExpect(jsonPath("$.posicaoSegundos").value(0));
     }
 
+    @Test
+    void administradorConsultaCursosEAulasSemMatricula() throws Exception {
+        long idModulo = prepararModulo();
+        long idAula = criarAula(idModulo);
+        long idCurso = modulos.findById(idModulo).orElseThrow().getIdCurso();
+        Usuario administrador = criarProfessor("adminLeitura");
+        administrador.setPerfil(Perfil.ADMINISTRADOR);
+        usuarios.saveAndFlush(administrador);
+        var principal = new UsuarioAutenticado(administrador.getId(), administrador.getEmail(), "senha",
+                Perfil.ADMINISTRADOR, true, true, true);
+        var acesso = authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+        mvc.perform(get("/api/administracao/cursos").with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(idCurso));
+        mvc.perform(get("/api/administracao/cursos/" + idCurso).with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(idCurso));
+        mvc.perform(get("/api/administracao/cursos/" + idCurso + "/modulos").with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(idModulo));
+        mvc.perform(get("/api/administracao/modulos/" + idModulo + "/aulas").with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].id").value(idAula));
+        mvc.perform(get("/api/administracao/aulas/" + idAula).with(acesso))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.youtubeVideoId").value("M7lc1UVf-VE"));
+        assertThat(matriculas.count()).isZero();
+        assertThat(progressos.count()).isZero();
+        mvc.perform(post("/api/cursos").with(acesso).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(put("/api/aulas/" + idAula).with(acesso).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(delete("/api/aulas/" + idAula).with(acesso)).andExpect(status().isForbidden());
+        mvc.perform(post("/api/aluno/aulas/" + idAula + "/conclusao").with(acesso)).andExpect(status().isForbidden());
+        mvc.perform(delete("/api/modulos/" + idModulo).with(comoProfessor(professor))).andExpect(status().isNoContent());
+        mvc.perform(get("/api/administracao/aulas/" + idAula).with(acesso)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void leituraAdministrativaExigeAdministradorAtivoEAutenticado() throws Exception {
+        mvc.perform(get("/api/administracao/cursos")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/administracao/cursos").with(comoProfessor(professor))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/administracao/cursos").with(comoAluno(criarAluno()))).andExpect(status().isForbidden());
+        Usuario administrador = criarProfessor("adminInativo");
+        administrador.setPerfil(Perfil.ADMINISTRADOR);
+        administrador.setAtivo(false);
+        usuarios.saveAndFlush(administrador);
+        var principal = new UsuarioAutenticado(administrador.getId(), administrador.getEmail(), "senha",
+                Perfil.ADMINISTRADOR, true, true, true);
+        var acesso = authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+        mvc.perform(get("/api/administracao/cursos").with(acesso)).andExpect(status().isForbidden());
+    }
+
+
     private RequestPostProcessor comoAluno(Usuario usuario) {
-        var principal = new UsuarioAutenticado(usuario.getId(), usuario.getEmail(), "senha", "ALUNO", true, true, true);
+        var principal = new UsuarioAutenticado(usuario.getId(), usuario.getEmail(), "senha", Perfil.ALUNO, true, true, true);
         return authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
     }
 
@@ -465,7 +518,7 @@ class AulasIntegracaoTest {
     }
 
     private RequestPostProcessor comoProfessor(Usuario usuario) {
-        var principal = new UsuarioAutenticado(usuario.getId(), usuario.getEmail(), "senha", "PROFESSOR", true, true, true);
+        var principal = new UsuarioAutenticado(usuario.getId(), usuario.getEmail(), "senha", Perfil.PROFESSOR, true, true, true);
         return authentication(new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
     }
 

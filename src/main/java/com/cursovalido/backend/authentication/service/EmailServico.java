@@ -1,14 +1,14 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.entity.ConviteAcesso;
+import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestClient;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Service
 public class EmailServico {
@@ -65,6 +65,14 @@ public class EmailServico {
                         + "O convite expira em 48 horas.");
     }
 
+    public void enviarExclusaoConta(Usuario usuario, String codigo) {
+        enviar(usuario.getEmail(), "Confirme a exclusao da sua conta",
+                "Seu codigo para excluir a conta e: " + codigo
+                + "\nO codigo expira em 10 minutos e so pode ser usado uma vez."
+                + "\nAo confirmar, sua conta sera excluida. Um novo cadastro com o mesmo e-mail ou CPF"
+                + " ficara bloqueado por 15 dias. As punicoes permanecem ate expirar ou serem revogadas.");
+    }
+
     private void enviar(String destinatario, String assunto, String conteudo) {
         if (chaveApi == null || chaveApi.isBlank())
             throw new IllegalStateException("RESEND_API_KEY nao configurada");
@@ -75,7 +83,7 @@ public class EmailServico {
                     .body(new EmailRequisicao(enderecoRemetente, List.of(destinatario), assunto, conteudo))
                     .retrieve()
                     .toBodilessEntity();
-        } catch (RestClientResponseException excecao) {
+        } catch (RestClientException excecao) {
             throw new ServicoEmailIndisponivelException();
         }
     }

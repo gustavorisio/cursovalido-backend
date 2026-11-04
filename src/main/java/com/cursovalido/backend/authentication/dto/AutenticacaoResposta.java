@@ -1,5 +1,7 @@
 package com.cursovalido.backend.authentication.dto;
 
-public record AutenticacaoResposta(String token, Long idUsuario, String nome, String perfil,
+import com.cursovalido.backend.authentication.entity.Perfil;
+
+public record AutenticacaoResposta(String token, Long idUsuario, String nome, Perfil perfil,
 		boolean requerCodigo2fa) {
 }

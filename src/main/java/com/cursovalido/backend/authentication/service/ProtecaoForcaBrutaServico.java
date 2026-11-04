@@ -19,6 +19,10 @@ public class ProtecaoForcaBrutaServico {
         Tentativa tentativa = tentativas.get(identificador);
         if (tentativa == null)
             return;
+        if (tentativa.ultimaFalha.plusMinutes(MINUTOS_BLOQUEIO).isBefore(LocalDateTime.now())) {
+            tentativas.remove(identificador);
+            return;
+        }
 
         if (tentativa.bloqueadoAte != null) {
             if (tentativa.bloqueadoAte.isAfter(LocalDateTime.now()))
@@ -32,10 +36,13 @@ public class ProtecaoForcaBrutaServico {
 
     // Registra uma falha e bloqueia apos muitas tentativas.
     public void registrarFalha(String identificador) {
+        tentativas.entrySet().removeIf(item -> item.getValue().ultimaFalha
+                .plusMinutes(MINUTOS_BLOQUEIO).isBefore(LocalDateTime.now()));
         tentativas.compute(identificador, (chave, tentativa) -> {
             if (tentativa == null)
                 tentativa = new Tentativa();
             tentativa.falhas++;
+            tentativa.ultimaFalha = LocalDateTime.now();
             if (tentativa.falhas >= LIMITE_TENTATIVAS)
                 tentativa.bloqueadoAte = LocalDateTime.now().plusMinutes(MINUTOS_BLOQUEIO);
             return tentativa;
@@ -59,5 +66,6 @@ public class ProtecaoForcaBrutaServico {
     private static class Tentativa {
         private int falhas;
         private LocalDateTime bloqueadoAte;
+        private LocalDateTime ultimaFalha = LocalDateTime.now();
     }
 }

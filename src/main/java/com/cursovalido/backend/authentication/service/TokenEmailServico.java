@@ -2,35 +2,29 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.entity.TokenEmail;
 import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.repository.TokenEmailRepositorio;
 import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoException;
+import com.cursovalido.backend.authentication.exception.LimiteReenvioException;
+import com.cursovalido.backend.authentication.repository.TokenEmailRepositorio;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Locale;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
+@RequiredArgsConstructor
 public class TokenEmailServico {
     private static final String CONFIRMACAO_CADASTRO = "CONFIRMACAO_CADASTRO";
     private static final String ALTERACAO_SENHA = "ALTERACAO_SENHA";
     private static final String CODIGO_2FA = "CODIGO_2FA";
 
-    @Autowired
-    private TokenEmailRepositorio repositorio;
+    private final TokenEmailRepositorio repositorio;
     private final SecureRandom aleatorio = new SecureRandom();
-
-    @Autowired
-    public TokenEmailServico() {
-    }
-
-    public TokenEmailServico(TokenEmailRepositorio repositorio) {
-        this.repositorio = repositorio;
-    }
 
     @Transactional
     // Cria o token de confirmacao do cadastro.
@@ -54,9 +48,15 @@ public class TokenEmailServico {
     @Transactional
     // Gera um novo codigo de 2FA e invalida o anterior.
     public String criarCodigo2fa(Usuario usuario) {
+        verificarLimite(usuario, CODIGO_2FA);
         repositorio.invalidarTokensAtivos(usuario.getId(), CODIGO_2FA);
-        String codigo = String.format("%06d", aleatorio.nextInt(1_000_000));
-        repositorio.save(new TokenEmail(hash(codigo), usuario, CODIGO_2FA,
+        String codigo;
+        String hashCodigo;
+        do {
+            codigo = String.format(Locale.ROOT, "%06d", aleatorio.nextInt(1_000_000));
+            hashCodigo = hash(usuario.getEmail().toLowerCase(Locale.ROOT) + ":" + codigo);
+        } while (repositorio.existsByTokenHash(hashCodigo));
+        repositorio.save(new TokenEmail(hashCodigo, usuario, CODIGO_2FA,
                 LocalDateTime.now().plusMinutes(10)));
         return codigo;
     }
@@ -64,7 +64,8 @@ public class TokenEmailServico {
     @Transactional
     // Confere o codigo 2FA e marca o token como usado.
     public Usuario validarCodigo2fa(String email, String codigo) {
-        TokenEmail registro = repositorio.findByTokenHashAndFinalidade(hash(codigo), CODIGO_2FA)
+        TokenEmail registro = repositorio.findByTokenHashAndFinalidade(
+                hash(email.toLowerCase(Locale.ROOT) + ":" + codigo), CODIGO_2FA)
                 .filter(token -> token.getUsuario().getEmail().equalsIgnoreCase(email))
                 .orElseThrow(() -> new IllegalArgumentException("Codigo invalido ou expirado"));
         if (registro.isUtilizado())
@@ -80,10 +81,54 @@ public class TokenEmailServico {
     @Transactional
     // Cria o token usado na alteracao de senha.
     public String criarAlteracaoSenha(Usuario usuario) {
+        verificarLimite(usuario, ALTERACAO_SENHA);
+        repositorio.invalidarTokensAtivos(usuario.getId(), ALTERACAO_SENHA);
         return criar(usuario, ALTERACAO_SENHA, 0.5);
     }
 
+    public boolean temCodigo2faPendente(Usuario usuario) {
+        return repositorio.existsByUsuarioIdAndFinalidadeAndUtilizadoFalseAndExpiraEmAfter(
+                usuario.getId(), CODIGO_2FA, LocalDateTime.now());
+    }
+
     @Transactional
+    public String criarExclusao(Usuario usuario) {
+        verificarLimite(usuario, "EXCLUSAO_CONTA");
+        repositorio.invalidarTokensAtivos(usuario.getId(), "EXCLUSAO_CONTA");
+        String codigo;
+        String protegido;
+        do {
+            codigo = String.format(Locale.ROOT, "%06d", aleatorio.nextInt(1_000_000));
+            protegido = hash("EXCLUSAO_CONTA:" + usuario.getId() + ":" + codigo);
+        } while (repositorio.existsByTokenHash(protegido));
+        repositorio.save(new TokenEmail(protegido, usuario, "EXCLUSAO_CONTA", LocalDateTime.now().plusMinutes(10)));
+        return codigo;
+    }
+
+    @Transactional
+    public void validarExclusao(Long idUsuario, String codigo) {
+        var registro = repositorio.findByTokenHashAndFinalidade(
+                hash("EXCLUSAO_CONTA:" + idUsuario + ":" + codigo), "EXCLUSAO_CONTA")
+                .filter(t -> t.getUsuario().getId().equals(idUsuario))
+                .filter(t -> !t.isUtilizado() && t.getExpiraEm().isAfter(LocalDateTime.now()))
+                .orElseThrow(() -> new IllegalArgumentException("Codigo invalido ou expirado"));
+        registro.setUtilizado(true);
+        repositorio.save(registro);
+    }
+
+    private void verificarLimite(Usuario usuario, String finalidade) {
+        if (repositorio.countByUsuarioIdAndFinalidadeAndCriadoEmAfter(
+                usuario.getId(), finalidade, LocalDateTime.now().minusMinutes(15)) >= 3)
+            throw new LimiteReenvioException();
+    }
+
+    @Transactional
+    public void invalidarAcessos(Usuario usuario) {
+        repositorio.invalidarTokensAtivos(usuario.getId(), CODIGO_2FA);
+        repositorio.invalidarTokensAtivos(usuario.getId(), ALTERACAO_SENHA);
+    }
+
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     // Valida um token de e-mail e marca seu uso.
     public TokenEmail validar(String token, String finalidade) {
         TokenEmail registro = repositorio.findByTokenHashAndFinalidade(hash(token), finalidade)

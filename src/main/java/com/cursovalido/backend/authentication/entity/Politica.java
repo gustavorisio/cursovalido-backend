@@ -2,9 +2,15 @@ package com.cursovalido.backend.authentication.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "tb_politicas")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Politica {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,12 +22,10 @@ public class Politica {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String conteudo;
     @Column(nullable = false)
+    @Setter
     private boolean ativa;
     @Column(name = "data_publicacao", nullable = false)
     private LocalDateTime dataPublicacao;
-
-    protected Politica() {
-    }
 
     public Politica(String nome, String versao, String conteudo) {
         this.nome = nome;
@@ -29,29 +33,5 @@ public class Politica {
         this.conteudo = conteudo;
         this.ativa = true;
         this.dataPublicacao = LocalDateTime.now();
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public String getVersao() {
-        return versao;
-    }
-
-    public String getConteudo() {
-        return conteudo;
-    }
-
-    public boolean isAtiva() {
-        return ativa;
-    }
-
-    public LocalDateTime getDataPublicacao() {
-        return dataPublicacao;
-    }
-
-    public void setAtiva(boolean valor) {
-        ativa = valor;
     }
 }

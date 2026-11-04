@@ -14,39 +14,37 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CadastroUsuarioServico {
     private static final int MENOR_RA = 10000000;
     private static final int MAIOR_RA = 100000000;
 
-    @Autowired
-    private UsuarioRepositorio repositorio;
-    @Autowired
-    private PasswordEncoder codificadorSenha;
-    @Autowired
-    private LogAuditoriaServico auditoria;
-    @Autowired
-    private UsuarioForumServico usuariosForum;
-    @Autowired
-    private PoliticaServico politicas;
-    @Autowired
-    private TokenEmailServico tokensEmail;
-    @Autowired
-    private EmailServico emails;
+    private final UsuarioRepositorio repositorio;
+    private final PasswordEncoder codificadorSenha;
+    private final LogAuditoriaServico auditoria;
+    private final UsuarioForumServico usuariosForum;
+    private final PoliticaServico politicas;
+    private final TokenEmailServico tokensEmail;
+    private final EmailServico emails;
+    private final ValidacaoEmailServico validacaoEmail;
+    private final IdentidadeExcluidaServico identidades;
     private final SecureRandom geradorRa = new SecureRandom();
 
     @Transactional
     // Cria uma conta de aluno e envia a confirmacao de e-mail.
     public Usuario cadastrar(CadastroUsuarioRequisicao requisicao, String enderecoIp) {
+        validacaoEmail.validar(requisicao.email());
+        identidades.verificarCadastro(requisicao.email(), requisicao.cpf());
         if (!politicas.versaoAtiva(requisicao.versaoTermos()))
             throw new TermosNaoDisponiveisException();
         if (Period.between(requisicao.dataNascimento(), LocalDate.now()).getYears() < 18) {
-            auditoria.registrar(null, "TENTATIVA_CADASTRO_MENOR_IDADE", requisicao.email(), enderecoIp);
+            auditoria.registrar(null, "TENTATIVA_CADASTRO_MENOR_IDADE", "Maioridade nao atendida", enderecoIp);
             throw new MenorDeIdadeException();
         }
         if (repositorio.existsByEmail(requisicao.email()))

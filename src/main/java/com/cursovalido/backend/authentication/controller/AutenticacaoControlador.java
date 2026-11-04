@@ -1,39 +1,66 @@
 package com.cursovalido.backend.authentication.controller;
 
+import com.cursovalido.backend.authentication.dto.AceiteTermosRequisicao;
+import com.cursovalido.backend.authentication.dto.AlteracaoSenhaRequisicao;
 import com.cursovalido.backend.authentication.dto.AutenticacaoResposta;
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequisicao;
+import com.cursovalido.backend.authentication.dto.Codigo2faRequisicao;
+import com.cursovalido.backend.authentication.dto.DadosPessoaisResposta;
+import com.cursovalido.backend.authentication.dto.EmailRequisicao;
 import com.cursovalido.backend.authentication.dto.LoginRequisicao;
 import com.cursovalido.backend.authentication.dto.TokenEmailRequisicao;
-import com.cursovalido.backend.authentication.dto.EmailRequisicao;
-import com.cursovalido.backend.authentication.dto.AlteracaoSenhaRequisicao;
-import com.cursovalido.backend.authentication.dto.AceiteTermosRequisicao;
-import com.cursovalido.backend.authentication.dto.Codigo2faRequisicao;
+import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.AutenticacaoServico;
 import com.cursovalido.backend.authentication.service.CadastroUsuarioServico;
 import com.cursovalido.backend.authentication.service.ContaUsuarioServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
 import com.cursovalido.backend.authentication.service.SenhaUsuarioServico;
 import com.cursovalido.backend.authentication.service.TermosUsuarioServico;
-import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import com.cursovalido.backend.authentication.service.TokenJwtServico;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/autenticacao")
+@RequiredArgsConstructor
 public class AutenticacaoControlador {
-    @Autowired
-    private CadastroUsuarioServico cadastroUsuarios;
-    @Autowired
-    private SenhaUsuarioServico senhasUsuarios;
-    @Autowired
-    private TermosUsuarioServico termosUsuarios;
-    @Autowired
-    private ContaUsuarioServico contaUsuarios;
-    @Autowired
-    private AutenticacaoServico autenticacao;
+    private final CadastroUsuarioServico cadastroUsuarios;
+    private final SenhaUsuarioServico senhasUsuarios;
+    private final TermosUsuarioServico termosUsuarios;
+    private final ContaUsuarioServico contaUsuarios;
+    private final AutenticacaoServico autenticacao;
+    private final TokenJwtServico tokens;
+    private final LogAuditoriaServico auditoria;
+
+    @GetMapping("/meus-dados")
+    public DadosPessoaisResposta meusDados(
+            @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return contaUsuarios.consultarDados(usuario.getId());
+    }
+
+    @GetMapping("/exportar-dados")
+    public ResponseEntity<DadosPessoaisResposta> exportarDados(
+            @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        var dados = contaUsuarios.consultarDados(usuario.getId());
+        auditoria.registrar(usuario.getId(), "EXPORTACAO_DADOS", "Dados de cadastro exportados", null);
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=meus-dados.json")
+                .header("Cache-Control", "no-store")
+                .body(dados);
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@RequestHeader("Authorization") String autorizacao,
+            @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        tokens.encerrar(autorizacao.substring(7));
+        auditoria.registrar(usuario.getId(), "LOGOUT", "Sessao encerrada", null);
+    }
 
     @PostMapping("/cadastro")
     @ResponseStatus(HttpStatus.CREATED)
@@ -89,13 +116,22 @@ public class AutenticacaoControlador {
     @PostMapping("/aceitar-termos-novamente")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void aceitarTermosNovamente(@AuthenticationPrincipal UsuarioAutenticado usuario,
+            @RequestHeader("Authorization") String autorizacao,
             @Valid @RequestBody AceiteTermosRequisicao requisicao) {
         termosUsuarios.aceitarTermosNovamente(usuario.getId(), requisicao.versaoTermos());
+        tokens.encerrar(autorizacao.substring(7));
+    }
+
+    @PostMapping("/conta/solicitar-exclusao")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void solicitarExclusao(@AuthenticationPrincipal UsuarioAutenticado usuario) {
+        contaUsuarios.solicitarExclusao(usuario.getId());
     }
 
     @DeleteMapping("/conta")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void excluirConta(@AuthenticationPrincipal UsuarioAutenticado usuario) {
-        contaUsuarios.excluirConta(usuario.getId());
+    public void excluirConta(@AuthenticationPrincipal UsuarioAutenticado usuario,
+            @Valid @RequestBody com.cursovalido.backend.authentication.dto.ExclusaoContaRequisicao requisicao) {
+        contaUsuarios.excluirConta(usuario.getId(), requisicao.codigo());
     }
 }

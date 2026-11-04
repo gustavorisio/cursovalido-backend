@@ -36,31 +36,48 @@ CREATE INDEX idx_tb_comments_topic_id ON tb_comments (topic_id);
 
 CREATE TABLE tb_usuarios (
     id BIGSERIAL NOT NULL,
-    nome_completo VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    nome_completo VARCHAR(120) NOT NULL,
+    email VARCHAR(254) NOT NULL,
     senha VARCHAR(60) NOT NULL,
-    cpf VARCHAR(11) NOT NULL,
-    data_nascimento DATE NOT NULL,
-    telefone VARCHAR(30) NOT NULL,
+    cpf VARCHAR(52),
+    cpf_hash VARCHAR(64),
+    data_nascimento DATE,
+    telefone VARCHAR(64),
     matricula VARCHAR(50) NOT NULL,
-    cep VARCHAR(512) NOT NULL,
-    logradouro VARCHAR(512) NOT NULL,
-    bairro VARCHAR(512) NOT NULL,
-    cidade VARCHAR(512) NOT NULL,
-    estado VARCHAR(512) NOT NULL,
+    cep VARCHAR(48),
+    logradouro VARCHAR(440),
+    bairro VARCHAR(280),
+    cidade VARCHAR(360),
+    estado VARCHAR(44),
     declarou_maior_idade BOOLEAN NOT NULL,
     aceitou_termos_lgpd BOOLEAN NOT NULL,
-    data_hora_aceite TIMESTAMP NOT NULL,
-    versao_termos VARCHAR(30) NOT NULL,
+    data_hora_aceite TIMESTAMP,
+    versao_termos VARCHAR(30),
     perfil VARCHAR(30) NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     email_confirmado BOOLEAN NOT NULL DEFAULT FALSE,
     status_aprovacao VARCHAR(20) NOT NULL DEFAULT 'APROVADO',
     CONSTRAINT pk_tb_usuarios PRIMARY KEY (id),
     CONSTRAINT uk_tb_usuarios_email UNIQUE (email),
-    CONSTRAINT uk_tb_usuarios_cpf UNIQUE (cpf),
-    CONSTRAINT uk_tb_usuarios_matricula UNIQUE (matricula)
+    CONSTRAINT uk_tb_usuarios_cpf UNIQUE (cpf_hash),
+    CONSTRAINT uk_tb_usuarios_matricula UNIQUE (matricula),
+    CONSTRAINT ck_tb_usuarios_dados_cadastro CHECK (
+        perfil = 'ADMINISTRADOR' OR (
+            cpf IS NOT NULL AND cpf_hash IS NOT NULL AND data_nascimento IS NOT NULL AND telefone IS NOT NULL
+            AND cep IS NOT NULL AND logradouro IS NOT NULL AND bairro IS NOT NULL
+            AND cidade IS NOT NULL AND estado IS NOT NULL
+            AND data_hora_aceite IS NOT NULL AND versao_termos IS NOT NULL
+        )
+    )
 );
+
+CREATE TABLE tb_sessoes (
+    id VARCHAR(36) PRIMARY KEY,
+    usuario_id BIGINT NOT NULL REFERENCES tb_usuarios(id),
+    expira_em TIMESTAMP NOT NULL,
+    revogada BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE INDEX idx_tb_sessoes_usuario ON tb_sessoes(usuario_id);
 
 CREATE TABLE tb_logs_auditoria (
     id BIGSERIAL NOT NULL,
@@ -158,8 +175,109 @@ VALUES
     <h2>10. Direitos e contato</h2>
     <p>O usuario pode exercer os direitos descritos neste Termo e solicitar esclarecimentos a administracao do Curso Valido pelo canal oficial da instituicao.</p>
 </body>
-</html>$$, TRUE, CURRENT_TIMESTAMP),
-    ('Politica de Privacidade', '1.0', $$<!DOCTYPE html>
+</html>$$, TRUE, CURRENT_TIMESTAMP);
+
+CREATE TABLE tb_cursos (
+    id BIGSERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    descricao VARCHAR(5000) NOT NULL,
+    professor_id BIGINT REFERENCES tb_usuarios(id) ON DELETE SET NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP NOT NULL
+);
+CREATE TABLE tb_modulos (
+    id BIGSERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    descricao VARCHAR(5000) NOT NULL,
+    curso_id BIGINT NOT NULL REFERENCES tb_cursos(id),
+    ordem INTEGER NOT NULL CHECK (ordem > 0),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP NOT NULL
+);
+CREATE TABLE tb_aulas (
+    id BIGSERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    descricao VARCHAR(5000) NOT NULL,
+    modulo_id BIGINT NOT NULL REFERENCES tb_modulos(id),
+    ordem INTEGER NOT NULL CHECK (ordem > 0),
+    youtube_video_id VARCHAR(11) NOT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP NOT NULL
+);
+CREATE INDEX idx_cursos_professor ON tb_cursos(professor_id);
+CREATE INDEX idx_modulos_curso_ordem ON tb_modulos(curso_id, ordem, id);
+CREATE INDEX idx_aulas_modulo_ordem ON tb_aulas(modulo_id, ordem, id);
+
+CREATE TABLE tb_matriculas (
+    id BIGSERIAL PRIMARY KEY,
+    aluno_id BIGINT NOT NULL REFERENCES tb_usuarios(id) ON DELETE CASCADE,
+    curso_id BIGINT NOT NULL REFERENCES tb_cursos(id),
+    matriculado_em TIMESTAMP NOT NULL,
+    CONSTRAINT uk_matricula_aluno_curso UNIQUE (aluno_id, curso_id)
+);
+CREATE INDEX idx_matriculas_curso ON tb_matriculas(curso_id);
+
+CREATE TABLE tb_progresso_aulas (
+    id BIGSERIAL PRIMARY KEY,
+    matricula_id BIGINT NOT NULL REFERENCES tb_matriculas(id) ON DELETE CASCADE,
+    aula_id BIGINT NOT NULL REFERENCES tb_aulas(id) ON DELETE CASCADE,
+    posicao_segundos BIGINT NOT NULL DEFAULT 0 CHECK (posicao_segundos >= 0),
+    concluida BOOLEAN NOT NULL DEFAULT FALSE,
+    concluida_em TIMESTAMP,
+    atualizado_em TIMESTAMP NOT NULL,
+    CONSTRAINT uk_progresso_matricula_aula UNIQUE (matricula_id, aula_id)
+);
+CREATE INDEX idx_progresso_aula ON tb_progresso_aulas(aula_id);
+
+CREATE TABLE tb_contas_excluidas (
+    id BIGINT PRIMARY KEY,
+    email_hash VARCHAR(64) NOT NULL,
+    cpf_hash VARCHAR(64),
+    bloqueada_ate TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX idx_contas_excluidas_email ON tb_contas_excluidas(email_hash);
+CREATE INDEX idx_contas_excluidas_cpf ON tb_contas_excluidas(cpf_hash);
+
+CREATE TABLE tb_suspensoes_usuarios (
+    id BIGSERIAL PRIMARY KEY,
+    -- Sem chave estrangeira para preservar as punicoes apos a exclusao da conta.
+    id_usuario BIGINT NOT NULL,
+    id_administrador BIGINT REFERENCES tb_usuarios(id) ON DELETE SET NULL,
+    escopo VARCHAR(20) NOT NULL CHECK (escopo IN ('CONTA', 'FORUM', 'TOPICOS', 'COMENTARIOS')),
+    motivo VARCHAR(1000) NOT NULL,
+    criada_em TIMESTAMP WITH TIME ZONE NOT NULL,
+    expira_em TIMESTAMP WITH TIME ZONE,
+    revogada_em TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX idx_suspensoes_usuario ON tb_suspensoes_usuarios(id_usuario) WHERE revogada_em IS NULL;
+
+CREATE TABLE tb_inicializacao_administrador (
+    id BIGINT PRIMARY KEY CHECK (id = 1),
+    concluida BOOLEAN NOT NULL DEFAULT FALSE,
+    id_usuario BIGINT UNIQUE REFERENCES tb_usuarios(id) ON DELETE SET NULL,
+    concluida_em TIMESTAMP WITH TIME ZONE
+);
+
+INSERT INTO tb_inicializacao_administrador (id, concluida) VALUES (1, FALSE);
+
+-- Preserva o administrador principal das versoes anteriores, sem mudar sua senha.
+UPDATE tb_inicializacao_administrador
+SET concluida = TRUE,
+    id_usuario = (SELECT id FROM tb_usuarios WHERE LOWER(email) = 'cursovalido@gmail.com' AND perfil = 'ADMINISTRADOR'),
+    concluida_em = CURRENT_TIMESTAMP
+WHERE EXISTS (SELECT 1 FROM tb_usuarios WHERE perfil = 'ADMINISTRADOR');
+
+CREATE TABLE tb_politicas_privacidade (
+    id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    versao VARCHAR(30) NOT NULL UNIQUE,
+    conteudo TEXT NOT NULL,
+    ativa BOOLEAN NOT NULL,
+    data_publicacao TIMESTAMP NOT NULL
+);
+
+INSERT INTO tb_politicas_privacidade (nome, versao, conteudo, ativa, data_publicacao)
+VALUES ('Politica de Privacidade', '1.0', $$<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">

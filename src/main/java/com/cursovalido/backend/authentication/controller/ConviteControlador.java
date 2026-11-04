@@ -4,15 +4,15 @@ import com.cursovalido.backend.authentication.dto.ConviteCadastroRequisicao;
 import com.cursovalido.backend.authentication.dto.TokenEmailRequisicao;
 import com.cursovalido.backend.authentication.service.ConviteAcessoServico;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @RestController
 @RequestMapping("/api/convites")
+@RequiredArgsConstructor
 public class ConviteControlador {
-    @Autowired
-    private ConviteAcessoServico convites;
+    private final ConviteAcessoServico convites;
 
     @PostMapping("/confirmar-email")
     @ResponseStatus(HttpStatus.NO_CONTENT)

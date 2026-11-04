@@ -2,6 +2,8 @@ package com.cursovalido.backend.forum.controller;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.forum.dto.*;
 import com.cursovalido.backend.forum.entity.*;
@@ -30,7 +32,7 @@ class ControladorForumTest {
 
     @BeforeEach
     void prepararDados() {
-        principal = new UsuarioAutenticado(7L, "autor@example.com", "senha", "ALUNO", true, true, true);
+        principal = new UsuarioAutenticado(7L, "autor@example.com", "senha", Perfil.ALUNO, true, true, true);
         autor = new UsuarioForum(7L, "Autor", "autor@example.com", "ALUNO");
         topico = new Topico();
         topico.setId(10L);

@@ -2,9 +2,15 @@ package com.cursovalido.backend.authentication.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "tb_logs_auditoria")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class LogAuditoria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,14 +23,12 @@ public class LogAuditoria {
     @Column(name = "endereco_ip")
     private String enderecoIp;
     @Column(name = "data_hora", nullable = false)
+    @Setter
     private LocalDateTime dataHora;
     @Column(name = "hash_anterior", length = 64)
     private String hashAnterior;
     @Column(length = 64)
     private String assinatura;
-
-    protected LogAuditoria() {
-    }
 
     public LogAuditoria(Long usuarioId, String tipoAcao, String detalhes, String enderecoIp,
             String hashAnterior, String assinatura) {
@@ -35,38 +39,6 @@ public class LogAuditoria {
         this.dataHora = LocalDateTime.now();
         this.hashAnterior = hashAnterior;
         this.assinatura = assinatura;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Long getUsuarioId() {
-        return usuarioId;
-    }
-
-    public String getTipoAcao() {
-        return tipoAcao;
-    }
-
-    public String getDetalhes() {
-        return detalhes;
-    }
-
-    public String getEnderecoIp() {
-        return enderecoIp;
-    }
-
-    public LocalDateTime getDataHora() {
-        return dataHora;
-    }
-
-    public String getHashAnterior() {
-        return hashAnterior;
-    }
-
-    public String getAssinatura() {
-        return assinatura;
     }
 
     public void proteger(String hashAnterior, String assinatura) {

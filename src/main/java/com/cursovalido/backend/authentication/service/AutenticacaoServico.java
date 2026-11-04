@@ -2,37 +2,45 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.dto.AutenticacaoResposta;
 import com.cursovalido.backend.authentication.dto.LoginRequisicao;
+import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.Usuario;
+import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
+import com.cursovalido.backend.authentication.exception.AcessoRejeitadoException;
+import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoException;
+import com.cursovalido.backend.authentication.exception.CredenciaisInvalidasException;
+import com.cursovalido.backend.authentication.exception.EmailNaoConfirmadoException;
+import com.cursovalido.backend.authentication.exception.PendenteAprovacaoException;
+import com.cursovalido.backend.authentication.exception.TermosNaoAceitosException;
 import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
 import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import java.util.Locale;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import com.cursovalido.backend.authentication.exception.CredenciaisInvalidasException;
-import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoException;
-import com.cursovalido.backend.authentication.exception.TermosNaoAceitosException;
-import com.cursovalido.backend.authentication.exception.PendenteAprovacaoException;
-import com.cursovalido.backend.authentication.exception.AcessoRejeitadoException;
-import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@RequiredArgsConstructor
 public class AutenticacaoServico {
-    @Autowired
-    private UsuarioRepositorio repositorio;
-    @Autowired
-    private TokenJwtServico tokens;
-    @Autowired
-    private TokenEmailServico tokensEmail;
-    @Autowired
-    private EmailServico emails;
-    @Autowired
-    private PasswordEncoder codificadorSenha;
-    @Autowired
-    private LogAuditoriaServico auditoria;
-    @Autowired
-    private UsuarioForumServico usuariosForum;
-    @Autowired
-    private ProtecaoForcaBrutaServico protecaoForcaBruta;
+    private final UsuarioRepositorio repositorio;
+    private final TokenJwtServico tokens;
+    private final TokenEmailServico tokensEmail;
+    private final EmailServico emails;
+    private final PasswordEncoder codificadorSenha;
+    private final LogAuditoriaServico auditoria;
+    private final UsuarioForumServico usuariosForum;
+    private final ProtecaoForcaBrutaServico protecaoForcaBruta;
+    private final ModeracaoUsuarioServico moderacao;
+    private final PoliticaServico politicas;
+    private final PrivacidadeServico privacidade;
+
+    private boolean aceiteAtualizado(Usuario usuario) {
+        return Boolean.TRUE.equals(usuario.getAceitouTermosLgpd())
+            && politicas.versaoAtiva(usuario.getVersaoTermos())
+            && !privacidade.atualizadaDesde(usuario.getDataHoraAceite());
+    }
+
 
     // Valida a senha e inicia o login com o envio do codigo 2FA.
     public AutenticacaoResposta autenticar(LoginRequisicao requisicao, String enderecoIp) {
@@ -53,11 +61,17 @@ public class AutenticacaoServico {
             auditoria.registrar(usuario.getId(), "LOGIN_RECUSADO", "Acesso rejeitado", enderecoIp);
             throw new AcessoRejeitadoException();
         }
-        if (!Boolean.TRUE.equals(usuario.getAceitouTermosLgpd())) {
+        if (!usuario.isEmailConfirmado())
+            throw new EmailNaoConfirmadoException();
+        if (!usuario.isAtivo())
+            throw new CredenciaisInvalidasException();
+        verificarSuspensao(usuario);
+        if (!aceiteAtualizado(usuario)) {
             auditoria.registrar(usuario.getId(), "LOGIN_RECUSADO",
                     "Termos precisam ser aceitos novamente", enderecoIp);
-            throw new TermosNaoAceitosException(tokens.gerar(usuario));
+            throw new TermosNaoAceitosException(tokens.gerarTermos(usuario));
         }
+        protecaoForcaBruta.registrarSucesso(identificador);
         String codigo = tokensEmail.criarCodigo2fa(usuario);
         emails.enviarCodigo2fa(usuario, codigo);
         auditoria.registrar(usuario.getId(), "CODIGO_2FA_ENVIADO", "Codigo enviado por e-mail", enderecoIp);
@@ -79,16 +93,28 @@ public class AutenticacaoServico {
             throw excecao;
         }
         protecaoForcaBruta.registrarSucesso(identificador);
+        verificarSuspensao(usuario);
+        if (!usuario.isAtivo() || !usuario.isEmailConfirmado()
+                || usuario.getStatusAprovacao() != StatusAprovacao.APROVADO
+                )
+            throw new CredenciaisInvalidasException();
+        if (!aceiteAtualizado(usuario))
+            throw new TermosNaoAceitosException(tokens.gerarTermos(usuario));
         usuariosForum.sincronizar(usuario);
         auditoria.registrar(usuario.getId(), "LOGIN", "Login realizado com 2FA", enderecoIp);
         return new AutenticacaoResposta(tokens.gerar(usuario), usuario.getId(), usuario.getNomeCompleto(),
-                usuario.getPerfil().name(), false);
+                usuario.getPerfil(), false);
     }
 
     // Envia um novo codigo 2FA para o usuario ativo.
     public void reenviarCodigo2fa(String email, String enderecoIp) {
         repositorio.findByEmail(email)
                 .filter(Usuario::isAtivo)
+                .filter(usuario -> !moderacao.restrito(usuario.getId(), EscopoSuspensao.CONTA))
+                .filter(Usuario::isEmailConfirmado)
+                .filter(usuario -> usuario.getStatusAprovacao() == StatusAprovacao.APROVADO)
+                .filter(this::aceiteAtualizado)
+                .filter(tokensEmail::temCodigo2faPendente)
                 .ifPresent(usuario -> {
                     String codigo = tokensEmail.criarCodigo2fa(usuario);
                     emails.enviarCodigo2fa(usuario, codigo);
@@ -101,7 +127,14 @@ public class AutenticacaoServico {
         return usuario != null && codificadorSenha.matches(senha, usuario.getSenha());
     }
 
+    private void verificarSuspensao(Usuario usuario) {
+        if (moderacao.restrito(usuario.getId(), EscopoSuspensao.CONTA)) {
+            throw new com.cursovalido.backend.authentication.exception.BanimentoException(
+                    moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.CONTA));
+        }
+    }
+
     private String identificador(String email, String enderecoIp) {
-        return email.trim().toLowerCase() + ":" + enderecoIp;
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 }

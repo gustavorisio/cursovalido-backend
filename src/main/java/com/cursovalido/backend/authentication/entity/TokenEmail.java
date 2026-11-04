@@ -2,9 +2,15 @@ package com.cursovalido.backend.authentication.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "tb_tokens_email")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TokenEmail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,13 +30,11 @@ public class TokenEmail {
     private LocalDateTime expiraEm;
 
     @Column(nullable = false)
+    @Setter
     private boolean utilizado;
 
     @Column(name = "criado_em", nullable = false)
     private LocalDateTime criadoEm;
-
-    protected TokenEmail() {
-    }
 
     public TokenEmail(String tokenHash, Usuario usuario, String finalidade, LocalDateTime expiraEm) {
         this.tokenHash = tokenHash;
@@ -38,33 +42,5 @@ public class TokenEmail {
         this.finalidade = finalidade;
         this.expiraEm = expiraEm;
         this.criadoEm = LocalDateTime.now();
-    }
-
-    public String getTokenHash() {
-        return tokenHash;
-    }
-
-    public Usuario getUsuario() {
-        return usuario;
-    }
-
-    public String getFinalidade() {
-        return finalidade;
-    }
-
-    public LocalDateTime getExpiraEm() {
-        return expiraEm;
-    }
-
-    public boolean isUtilizado() {
-        return utilizado;
-    }
-
-    public void setUtilizado(boolean valor) {
-        utilizado = valor;
-    }
-
-    public LocalDateTime getCriadoEm() {
-        return criadoEm;
     }
 }

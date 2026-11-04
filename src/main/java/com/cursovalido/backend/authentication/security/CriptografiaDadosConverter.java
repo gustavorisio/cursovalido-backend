@@ -52,15 +52,13 @@ public class CriptografiaDadosConverter implements AttributeConverter<String, St
             cifra.init(Cipher.DECRYPT_MODE, KEY, new GCMParameterSpec(TAG_SIZE, iv));
             return new String(cifra.doFinal(cifrado), StandardCharsets.UTF_8);
         } catch (GeneralSecurityException | IllegalArgumentException erro) {
-            // Permite ler registros antigos para que sejam regravados de forma protegida.
-            return valor;
+            throw new IllegalStateException("Dado pessoal invalido ou chave de criptografia incorreta", erro);
         }
     }
 
     private static SecretKeySpec criarChave() {
-        String chave = System.getenv().getOrDefault("DADOS_CRIPTOGRAFIA_CHAVE",
-            "0123456789abcdef0123456789abcdef");
-        if (chave.getBytes(StandardCharsets.UTF_8).length != 32) {
+        String chave = System.getenv("DADOS_CRIPTOGRAFIA_CHAVE");
+        if (chave == null || chave.getBytes(StandardCharsets.UTF_8).length != 32) {
             throw new IllegalStateException("DADOS_CRIPTOGRAFIA_CHAVE deve ter 32 bytes");
         }
         return new SecretKeySpec(chave.getBytes(StandardCharsets.UTF_8), "AES");

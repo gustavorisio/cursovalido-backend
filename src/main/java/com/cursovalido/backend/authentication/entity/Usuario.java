@@ -1,28 +1,44 @@
 package com.cursovalido.backend.authentication.entity;
 
+import com.cursovalido.backend.authentication.security.CriptografiaDadosConverter;
+import com.cursovalido.backend.authentication.security.ProtecaoDadosPessoais;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "tb_usuarios")
+@Getter
+@NoArgsConstructor
+@Setter
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Setter(AccessLevel.NONE)
     private Long id;
-    @Column(name = "nome_completo", nullable = false)
+    @Column(name = "nome_completo", nullable = false, length = 120)
     private String nomeCompleto;
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 254)
     private String email;
     @Column(nullable = false, length = 60)
     private String senha;
-    @Column(nullable = false, unique = true)
+    @Convert(converter = CriptografiaDadosConverter.class)
+    @Column(length = 52)
     private String cpf;
-    @Column(name = "data_nascimento", nullable = false)
+    @Column(name = "cpf_hash", unique = true, length = 64)
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
+    private String cpfHash;
+    @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
-    @Column(nullable = false)
+    @Convert(converter = CriptografiaDadosConverter.class)
+    @Column(length = 64)
     private String telefone;
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 50)
     private String matricula;
     @Embedded
     private Endereco endereco;
@@ -30,9 +46,9 @@ public class Usuario {
     private Boolean declarouMaiorIdade;
     @Column(name = "aceitou_termos_lgpd", nullable = false)
     private Boolean aceitouTermosLgpd;
-    @Column(name = "data_hora_aceite", nullable = false)
+    @Column(name = "data_hora_aceite")
     private LocalDateTime dataHoraAceite;
-    @Column(name = "versao_termos", nullable = false)
+    @Column(name = "versao_termos", length = 30)
     private String versaoTermos;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -45,135 +61,8 @@ public class Usuario {
     @Column(name = "status_aprovacao", nullable = false)
     private StatusAprovacao statusAprovacao = StatusAprovacao.APROVADO;
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getNomeCompleto() {
-        return nomeCompleto;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getSenha() {
-        return senha;
-    }
-
-    public String getCpf() {
-        return cpf;
-    }
-
-    public String getTelefone() {
-        return telefone;
-    }
-
-    public String getMatricula() {
-        return matricula;
-    }
-
-    public LocalDate getDataNascimento() {
-        return dataNascimento;
-    }
-
-    public Endereco getEndereco() {
-        return endereco;
-    }
-
-    public Boolean getDeclarouMaiorIdade() {
-        return declarouMaiorIdade;
-    }
-
-    public Boolean getAceitouTermosLgpd() {
-        return aceitouTermosLgpd;
-    }
-
-    public LocalDateTime getDataHoraAceite() {
-        return dataHoraAceite;
-    }
-
-    public String getVersaoTermos() {
-        return versaoTermos;
-    }
-
-    public Perfil getPerfil() {
-        return perfil;
-    }
-
-    public boolean isAtivo() {
-        return ativo;
-    }
-
-    public boolean isEmailConfirmado() {
-        return emailConfirmado;
-    }
-
-    public StatusAprovacao getStatusAprovacao() {
-        return statusAprovacao;
-    }
-
-    public void setNomeCompleto(String valor) {
-        nomeCompleto = valor;
-    }
-
-    public void setEmail(String valor) {
-        email = valor;
-    }
-
-    public void setSenha(String valor) {
-        senha = valor;
-    }
-
     public void setCpf(String valor) {
         cpf = valor;
-    }
-
-    public void setDataNascimento(LocalDate valor) {
-        dataNascimento = valor;
-    }
-
-    public void setTelefone(String valor) {
-        telefone = valor;
-    }
-
-    public void setMatricula(String valor) {
-        matricula = valor;
-    }
-
-    public void setEndereco(Endereco valor) {
-        endereco = valor;
-    }
-
-    public void setDeclarouMaiorIdade(Boolean valor) {
-        declarouMaiorIdade = valor;
-    }
-
-    public void setAceitouTermosLgpd(Boolean valor) {
-        aceitouTermosLgpd = valor;
-    }
-
-    public void setDataHoraAceite(LocalDateTime valor) {
-        dataHoraAceite = valor;
-    }
-
-    public void setVersaoTermos(String valor) {
-        versaoTermos = valor;
-    }
-
-    public void setPerfil(Perfil valor) {
-        perfil = valor;
-    }
-
-    public void setEmailConfirmado(boolean valor) {
-        emailConfirmado = valor;
-    }
-
-    public void setStatusAprovacao(StatusAprovacao valor) {
-        statusAprovacao = valor;
-    }
-
-    public void setAtivo(boolean valor) {
-        ativo = valor;
+        cpfHash = valor == null ? null : ProtecaoDadosPessoais.hashCpf(valor);
     }
 }
