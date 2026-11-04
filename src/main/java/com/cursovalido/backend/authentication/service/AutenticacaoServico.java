@@ -4,6 +4,7 @@ import com.cursovalido.backend.authentication.dto.AutenticacaoResposta;
 import com.cursovalido.backend.authentication.dto.LoginRequisicao;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.Usuario;
+import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
 import com.cursovalido.backend.authentication.exception.AcessoRejeitadoException;
 import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoException;
 import com.cursovalido.backend.authentication.exception.CredenciaisInvalidasException;
@@ -16,6 +17,8 @@ import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +31,16 @@ public class AutenticacaoServico {
     private final LogAuditoriaServico auditoria;
     private final UsuarioForumServico usuariosForum;
     private final ProtecaoForcaBrutaServico protecaoForcaBruta;
+    private final ModeracaoUsuarioServico moderacao;
+    private final PoliticaServico politicas;
+    private final PrivacidadeServico privacidade;
+
+    private boolean aceiteAtualizado(Usuario usuario) {
+        return Boolean.TRUE.equals(usuario.getAceitouTermosLgpd())
+            && politicas.versaoAtiva(usuario.getVersaoTermos())
+            && !privacidade.atualizadaDesde(usuario.getDataHoraAceite());
+    }
+
 
     // Valida a senha e inicia o login com o envio do codigo 2FA.
     public AutenticacaoResposta autenticar(LoginRequisicao requisicao, String enderecoIp) {
@@ -52,7 +65,8 @@ public class AutenticacaoServico {
             throw new EmailNaoConfirmadoException();
         if (!usuario.isAtivo())
             throw new CredenciaisInvalidasException();
-        if (!Boolean.TRUE.equals(usuario.getAceitouTermosLgpd())) {
+        verificarSuspensao(usuario);
+        if (!aceiteAtualizado(usuario)) {
             auditoria.registrar(usuario.getId(), "LOGIN_RECUSADO",
                     "Termos precisam ser aceitos novamente", enderecoIp);
             throw new TermosNaoAceitosException(tokens.gerarTermos(usuario));
@@ -79,10 +93,13 @@ public class AutenticacaoServico {
             throw excecao;
         }
         protecaoForcaBruta.registrarSucesso(identificador);
+        verificarSuspensao(usuario);
         if (!usuario.isAtivo() || !usuario.isEmailConfirmado()
                 || usuario.getStatusAprovacao() != StatusAprovacao.APROVADO
-                || !Boolean.TRUE.equals(usuario.getAceitouTermosLgpd()))
+                )
             throw new CredenciaisInvalidasException();
+        if (!aceiteAtualizado(usuario))
+            throw new TermosNaoAceitosException(tokens.gerarTermos(usuario));
         usuariosForum.sincronizar(usuario);
         auditoria.registrar(usuario.getId(), "LOGIN", "Login realizado com 2FA", enderecoIp);
         return new AutenticacaoResposta(tokens.gerar(usuario), usuario.getId(), usuario.getNomeCompleto(),
@@ -93,9 +110,10 @@ public class AutenticacaoServico {
     public void reenviarCodigo2fa(String email, String enderecoIp) {
         repositorio.findByEmail(email)
                 .filter(Usuario::isAtivo)
+                .filter(usuario -> !moderacao.restrito(usuario.getId(), EscopoSuspensao.CONTA))
                 .filter(Usuario::isEmailConfirmado)
                 .filter(usuario -> usuario.getStatusAprovacao() == StatusAprovacao.APROVADO)
-                .filter(usuario -> Boolean.TRUE.equals(usuario.getAceitouTermosLgpd()))
+                .filter(this::aceiteAtualizado)
                 .filter(tokensEmail::temCodigo2faPendente)
                 .ifPresent(usuario -> {
                     String codigo = tokensEmail.criarCodigo2fa(usuario);
@@ -107,6 +125,13 @@ public class AutenticacaoServico {
 
     private boolean senhaValida(Usuario usuario, String senha) {
         return usuario != null && codificadorSenha.matches(senha, usuario.getSenha());
+    }
+
+    private void verificarSuspensao(Usuario usuario) {
+        if (moderacao.restrito(usuario.getId(), EscopoSuspensao.CONTA)) {
+            throw new com.cursovalido.backend.authentication.exception.BanimentoException(
+                    moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.CONTA));
+        }
     }
 
     private String identificador(String email, String enderecoIp) {

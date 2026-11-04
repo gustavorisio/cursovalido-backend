@@ -16,6 +16,20 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class PoliticaControlador {
     private final PoliticaServico servico;
+    private final com.cursovalido.backend.authentication.service.PrivacidadeServico privacidade;
+
+    @GetMapping("/privacidade/ativa")
+    public org.springframework.http.ResponseEntity<PoliticaResposta> privacidadeAtiva() {
+        return org.springframework.http.ResponseEntity.ok().body(privacidade.buscarAtiva());
+    }
+
+    @PostMapping("/privacidade")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PoliticaResposta publicarPrivacidade(@AuthenticationPrincipal UsuarioAutenticado administrador,
+            @Valid @RequestBody PoliticaRequisicao requisicao) {
+        return privacidade.publicar(requisicao, administrador.getId());
+    }
+
 
     @GetMapping("/ativas")
     public List<PoliticaResposta> listarAtivas() {

@@ -46,6 +46,11 @@ public class TermosUsuarioServico {
         if (!politicas.versaoAtiva(versaoTermos))
             throw new TermosNaoDisponiveisException();
         Usuario usuario = buscarUsuario(idUsuario);
+        if (Boolean.TRUE.equals(usuario.getAceitouTermosLgpd()) && usuario.getVersaoTermos() != null
+                && usuario.getDataHoraAceite() != null) {
+            aceitesArquivados.save(new AceiteTermoArquivado(idUsuario, usuario.getVersaoTermos(),
+                usuario.getDataHoraAceite(), "NOVA_VERSAO_DOCUMENTOS"));
+        }
         usuario.setAceitouTermosLgpd(true);
         usuario.setVersaoTermos(versaoTermos);
         usuario.setDataHoraAceite(LocalDateTime.now());

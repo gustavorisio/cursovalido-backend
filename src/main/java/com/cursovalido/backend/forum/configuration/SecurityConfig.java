@@ -2,14 +2,12 @@ package com.cursovalido.backend.forum.configuration;
 
 import com.cursovalido.backend.authentication.configuration.HttpsFiltro;
 import com.cursovalido.backend.authentication.configuration.LimiteRequisicoesFiltro;
-import com.cursovalido.backend.authentication.configuration.PermissoesSeguranca;
 import com.cursovalido.backend.authentication.configuration.TokenJwtFiltro;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -26,11 +24,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@EnableConfigurationProperties(PermissoesSeguranca.class)
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final TokenJwtFiltro tokenJwtFiltro;
-    private final PermissoesSeguranca permissoes;
     @Value("${aplicacao.frontend-origens:http://localhost:3000,http://localhost:5173}")
     private String origensFrontend;
     @Value("${seguranca.https-obrigatorio:false}")
@@ -61,48 +57,75 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/autenticacao/cadastro", "/api/autenticacao/login",
+                        // Rotas publicas de autenticacao e cadastro.
+                        .requestMatchers(HttpMethod.POST, "/api/autenticacao/cadastro", "/api/autenticacao/login",
                                 "/api/autenticacao/confirmar-2fa",
                                 "/api/autenticacao/reenviar-2fa",
                                 "/api/autenticacao/confirmar-email", "/api/autenticacao/reenviar-confirmacao",
                                 "/api/autenticacao/solicitar-alteracao-senha", "/api/autenticacao/alterar-senha",
-                                "/api/enderecos/**", "/api/politicas/ativas",
+                                "/api/convites/confirmar-email", "/api/convites/completar-cadastro").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/enderecos/consultar/*", "/api/politicas/ativas", "/api/politicas/privacidade/ativa",
                                 "/politica-privacidade.html", "/termos-aceite.html")
                         .permitAll()
-                        .requestMatchers("/api/convites/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/politicas").hasRole("ADMINISTRADOR")
-                        .requestMatchers("/api/administracao/**").hasRole("ADMINISTRADOR")
-                        .requestMatchers("/api/autenticacao/aceitar-termos-novamente")
+                        // Administracao; os servicos exigem o principal nas operacoes exclusivas.
+                        .requestMatchers(HttpMethod.POST, "/api/politicas", "/api/politicas/privacidade").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.GET, "/api/administracao/permissoes", "/api/administracao/usuarios",
+                                "/api/administracao/convites", "/api/administracao/convites/pendentes",
+                                "/api/administracao/convites/auditoria/integridade",
+                                "/api/administracao/cursos", "/api/administracao/cursos/*",
+                                "/api/administracao/cursos/*/modulos", "/api/administracao/modulos/*/aulas",
+                                "/api/administracao/aulas/*").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.POST, "/api/administracao/convites",
+                                "/api/administracao/convites/*/aprovar", "/api/administracao/convites/*/rejeitar",
+                                "/api/administracao/convites/*/reenviar",
+                                "/api/administracao/usuarios/*/suspensoes").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/administracao/convites/*",
+                                "/api/administracao/convites/*/cancelar",
+                                "/api/administracao/usuarios/*/suspensoes/*").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.POST, "/api/autenticacao/aceitar-termos-novamente")
                         .hasAuthority("TERMOS_PENDENTES")
+                        .requestMatchers(HttpMethod.POST, "/api/autenticacao/logout").authenticated()
+                        // Operacoes da propria conta, para os tres perfis.
+                        .requestMatchers(HttpMethod.GET, "/api/autenticacao/meus-dados",
+                                "/api/autenticacao/exportar-dados", "/api/autenticacao/restricoes")
+                        .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.POST, "/api/autenticacao/revogar-termos", "/api/autenticacao/conta/solicitar-exclusao")
+                        .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
+                        .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                        // Catalogo, matriculas e progresso pessoais do aluno.
                         .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas").hasRole("ALUNO")
                         .requestMatchers(HttpMethod.PUT, "/api/aluno/aulas/*/progresso").hasRole("ALUNO")
                         .requestMatchers(HttpMethod.POST, "/api/aluno/aulas/*/conclusao").hasRole("ALUNO")
-                        .requestMatchers(HttpMethod.GET, "/api/aluno/**").hasRole("ALUNO")
+                        .requestMatchers(HttpMethod.GET, "/api/aluno/cursos", "/api/aluno/cursos/*",
+                                "/api/aluno/matriculas", "/api/aluno/cursos/*/modulos",
+                                "/api/aluno/modulos/*/aulas", "/api/aluno/aulas/*",
+                                "/api/aluno/aulas/*/progresso").hasRole("ALUNO")
                         .requestMatchers("/api/aluno", "/api/aluno/**").denyAll()
                         // As rotas de gestao continuam exclusivas do professor.
-                        .requestMatchers("/api/cursos", "/api/cursos/**", "/api/modulos", "/api/modulos/**",
-                                "/api/aulas", "/api/aulas/**")
+                        .requestMatchers(HttpMethod.GET, "/api/cursos", "/api/cursos/*", "/api/cursos/*/modulos",
+                                "/api/modulos/*", "/api/modulos/*/aulas", "/api/aulas/*")
                         .hasRole("PROFESSOR")
-                        .requestMatchers(HttpMethod.GET, permissoes.getLeituraAluno().toArray(String[]::new))
+                        .requestMatchers(HttpMethod.POST, "/api/cursos", "/api/cursos/*/modulos",
+                                "/api/modulos/*/aulas").hasRole("PROFESSOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/cursos/*", "/api/modulos/*", "/api/aulas/*")
+                        .hasRole("PROFESSOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/cursos/*", "/api/modulos/*", "/api/aulas/*")
+                        .hasRole("PROFESSOR")
+                        // Forum: autoria e moderacao sao verificadas pelos servicos.
+                        .requestMatchers(HttpMethod.GET, "/api/forum/topicos", "/api/forum/topicos/*/comentarios",
+                                "/api/forum/users")
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.GET, permissoes.getLeituraProfessor().toArray(String[]::new))
-                        .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.POST, permissoes.getEscritaAluno().toArray(String[]::new))
+                        .requestMatchers(HttpMethod.POST, "/api/forum/topicos", "/api/forum/topicos/*/comentarios")
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.PUT, "/api/forum/topicos/*")
+                        .requestMatchers(HttpMethod.PUT, "/api/forum/topicos/*", "/api/forum/topicos/*/arquivar",
+                                "/api/forum/topicos/*/fechar", "/api/forum/comentarios/*")
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.PUT, permissoes.getEscritaAluno().toArray(String[]::new))
+                        .requestMatchers(HttpMethod.DELETE, "/api/forum/comentarios/*",
+                                "/api/forum/topicos/*/comentarios/*")
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.DELETE, permissoes.getEscritaAluno().toArray(String[]::new))
-                        .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.POST, permissoes.getEscritaProfessor().toArray(String[]::new))
-                        .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.PUT, permissoes.getEscritaProfessor().toArray(String[]::new))
-                        .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.DELETE, permissoes.getEscritaProfessor().toArray(String[]::new))
-                        .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
-                        .requestMatchers(permissoes.getAdministrador().toArray(String[]::new)).hasRole("ADMINISTRADOR")
-                        .anyRequest().authenticated())
+                        .requestMatchers(HttpMethod.DELETE, "/api/forum/topicos/*").hasRole("ADMINISTRADOR")
+                        .anyRequest().denyAll())
                 .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new HttpsFiltro(httpsObrigatorio),
                         TokenJwtFiltro.class)
