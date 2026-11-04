@@ -64,6 +64,10 @@ public class TokenJwtServico {
         return validar(token).getSubject();
     }
 
+    public Long extrairIdUsuario(String token) {
+        return validar(token).get("idUsuario", Long.class);
+    }
+
     private Claims validar(String token) {
         var dados = Jwts.parser().verifyWith((javax.crypto.SecretKey) chave).build()
                 .parseSignedClaims(token).getPayload();
@@ -71,6 +75,10 @@ public class TokenJwtServico {
                 .orElseThrow(() -> new IllegalArgumentException("Sessao invalida"));
         if (sessao.isRevogada())
             throw new IllegalArgumentException("Sessao encerrada");
+        if (!sessao.getExpiraEm().isAfter(LocalDateTime.now()))
+            throw new IllegalArgumentException("Sessao expirada");
+        if (!java.util.Objects.equals(sessao.getUsuarioId(), dados.get("idUsuario", Long.class)))
+            throw new IllegalArgumentException("Sessao de outro usuario");
         return dados;
     }
 

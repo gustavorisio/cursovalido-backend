@@ -20,13 +20,17 @@ class TokenJwtServicoTest {
 
     private TokenJwtServico servico;
     private Usuario usuario;
+    private SessaoRepositorio sessoes;
+    private Map<String, Sessao> registros;
 
     @BeforeEach
     void configurarCenario() {
         // A chave é definida porque o teste não carrega o Spring.
-        var sessoes = org.mockito.Mockito.mock(SessaoRepositorio.class);
+        sessoes = org.mockito.Mockito.mock(SessaoRepositorio.class);
         servico = new TokenJwtServico(sessoes);
-        Map<String, Sessao> registros = new HashMap<>();
+        registros = new HashMap<>();
+        org.mockito.Mockito.doAnswer(chamada -> { registros.values().forEach(Sessao::revogar); return null; })
+                .when(sessoes).revogarTodas();
         org.mockito.Mockito.when(sessoes.save(org.mockito.ArgumentMatchers.any())).thenAnswer(chamada -> {
             Sessao sessao = chamada.getArgument(0);
             String id = (String) ReflectionTestUtils.getField(sessao, "id");
@@ -40,6 +44,7 @@ class TokenJwtServicoTest {
         servico.prepararChave();
 
         usuario = new Usuario();
+        ReflectionTestUtils.setField(usuario, "id", 1L);
         usuario.setEmail("aluno@teste.com");
         usuario.setPerfil(Perfil.ALUNO);
     }
@@ -85,5 +90,29 @@ class TokenJwtServicoTest {
     void deveLancarExcecaoQuandoTokenEstiverVazio() {
         // Token sem conteúdo não deve ser aceito pelo parser.
         assertThrows(RuntimeException.class, () -> servico.extrairEmail(""));
+    }
+
+    @Test
+    void reiniciarPreservaSessaoValidaComMesmaChave() {
+        String anterior = servico.gerar(usuario);
+        servico.prepararChave();
+        assertEquals(usuario.getEmail(), servico.extrairEmail(anterior));
+        assertEquals(usuario.getEmail(), servico.extrairEmail(servico.gerar(usuario)));
+    }
+
+    @Test
+    void rejeitaTokenVinculadoASessaoDeOutroUsuario() {
+        String token = servico.gerar(usuario);
+        String id = registros.keySet().iterator().next();
+        registros.put(id, new Sessao(id, 2L, java.time.LocalDateTime.now().plusHours(1)));
+        assertThrows(IllegalArgumentException.class, () -> servico.extrairEmail(token));
+    }
+
+    @Test
+    void respeitaExpiracaoDaSessaoPersistida() {
+        String token = servico.gerar(usuario);
+        String id = registros.keySet().iterator().next();
+        registros.put(id, new Sessao(id, 1L, java.time.LocalDateTime.now().minusMinutes(1)));
+        assertThrows(IllegalArgumentException.class, () -> servico.extrairEmail(token));
     }
 }

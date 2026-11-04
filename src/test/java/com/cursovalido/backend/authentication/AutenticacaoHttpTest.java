@@ -29,12 +29,14 @@ import org.springframework.web.client.RestClient;
         properties = "security.bcrypt.strength=10")
 @ActiveProfiles("test")
 class AutenticacaoHttpTest {
+    @Autowired private com.cursovalido.backend.authentication.service.TokenEmailServico tokensExclusao;
     @LocalServerPort private int porta;
     @Autowired private UsuarioRepositorio usuarios;
     @Autowired private PoliticaRepositorio politicas;
     @Autowired private PasswordEncoder senhas;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private LogAuditoriaServico auditoria;
+    @Autowired private TokenJwtServico tokens;
     @MockitoBean private EmailServico emails;
     @MockitoBean private ValidacaoEmailServico validacaoEmail;
     @MockitoBean private UsuarioForumServico usuariosForum;
@@ -76,6 +78,25 @@ class AutenticacaoHttpTest {
             recuperacoes.put(destinatario.getEmail(), chamada.getArgument(1));
             return null;
         }).when(emails).enviarRedefinicaoSenha(any(), anyString());
+    }
+
+    @Test
+    void recarregarDadosEReiniciarControlePreservaSessaoAteLogout() {
+        String anterior = entrar();
+        for (int i = 0; i < 3; i++) {
+            assertEquals(200, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(anterior))
+                    .retrieve().toBodilessEntity().getStatusCode().value());
+        }
+        tokens.prepararChave();
+        assertEquals(200, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(anterior))
+                .retrieve().toBodilessEntity().getStatusCode().value());
+        cliente.post().uri("/api/autenticacao/logout").headers(h -> h.setBearerAuth(anterior))
+                .retrieve().toBodilessEntity();
+        assertEquals(401, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(anterior))
+                .retrieve().toBodilessEntity().getStatusCode().value());
+        String novo = entrar();
+        assertEquals(200, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(novo))
+                .retrieve().toBodilessEntity().getStatusCode().value());
     }
 
     private ResponseEntity<Map> post(String caminho, Map<String, ?> corpo) {
@@ -195,7 +216,9 @@ class AutenticacaoHttpTest {
     @Test
     void excluirContaApagaCadastroESessoes() {
         String token = entrar();
-        assertEquals(204, cliente.delete().uri("/api/autenticacao/conta").headers(h -> h.setBearerAuth(token))
+        String codigo = tokensExclusao.criarExclusao(usuario);
+        assertEquals(204, cliente.method(org.springframework.http.HttpMethod.DELETE).uri("/api/autenticacao/conta")
+                .headers(h -> h.setBearerAuth(token)).body(Map.of("codigo", codigo))
                 .retrieve().toBodilessEntity().getStatusCode().value());
         assertTrue(usuarios.findById(usuario.getId()).isEmpty());
         assertEquals(401, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(token))
