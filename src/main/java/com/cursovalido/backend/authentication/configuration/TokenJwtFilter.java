@@ -86,7 +86,7 @@ public class TokenJwtFilter extends OncePerRequestFilter {
                         response.setContentType("application/json");
                         response.setCharacterEncoding("UTF-8");
                         response.getWriter().write(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(
-                                new com.cursovalido.backend.authentication.dto.RespostaTermosPendentes(
+                                new com.cursovalido.backend.authentication.dto.TermosPendentesResponse(
                                         "É necessário aceitar a nova versão dos termos.", "TERMOS_NAO_ACEITOS",
                                         tokens.gerarTermos(conta))));
                         return;

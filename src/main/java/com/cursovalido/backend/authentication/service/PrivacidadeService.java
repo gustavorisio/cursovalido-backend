@@ -1,6 +1,6 @@
 package com.cursovalido.backend.authentication.service;
-import com.cursovalido.backend.authentication.dto.PoliticaRequisicao;
-import com.cursovalido.backend.authentication.dto.PoliticaResposta;
+import com.cursovalido.backend.authentication.dto.PoliticaRequest;
+import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.entity.PoliticaPrivacidade;
 import com.cursovalido.backend.authentication.repository.PrivacidadeRepository;
 import java.time.LocalDateTime;
@@ -14,7 +14,7 @@ public class PrivacidadeService {
     private final PrivilegiosAdministrativosService privilegios;
     private final LogAuditoriaService auditoria;
 
-    public PoliticaResposta buscarAtiva() {
+    public PoliticaResponse buscarAtiva() {
         return repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().stream()
             .findFirst().map(this::converter).orElse(null);
     }
@@ -31,7 +31,7 @@ public class PrivacidadeService {
     }
 
     @Transactional
-    public PoliticaResposta publicar(PoliticaRequisicao dados, Long administradorId) {
+    public PoliticaResponse publicar(PoliticaRequest dados, Long administradorId) {
         privilegios.verificarPrincipal(administradorId);
         if (repositorio.findByVersao(dados.versao().trim()).isPresent())
             throw new IllegalArgumentException("A versao informada ja existe");
@@ -44,7 +44,7 @@ public class PrivacidadeService {
         return converter(publicada);
     }
 
-    private PoliticaResposta converter(PoliticaPrivacidade politica) {
-        return new PoliticaResposta(politica.getNome(), politica.getVersao(), politica.getConteudo(), politica.getDataPublicacao());
+    private PoliticaResponse converter(PoliticaPrivacidade politica) {
+        return new PoliticaResponse(politica.getNome(), politica.getVersao(), politica.getConteudo(), politica.getDataPublicacao());
     }
 }

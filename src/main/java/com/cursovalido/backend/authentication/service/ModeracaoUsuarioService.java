@@ -55,7 +55,7 @@ public class ModeracaoUsuarioService {
     }
 
     @Transactional
-    public SuspensaoResposta aplicar(Long idUsuario, SuspensaoRequisicao dados, Long idAdministrador) {
+    public SuspensaoResponse aplicar(Long idUsuario, SuspensaoRequest dados, Long idAdministrador) {
         verificarAlvo(idUsuario, idAdministrador);
         if (dados.expiraEm() != null) {
             if (!dados.expiraEm().isAfter(Instant.now())) {
@@ -77,7 +77,7 @@ public class ModeracaoUsuarioService {
         sessoes.revogarPorUsuario(idUsuario);
         tokensEmail.invalidarAcessos(usuarios.findById(idUsuario).orElseThrow());
         auditoria.registrar(idAdministrador, "SUSPENSAO_APLICADA", "Usuario " + idUsuario + ": " + dados.escopo(), null);
-        return SuspensaoResposta.de(suspensao);
+        return SuspensaoResponse.de(suspensao);
     }
 
     @Transactional

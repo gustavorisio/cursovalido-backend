@@ -1,7 +1,7 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.dto.PoliticaRequisicao;
-import com.cursovalido.backend.authentication.dto.PoliticaResposta;
+import com.cursovalido.backend.authentication.dto.PoliticaRequest;
+import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 
 import com.cursovalido.backend.authentication.entity.Politica;
 
@@ -23,9 +23,9 @@ public class PoliticaService {
     private final PrivilegiosAdministrativosService privilegios;
 
     // Lista as politicas que estao ativas no momento.
-    public List<PoliticaResposta> listarAtivas() {
+    public List<PoliticaResponse> listarAtivas() {
         return repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().stream()
-                .map(politica -> new PoliticaResposta(politica.getNome(), politica.getVersao(), politica.getConteudo(),
+                .map(politica -> new PoliticaResponse(politica.getNome(), politica.getVersao(), politica.getConteudo(),
                         politica.getDataPublicacao()))
                 .toList();
     }
@@ -38,7 +38,7 @@ public class PoliticaService {
 
     @Transactional
     // Publica uma nova versao e pede novo aceite aos usuarios.
-    public PoliticaResposta publicar(PoliticaRequisicao requisicao, Long administradorId) {
+    public PoliticaResponse publicar(PoliticaRequest requisicao, Long administradorId) {
         privilegios.verificarPrincipal(administradorId);
         if (repositorio.findByVersao(requisicao.versao()).isPresent()) {
             throw new IllegalArgumentException("A versao informada ja existe");
@@ -55,8 +55,8 @@ public class PoliticaService {
         return converter(publicada);
     }
 
-    private PoliticaResposta converter(Politica politica) {
-        return new PoliticaResposta(politica.getNome(), politica.getVersao(), politica.getConteudo(),
+    private PoliticaResponse converter(Politica politica) {
+        return new PoliticaResponse(politica.getNome(), politica.getVersao(), politica.getConteudo(),
                 politica.getDataPublicacao());
     }
 }

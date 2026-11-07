@@ -6,7 +6,7 @@ import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisExce
 import com.cursovalido.backend.authentication.repository.AceiteTermoArquivadoRepository;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TermosUsuarioService {
     private final UsuarioRepository repositorio;
     private final AceiteTermoArquivadoRepository aceitesArquivados;
-    private final UsuarioForumServico usuariosForum;
+    private final UsuarioForumService usuariosForum;
     private final PoliticaService politicas;
     private final LogAuditoriaService auditoria;
     private final SessaoRepository sessoes;

@@ -82,7 +82,7 @@ public class EmailService {
         try {
             cliente.post()
                     .uri("/emails")
-                    .body(new EmailRequisicao(enderecoRemetente, List.of(destinatario), assunto, conteudo))
+                    .body(new EmailRequest(enderecoRemetente, List.of(destinatario), assunto, conteudo))
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientException excecao) {
@@ -90,6 +90,6 @@ public class EmailService {
         }
     }
 
-    private record EmailRequisicao(String from, List<String> to, String subject, String text) {
+    private record EmailRequest(String from, List<String> to, String subject, String text) {
     }
 }

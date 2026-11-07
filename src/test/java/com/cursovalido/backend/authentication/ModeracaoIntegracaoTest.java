@@ -7,13 +7,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.cursovalido.backend.authentication.dto.SuspensaoRequisicao;
+import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.*;
-import com.cursovalido.backend.forum.repository.TopicoRepositorio;
-import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import com.cursovalido.backend.forum.repository.TopicoRepository;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +61,7 @@ class ModeracaoIntegracaoTest {
         antigo.setCpf("12345678901");
         usuarios.saveAndFlush(antigo);
         for (var escopo : EscopoSuspensao.values()) {
-            moderacao.aplicar(antigo.getId(), new SuspensaoRequisicao(escopo, "Teste de persistencia", null), principal.getId());
+            moderacao.aplicar(antigo.getId(), new SuspensaoRequest(escopo, "Teste de persistencia", null), principal.getId());
         }
         String codigo = tokensEmail.criarExclusao(antigo);
         contas.excluirConta(antigo.getId(), codigo);
@@ -129,7 +129,7 @@ class ModeracaoIntegracaoTest {
     }
 
     @Autowired private TokenJwtService tokens;
-    @MockitoBean private UsuarioForumServico forum;
+    @MockitoBean private UsuarioForumService forum;
     @Autowired private PasswordEncoder senhas;
     @MockitoBean private EmailService emails;
     @MockitoBean private ValidacaoEmailService validacaoEmail;
@@ -255,7 +255,7 @@ class ModeracaoIntegracaoTest {
     @ParameterizedTest
     @EnumSource(EscopoSuspensao.class)
     void restricoesSaoAplicadasNoServidorERevogaveis(EscopoSuspensao escopo) throws Exception {
-        var suspensao = moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(escopo, "Teste", null), administrador.getId());
+        var suspensao = moderacao.aplicar(aluno.getId(), new SuspensaoRequest(escopo, "Teste", null), administrador.getId());
         switch (escopo) {
             case CONTA -> mvc.perform(get("/api/aluno/cursos").with(como(aluno))).andExpect(status().isForbidden());
             case FORUM -> mvc.perform(get("/api/forum/topicos").with(como(aluno))).andExpect(status().isForbidden());
@@ -274,7 +274,7 @@ class ModeracaoIntegracaoTest {
     @Test
     void restricoesDeConteudoBloqueiamCrudCompletoDeTopicosEComentarios() throws Exception {
         for (var escopo : new EscopoSuspensao[] { EscopoSuspensao.TOPICOS, EscopoSuspensao.COMENTARIOS }) {
-            var suspensao = moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(escopo, "Teste CRUD", null), administrador.getId());
+            var suspensao = moderacao.aplicar(aluno.getId(), new SuspensaoRequest(escopo, "Teste CRUD", null), administrador.getId());
             for (String caminho : new String[] { "/api/forum/topicos", "/api/forum/topicos/1/comentarios" }) {
                 mvc.perform(get(caminho).with(como(aluno))).andExpect(status().isForbidden())
                         .andExpect(jsonPath("$.codigo").value(escopo.name() + "_SUSPENSOS"));
@@ -304,7 +304,7 @@ class ModeracaoIntegracaoTest {
         String deOutroUsuario = tokens.gerar(professor);
         for (var escopo : EscopoSuspensao.values()) {
             String atual = tokens.gerar(aluno);
-            moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(escopo, "Desconectar", null), administrador.getId());
+            moderacao.aplicar(aluno.getId(), new SuspensaoRequest(escopo, "Desconectar", null), administrador.getId());
             // A consulta de validacao precisa refletir a atualizacao em lote no banco.
             mvc.perform(get("/api/autenticacao/restricoes").header("Authorization", "Bearer " + atual))
                     .andExpect(status().isUnauthorized());
@@ -341,7 +341,7 @@ class ModeracaoIntegracaoTest {
 
     @Test
     void banimentoInformaDuracaoNaSessaoENoLogin() throws Exception {
-        moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(EscopoSuspensao.CONTA, "Teste", null), administrador.getId());
+        moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.CONTA, "Teste", null), administrador.getId());
         mvc.perform(get("/api/aluno/cursos").with(como(aluno)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.mensagem").value("Você foi banido permanentemente da plataforma."));
@@ -349,7 +349,7 @@ class ModeracaoIntegracaoTest {
         mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON).content(login))
                 .andExpect(status().isForbidden()).andExpect(jsonPath("$.codigo").value("CONTA_SUSPENSA"))
                 .andExpect(jsonPath("$.erro").value("Você foi banido permanentemente da plataforma."));
-        moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(EscopoSuspensao.CONTA, "Teste",
+        moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.CONTA, "Teste",
                 Instant.parse("2099-01-02T15:30:00Z")), administrador.getId());
         mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON).content(login))
                 .andExpect(status().isForbidden())
@@ -358,8 +358,8 @@ class ModeracaoIntegracaoTest {
 
     @Test
     void escoposLegadosDeConteudoSaoSubstituidosSemDuplicacao() {
-        moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(EscopoSuspensao.COMENTARIOS, "Antigo", null), administrador.getId());
-        moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(EscopoSuspensao.TOPICOS, "Atual",
+        moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.COMENTARIOS, "Antigo", null), administrador.getId());
+        moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.TOPICOS, "Atual",
                 Instant.now().plusSeconds(3600)), administrador.getId());
         assertThat(moderacao.vigentes(aluno.getId())).hasSize(1);
         assertThat(moderacao.mensagemBanimento(aluno.getId(), EscopoSuspensao.TOPICOS)).contains("temporariamente", "até");
@@ -370,7 +370,7 @@ class ModeracaoIntegracaoTest {
         mvc.perform(post("/api/administracao/usuarios/" + aluno.getId() + "/suspensoes").with(como(administrador))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"escopo\":\"FORUM\",\"motivo\":\"Teste\",\"expiraEm\":\"2000-01-01T00:00:00Z\"}"))
                 .andExpect(status().isBadRequest());
-        var criada = moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(EscopoSuspensao.FORUM, "Teste", Instant.now().plusSeconds(3600)), administrador.getId());
+        var criada = moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.FORUM, "Teste", Instant.now().plusSeconds(3600)), administrador.getId());
         mvc.perform(get("/api/forum/topicos").with(como(aluno))).andExpect(status().isForbidden());
         var entidade = suspensoes.findById(criada.id()).orElseThrow();
         entidade.setExpiraEm(Instant.now().minusSeconds(1));
@@ -380,7 +380,7 @@ class ModeracaoIntegracaoTest {
 
     @Test
     void impedirRevogacaoDeSuspensaoDeOutroUsuarioEAutoPromocao() throws Exception {
-        var criada = moderacao.aplicar(aluno.getId(), new SuspensaoRequisicao(EscopoSuspensao.FORUM, "Teste", null), administrador.getId());
+        var criada = moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.FORUM, "Teste", null), administrador.getId());
         mvc.perform(delete("/api/administracao/usuarios/" + professor.getId() + "/suspensoes/" + criada.id()).with(como(administrador)))
                 .andExpect(status().isNotFound());
         mvc.perform(post("/api/administracao/usuarios/" + professor.getId() + "/suspensoes").with(como(aluno))

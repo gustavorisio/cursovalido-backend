@@ -1,7 +1,7 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequisicao;
-import com.cursovalido.backend.authentication.dto.ConviteResumoResposta;
+import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
+import com.cursovalido.backend.authentication.dto.ConviteResumoResponse;
 import com.cursovalido.backend.authentication.entity.ConviteAcesso;
 import com.cursovalido.backend.authentication.entity.Endereco;
 import com.cursovalido.backend.authentication.entity.Perfil;
@@ -14,7 +14,7 @@ import org.springframework.http.HttpStatus;
 import java.util.Locale;
 import com.cursovalido.backend.authentication.repository.ConviteAcessoRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -41,7 +41,7 @@ public class ConviteAcessoService {
     private final ValidacaoEmailService validacaoEmail;
     private final IdentidadeExcluidaService identidades;
     private final LogAuditoriaService auditoria;
-    private final UsuarioForumServico usuariosForum;
+    private final UsuarioForumService usuariosForum;
     private final PrivilegiosAdministrativosService privilegios;
     private final SecureRandom aleatorio = new SecureRandom();
 
@@ -83,7 +83,7 @@ public class ConviteAcessoService {
 
     @Transactional
     // Completa o cadastro e deixa o usuario aguardando aprovacao.
-    public void completar(String token, CadastroUsuarioRequisicao cadastro) {
+    public void completar(String token, CadastroUsuarioRequest cadastro) {
         validacaoEmail.validar(cadastro.email());
         identidades.verificarCadastro(cadastro.email(), cadastro.cpf());
         if (Period.between(cadastro.dataNascimento(), LocalDate.now()).getYears() < 18)
@@ -142,9 +142,9 @@ public class ConviteAcessoService {
     }
 
     // Lista os convites que ainda estao pendentes.
-    public List<ConviteResumoResposta> convitesPendentes() {
+    public List<ConviteResumoResponse> convitesPendentes() {
         return convites.findByStatusOrderByCriadoEmAsc(PENDENTE).stream()
-                .map(convite -> new ConviteResumoResposta(convite.getId(), convite.getEmail(), convite.getPerfil(),
+                .map(convite -> new ConviteResumoResponse(convite.getId(), convite.getEmail(), convite.getPerfil(),
                         convite.getStatus(), convite.isEmailConfirmado(), convite.getCriadoEm(), convite.getExpiraEm()))
                 .toList();
     }

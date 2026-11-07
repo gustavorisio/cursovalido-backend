@@ -1,6 +1,6 @@
 package com.cursovalido.backend.authentication.controller;
 
-import com.cursovalido.backend.authentication.dto.PoliticaResposta;
+import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.PrivacidadeService;
 import java.io.IOException;
@@ -30,7 +30,7 @@ public class DocumentoTermosController {
         return responder("termos-aceite.html", politicas.listarAtivas().stream().findFirst().orElse(null));
     }
 
-    private ResponseEntity<String> responder(String recurso, PoliticaResposta politica) throws IOException {
+    private ResponseEntity<String> responder(String recurso, PoliticaResponse politica) throws IOException {
         String modelo;
         try (var entrada = new ClassPathResource("static/" + recurso).getInputStream()) {
             modelo = new String(entrada.readAllBytes(), StandardCharsets.UTF_8);
@@ -40,7 +40,7 @@ public class DocumentoTermosController {
                 .contentType(new MediaType("text", "html", StandardCharsets.UTF_8)).body(html);
     }
 
-    static String renderizarDocumento(String modelo, PoliticaResposta politica) {
+    static String renderizarDocumento(String modelo, PoliticaResponse politica) {
         var navegacao = Pattern.compile("(?is)<nav\\b[^>]*>.*?</nav>").matcher(modelo);
         String botoes = navegacao.find() ? navegacao.group() : "";
         String conteudo = renderizarConteudo(politica.conteudo());

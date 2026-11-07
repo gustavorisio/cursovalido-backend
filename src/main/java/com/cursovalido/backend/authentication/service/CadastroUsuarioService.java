@@ -1,6 +1,6 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequisicao;
+import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.entity.Endereco;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
@@ -9,7 +9,7 @@ import com.cursovalido.backend.authentication.exception.LimiteReenvioException;
 import com.cursovalido.backend.authentication.exception.MenorDeIdadeException;
 import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,7 +28,7 @@ public class CadastroUsuarioService {
     private final UsuarioRepository repositorio;
     private final PasswordEncoder codificadorSenha;
     private final LogAuditoriaService auditoria;
-    private final UsuarioForumServico usuariosForum;
+    private final UsuarioForumService usuariosForum;
     private final PoliticaService politicas;
     private final TokenEmailService tokensEmail;
     private final EmailService emails;
@@ -38,7 +38,7 @@ public class CadastroUsuarioService {
 
     @Transactional
     // Cria uma conta de aluno e envia a confirmacao de e-mail.
-    public Usuario cadastrar(CadastroUsuarioRequisicao requisicao, String enderecoIp) {
+    public Usuario cadastrar(CadastroUsuarioRequest requisicao, String enderecoIp) {
         validacaoEmail.validar(requisicao.email());
         identidades.verificarCadastro(requisicao.email(), requisicao.cpf());
         if (!politicas.versaoAtiva(requisicao.versaoTermos()))

@@ -7,13 +7,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequisicao;
-import com.cursovalido.backend.authentication.dto.EnderecoRequisicao;
+import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
+import com.cursovalido.backend.authentication.dto.EnderecoRequest;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
 import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +32,7 @@ class CadastroUsuarioServiceTest {
     @Mock
     private LogAuditoriaService auditoria;
     @Mock
-    private UsuarioForumServico usuariosForum;
+    private UsuarioForumService usuariosForum;
     @Mock
     private PoliticaService politicas;
     @Mock
@@ -61,7 +61,7 @@ class CadastroUsuarioServiceTest {
     @Test
     void deveCadastrarUsuarioMaiorDeIdade() {
         // Mantemos as integrações fora do teste para avaliar só o cadastro.
-        CadastroUsuarioRequisicao requisicao = requisicaoPadrao();
+        CadastroUsuarioRequest requisicao = requisicaoPadrao();
         Usuario salvo = new Usuario();
         when(politicas.versaoAtiva("1.0")).thenReturn(true);
         when(repositorio.existsByEmail(requisicao.email())).thenReturn(false);
@@ -80,7 +80,7 @@ class CadastroUsuarioServiceTest {
 
     @Test
     void deveLancarExcecaoQuandoEmailJaEstiverCadastrado() {
-        CadastroUsuarioRequisicao requisicao = requisicaoPadrao();
+        CadastroUsuarioRequest requisicao = requisicaoPadrao();
         // A duplicidade deve interromper o fluxo antes de salvar qualquer dado.
         when(politicas.versaoAtiva("1.0")).thenReturn(true);
         when(repositorio.existsByEmail(requisicao.email())).thenReturn(true);
@@ -92,7 +92,7 @@ class CadastroUsuarioServiceTest {
 
     @Test
     void deveLancarExcecaoQuandoVersaoDosTermosNaoEstiverDisponivel() {
-        CadastroUsuarioRequisicao requisicao = requisicaoPadrao();
+        CadastroUsuarioRequest requisicao = requisicaoPadrao();
         when(politicas.versaoAtiva("1.0")).thenReturn(false);
 
         assertThrows(TermosNaoDisponiveisException.class,
@@ -103,7 +103,7 @@ class CadastroUsuarioServiceTest {
     @Test
     void deveCadastrarUsuarioNaDataExataEmQueCompletaDezoitoAnos() {
         // A idade mínima também precisa ser aceita no limite da regra.
-        CadastroUsuarioRequisicao requisicao = requisicaoComNascimento(
+        CadastroUsuarioRequest requisicao = requisicaoComNascimento(
                 LocalDate.now().minusYears(18));
         Usuario salvo = new Usuario();
         when(politicas.versaoAtiva("1.0")).thenReturn(true);
@@ -120,20 +120,20 @@ class CadastroUsuarioServiceTest {
         verify(repositorio).save(any(Usuario.class));
     }
 
-    private CadastroUsuarioRequisicao requisicaoPadrao() {
+    private CadastroUsuarioRequest requisicaoPadrao() {
         // Dados válidos compartilhados pelos cenários de cadastro.
         return requisicaoComNascimento(LocalDate.now().minusYears(25));
     }
 
-    private CadastroUsuarioRequisicao requisicaoComNascimento(LocalDate dataNascimento) {
-        return new CadastroUsuarioRequisicao(
+    private CadastroUsuarioRequest requisicaoComNascimento(LocalDate dataNascimento) {
+        return new CadastroUsuarioRequest(
                 "Aluno Teste",
                 "aluno@teste.com",
                 "senha-segura",
                 "12345678901",
                 dataNascimento,
                 "11999999999",
-                new EnderecoRequisicao("01001000", "Rua A", "Centro", "Sao Paulo", "SP"),
+                new EnderecoRequest("01001000", "Rua A", "Centro", "Sao Paulo", "SP"),
                 true,
                 true,
                 "1.0");

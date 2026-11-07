@@ -24,22 +24,22 @@ class CadastroValidacaoTest {
     @ValueSource(strings = { "nomeCompleto", "email", "senha", "cpf", "dataNascimento", "telefone",
             "endereco", "declarouMaiorIdade", "aceitouTermosLgpd", "versaoTermos" })
     void todosCamposDoCadastroSaoObrigatorios(String campo) {
-        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequisicao.class, campo, null).isEmpty());
+        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, campo, null).isEmpty());
     }
 
     @ParameterizedTest
     @ValueSource(strings = { "cep", "logradouro", "bairro", "cidade", "estado" })
     void enderecoNaoAceitaCamposAusentesOuEmBranco(String campo) {
-        assertFalse(VALIDATOR.validateValue(EnderecoRequisicao.class, campo, null).isEmpty());
-        assertFalse(VALIDATOR.validateValue(EnderecoRequisicao.class, campo, " ").isEmpty());
+        assertFalse(VALIDATOR.validateValue(EnderecoRequest.class, campo, null).isEmpty());
+        assertFalse(VALIDATOR.validateValue(EnderecoRequest.class, campo, " ").isEmpty());
     }
 
     @ParameterizedTest
     @CsvSource({ "logradouro,100,440", "bairro,60,280", "cidade,80,360" })
     void limitesDoEnderecoCabemCriptografadosMesmoComUnicode(String campo, int limite, int capacidade) {
         String valor = "\u0800".repeat(limite);
-        assertTrue(VALIDATOR.validateValue(EnderecoRequisicao.class, campo, valor).isEmpty());
-        assertFalse(VALIDATOR.validateValue(EnderecoRequisicao.class, campo, valor + "a").isEmpty());
+        assertTrue(VALIDATOR.validateValue(EnderecoRequest.class, campo, valor).isEmpty());
+        assertFalse(VALIDATOR.validateValue(EnderecoRequest.class, campo, valor + "a").isEmpty());
         var converter = new CriptografiaDadosConverter();
         String cifrado = converter.convertToDatabaseColumn(valor);
         assertTrue(cifrado.length() <= capacidade);
@@ -49,17 +49,17 @@ class CadastroValidacaoTest {
     @ParameterizedTest
     @CsvSource({ "nomeCompleto,120", "telefone,20", "versaoTermos,30" })
     void rejeitaCamposAcimaDoLimite(String campo, int limite) {
-        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequisicao.class, campo, "1".repeat(limite + 1)).isEmpty());
+        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, campo, "1".repeat(limite + 1)).isEmpty());
     }
 
     @Test
     void validaCepUfEAceites() {
-        assertTrue(VALIDATOR.validate(new EnderecoRequisicao("01001000", "Rua A", "Centro", "Sao Paulo", "SP")).isEmpty());
-        assertFalse(VALIDATOR.validateValue(EnderecoRequisicao.class, "cep", "01001-000").isEmpty());
-        assertFalse(VALIDATOR.validateValue(EnderecoRequisicao.class, "estado", "ZZ").isEmpty());
-        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequisicao.class, "aceitouTermosLgpd", false).isEmpty());
-        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequisicao.class, "declarouMaiorIdade", false).isEmpty());
-        assertFalse(VALIDATOR.validateValue(ConviteCadastroRequisicao.class, "cadastro", null).isEmpty());
+        assertTrue(VALIDATOR.validate(new EnderecoRequest("01001000", "Rua A", "Centro", "Sao Paulo", "SP")).isEmpty());
+        assertFalse(VALIDATOR.validateValue(EnderecoRequest.class, "cep", "01001-000").isEmpty());
+        assertFalse(VALIDATOR.validateValue(EnderecoRequest.class, "estado", "ZZ").isEmpty());
+        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "aceitouTermosLgpd", false).isEmpty());
+        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "declarouMaiorIdade", false).isEmpty());
+        assertFalse(VALIDATOR.validateValue(ConviteCadastroRequest.class, "cadastro", null).isEmpty());
     }
 
     @Test
@@ -86,8 +86,8 @@ class CadastroValidacaoTest {
 
     @Test
     void senhaRespeitaLimiteEmBytesDoBcrypt() {
-        assertTrue(VALIDATOR.validateValue(CadastroUsuarioRequisicao.class, "senha", "a".repeat(72)).isEmpty());
-        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequisicao.class, "senha", "á".repeat(37)).isEmpty());
-        assertFalse(VALIDATOR.validateValue(AlteracaoSenhaRequisicao.class, "novaSenha", "á".repeat(37)).isEmpty());
+        assertTrue(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "a".repeat(72)).isEmpty());
+        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "á".repeat(37)).isEmpty());
+        assertFalse(VALIDATOR.validateValue(AlteracaoSenhaRequest.class, "novaSenha", "á".repeat(37)).isEmpty());
     }
 }

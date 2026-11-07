@@ -1,7 +1,7 @@
 package com.cursovalido.backend.authentication.controller;
 
-import com.cursovalido.backend.authentication.dto.ConviteCadastroRequisicao;
-import com.cursovalido.backend.authentication.dto.TokenEmailRequisicao;
+import com.cursovalido.backend.authentication.dto.ConviteCadastroRequest;
+import com.cursovalido.backend.authentication.dto.TokenEmailRequest;
 import com.cursovalido.backend.authentication.service.ConviteAcessoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +16,13 @@ public class ConviteController {
 
     @PostMapping("/confirmar-email")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void confirmarEmail(@Valid @RequestBody TokenEmailRequisicao requisicao) {
+    public void confirmarEmail(@Valid @RequestBody TokenEmailRequest requisicao) {
         convites.confirmarEmail(requisicao.token());
     }
 
     @PostMapping("/completar-cadastro")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void completar(@Valid @RequestBody ConviteCadastroRequisicao requisicao) {
+    public void completar(@Valid @RequestBody ConviteCadastroRequest requisicao) {
         convites.completar(requisicao.token(), requisicao.cadastro());
     }
 }

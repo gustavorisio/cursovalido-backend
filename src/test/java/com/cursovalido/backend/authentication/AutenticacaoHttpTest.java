@@ -7,7 +7,7 @@ import static org.mockito.Mockito.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.service.*;
-import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -39,7 +39,7 @@ class AutenticacaoHttpTest {
     @Autowired private TokenJwtService tokens;
     @MockitoBean private EmailService emails;
     @MockitoBean private ValidacaoEmailService validacaoEmail;
-    @MockitoBean private UsuarioForumServico usuariosForum;
+    @MockitoBean private UsuarioForumService usuariosForum;
     private RestClient cliente;
     private Usuario usuario;
     private final Map<String, String> codigos = new ConcurrentHashMap<>();

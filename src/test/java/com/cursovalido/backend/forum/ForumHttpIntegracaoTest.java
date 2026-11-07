@@ -43,9 +43,9 @@ class ForumHttpIntegracaoTest {
     private static final String SENHA = "SenhaTeste123!";
     @LocalServerPort private int porta;
     @Autowired private JdbcTemplate jdbc;
-    @Autowired private TopicoRepositorio topicos;
-    @Autowired private ComentarioRepositorio comentarios;
-    @Autowired private UsuarioForumRepositorio usuariosForum;
+    @Autowired private TopicoRepository topicos;
+    @Autowired private ComentarioRepository comentarios;
+    @Autowired private UsuarioForumRepository usuariosForum;
     @Autowired private UsuarioRepository usuarios;
     @Autowired private PoliticaRepository politicas;
     @Autowired private InicializacaoAdministradorRepository inicializacao;
@@ -249,7 +249,7 @@ class ForumHttpIntegracaoTest {
         var inativo = new UsuarioForum(999999L, "Inativo", "inativo@example.com", "ALUNO");
         inativo.setAtivo(false);
         usuariosForum.save(inativo);
-        var resposta = enviar(HttpMethod.GET, "/api/forum/users", autor.token(), null, RespostaUsuariosForum.class);
+        var resposta = enviar(HttpMethod.GET, "/api/forum/users", autor.token(), null, UsuariosForumResponse.class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resposta.getBody().count()).isEqualTo(1);
         assertThat(resposta.getBody().value()).singleElement().satisfies(usuario -> {
@@ -449,7 +449,7 @@ class ForumHttpIntegracaoTest {
     // Segundo controller da atividade, usado no cadastro de participantes do forum.
     @Test
     void listarPoliticas_comVersaoAtiva_deveRetornarCorpoPublicamente() {
-        var resposta = enviar(HttpMethod.GET, "/api/politicas/ativas", null, null, PoliticaResposta[].class);
+        var resposta = enviar(HttpMethod.GET, "/api/politicas/ativas", null, null, PoliticaResponse[].class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resposta.getBody()).singleElement().satisfies(politica -> {
             assertThat(politica.versao()).isEqualTo("teste-v1");
@@ -461,7 +461,7 @@ class ForumHttpIntegracaoTest {
     @Test
     void publicarPolitica_comAdministradorPrincipal_deveRetornar201EPersistirNovaVersao() {
         var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "cursovalido@gmail.com");
-        var resposta = enviar(HttpMethod.POST, "/api/politicas", admin.token(), new PoliticaRequisicao("Novos termos", "teste-v2", "Conteudo novo"), PoliticaResposta.class);
+        var resposta = enviar(HttpMethod.POST, "/api/politicas", admin.token(), new PoliticaRequest("Novos termos", "teste-v2", "Conteudo novo"), PoliticaResponse.class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(resposta.getBody().versao()).isEqualTo("teste-v2");
         assertThat(resposta.getBody().nome()).isEqualTo("Novos termos");
@@ -474,7 +474,7 @@ class ForumHttpIntegracaoTest {
 
     @Test
     void publicarPolitica_comAluno_deveRetornar403SemPersistir() {
-        verificarErro(enviar(HttpMethod.POST, "/api/politicas", autor.token(), new PoliticaRequisicao("Termos", "teste-v2", "Conteudo"), ErroHttp.class), 403);
+        verificarErro(enviar(HttpMethod.POST, "/api/politicas", autor.token(), new PoliticaRequest("Termos", "teste-v2", "Conteudo"), ErroHttp.class), 403);
         assertThat(politicas.findByVersao("teste-v2")).isEmpty();
     }
 
@@ -512,7 +512,7 @@ class ForumHttpIntegracaoTest {
         var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-convite@example.com");
         String email = "sem-conta@example.com";
         assertThat(enviar(HttpMethod.POST, "/api/administracao/convites", principal.token(),
-                new ConviteAcessoRequisicao(email, Perfil.PROFESSOR), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+                new ConviteAcessoRequest(email, Perfil.PROFESSOR), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         String tokenAnterior = convitesEnviados.get(email);
         var conviteAnterior = convites.findByEmail(email).orElseThrow();
         Long idConvite = conviteAnterior.getId();
@@ -520,7 +520,7 @@ class ForumHttpIntegracaoTest {
         conviteAnterior.setEmailConfirmado(true);
         convites.saveAndFlush(conviteAnterior);
         assertThat(enviar(HttpMethod.POST, "/api/administracao/convites", principal.token(),
-                new ConviteAcessoRequisicao(email, Perfil.ADMINISTRADOR), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+                new ConviteAcessoRequest(email, Perfil.ADMINISTRADOR), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         var novo = convites.findByEmail(email).orElseThrow();
         assertThat(novo.getId()).isEqualTo(idConvite);
         assertThat(novo.getPerfil()).isEqualTo(Perfil.ADMINISTRADOR);
@@ -541,7 +541,7 @@ class ForumHttpIntegracaoTest {
             existente.setAtivo(ativo);
             usuarios.saveAndFlush(existente);
             var resposta = enviar(HttpMethod.POST, "/api/administracao/convites", principal.token(),
-                    new ConviteAcessoRequisicao(existente.getEmail(), Perfil.PROFESSOR), Map.class);
+                    new ConviteAcessoRequest(existente.getEmail(), Perfil.PROFESSOR), Map.class);
             assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
             assertThat(resposta.getBody()).containsEntry("codigo", "EMAIL_JA_CADASTRADO");
             assertThat(resposta.getBody().get("erro").toString()).contains("conta cadastrada");
@@ -551,12 +551,12 @@ class ForumHttpIntegracaoTest {
 
     private long cadastrarConvidado(String email, String cpf, String tokenPrincipal) {
         assertThat(enviar(HttpMethod.POST, "/api/administracao/convites", tokenPrincipal,
-                new ConviteAcessoRequisicao(email, Perfil.PROFESSOR), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+                new ConviteAcessoRequest(email, Perfil.PROFESSOR), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         String token = convitesEnviados.get(email);
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", token), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
-        var cadastro = new CadastroUsuarioRequisicao("Professor Convidado", email, SENHA, cpf,
-                LocalDate.of(1990, 1, 1), "11999999999", new EnderecoRequisicao("01001000", "Rua Teste", "Centro", "Sao Paulo", "SP"),
+        var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA, cpf,
+                LocalDate.of(1990, 1, 1), "11999999999", new EnderecoRequest("01001000", "Rua Teste", "Centro", "Sao Paulo", "SP"),
                 true, true, "teste-v1");
         assertThat(enviar(HttpMethod.POST, "/api/convites/completar-cadastro", null,
                 Map.of("token", token, "cadastro", cadastro), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -567,10 +567,10 @@ class ForumHttpIntegracaoTest {
     }
 
     private String autenticarConvidado(String email) {
-        var login = enviar(HttpMethod.POST, "/api/autenticacao/login", null, Map.of("email", email, "senha", SENHA), AutenticacaoResposta.class);
+        var login = enviar(HttpMethod.POST, "/api/autenticacao/login", null, Map.of("email", email, "senha", SENHA), AutenticacaoResponse.class);
         assertThat(login.getStatusCode()).isEqualTo(HttpStatus.OK);
         var confirmado = enviar(HttpMethod.POST, "/api/autenticacao/confirmar-2fa", null,
-                Map.of("email", email, "codigo", codigos.get(email)), AutenticacaoResposta.class);
+                Map.of("email", email, "codigo", codigos.get(email)), AutenticacaoResponse.class);
         assertThat(confirmado.getStatusCode()).isEqualTo(HttpStatus.OK);
         return confirmado.getBody().token();
     }
@@ -583,8 +583,8 @@ class ForumHttpIntegracaoTest {
         long numero = SEQUENCIA.incrementAndGet();
         String email = emailPrincipal == null ? "forum-" + numero + "@example.com" : emailPrincipal;
         String nome = "Participante " + numero;
-        var requisicao = new CadastroUsuarioRequisicao(nome, email, SENHA, String.format("%011d", numero),
-                LocalDate.of(2000, 1, 1), "11999999999", new EnderecoRequisicao("01001000", "Rua Teste", "Centro", "Sao Paulo", "SP"), true, true, "teste-v1");
+        var requisicao = new CadastroUsuarioRequest(nome, email, SENHA, String.format("%011d", numero),
+                LocalDate.of(2000, 1, 1), "11999999999", new EnderecoRequest("01001000", "Rua Teste", "Centro", "Sao Paulo", "SP"), true, true, "teste-v1");
         assertThat(enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, requisicao, String.class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(confirmacoes.get(email)).isNotBlank();
         assertThat(enviar(HttpMethod.POST, "/api/autenticacao/confirmar-email", null, Map.of("token", confirmacoes.get(email)), String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -599,11 +599,11 @@ class ForumHttpIntegracaoTest {
                 inicializacao.saveAndFlush(registro);
             }
         }
-        var login = enviar(HttpMethod.POST, "/api/autenticacao/login", null, Map.of("email", email, "senha", SENHA), AutenticacaoResposta.class);
+        var login = enviar(HttpMethod.POST, "/api/autenticacao/login", null, Map.of("email", email, "senha", SENHA), AutenticacaoResponse.class);
         assertThat(login.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(login.getBody().requerCodigo2fa()).isTrue();
         assertThat(codigos.get(email)).isNotBlank();
-        var confirmacao = enviar(HttpMethod.POST, "/api/autenticacao/confirmar-2fa", null, Map.of("email", email, "codigo", codigos.get(email)), AutenticacaoResposta.class);
+        var confirmacao = enviar(HttpMethod.POST, "/api/autenticacao/confirmar-2fa", null, Map.of("email", email, "codigo", codigos.get(email)), AutenticacaoResponse.class);
         assertThat(confirmacao.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(confirmacao.getBody().token()).isNotBlank();
         return new Sessao(confirmacao.getBody().idUsuario(), nome, confirmacao.getBody().token());

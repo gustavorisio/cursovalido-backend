@@ -1,6 +1,6 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.dto.ConviteAcessoRequisicao;
+import com.cursovalido.backend.authentication.dto.ConviteAcessoRequest;
 import com.cursovalido.backend.authentication.entity.InicializacaoAdministrador;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
@@ -52,7 +52,7 @@ public class AdministradorInicialService {
             }
         }
         String endereco = email.trim().toLowerCase(Locale.ROOT);
-        var configuracao = new ConviteAcessoRequisicao(endereco, Perfil.ADMINISTRADOR);
+        var configuracao = new ConviteAcessoRequest(endereco, Perfil.ADMINISTRADOR);
         if (!validador.validate(configuracao).isEmpty()) {
             throw new IllegalStateException("Defina ADMIN_EMAIL com um endereco de e-mail valido.");
         }

@@ -1,7 +1,7 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.dto.AutenticacaoResposta;
-import com.cursovalido.backend.authentication.dto.LoginRequisicao;
+import com.cursovalido.backend.authentication.dto.AutenticacaoResponse;
+import com.cursovalido.backend.authentication.dto.LoginRequest;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
@@ -12,7 +12,7 @@ import com.cursovalido.backend.authentication.exception.EmailNaoConfirmadoExcept
 import com.cursovalido.backend.authentication.exception.PendenteAprovacaoException;
 import com.cursovalido.backend.authentication.exception.TermosNaoAceitosException;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,7 +29,7 @@ public class AutenticacaoService {
     private final EmailService emails;
     private final PasswordEncoder codificadorSenha;
     private final LogAuditoriaService auditoria;
-    private final UsuarioForumServico usuariosForum;
+    private final UsuarioForumService usuariosForum;
     private final ProtecaoForcaBrutaService protecaoForcaBruta;
     private final ModeracaoUsuarioService moderacao;
     private final PoliticaService politicas;
@@ -47,7 +47,7 @@ public class AutenticacaoService {
 
 
     // Valida a senha e inicia o login com o envio do codigo 2FA.
-    public AutenticacaoResposta autenticar(LoginRequisicao requisicao, String enderecoIp) {
+    public AutenticacaoResponse autenticar(LoginRequest requisicao, String enderecoIp) {
         String identificador = identificador(requisicao.email(), enderecoIp);
         protecaoForcaBruta.verificar(identificador);
         Usuario usuario = repositorio.findByEmail(requisicao.email()).orElse(null);
@@ -79,11 +79,11 @@ public class AutenticacaoService {
         String codigo = tokensEmail.criarCodigo2fa(usuario);
         emails.enviarCodigo2fa(usuario, codigo);
         auditoria.registrar(usuario.getId(), "CODIGO_2FA_ENVIADO", "Codigo enviado por e-mail", enderecoIp);
-        return new AutenticacaoResposta(null, null, null, null, true);
+        return new AutenticacaoResponse(null, null, null, null, true);
     }
 
     // Confirma o codigo 2FA e gera o token de acesso.
-    public AutenticacaoResposta confirmarCodigo(String email, String codigo, String enderecoIp) {
+    public AutenticacaoResponse confirmarCodigo(String email, String codigo, String enderecoIp) {
         String identificador = identificador(email, enderecoIp) + ":2fa";
         protecaoForcaBruta.verificar(identificador);
         Usuario usuario;
@@ -108,7 +108,7 @@ public class AutenticacaoService {
             throw new TermosNaoAceitosException(tokens.gerarTermos(usuario));
         usuariosForum.sincronizar(usuario);
         auditoria.registrar(usuario.getId(), "LOGIN", "Login realizado com 2FA", enderecoIp);
-        return new AutenticacaoResposta(tokens.gerar(usuario), usuario.getId(), usuario.getNomeCompleto(),
+        return new AutenticacaoResponse(tokens.gerar(usuario), usuario.getId(), usuario.getNomeCompleto(),
                 usuario.getPerfil(), false);
     }
 

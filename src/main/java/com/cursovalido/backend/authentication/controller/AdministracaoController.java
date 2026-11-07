@@ -1,8 +1,8 @@
 package com.cursovalido.backend.authentication.controller;
 
-import com.cursovalido.backend.authentication.dto.ConviteAcessoRequisicao;
-import com.cursovalido.backend.authentication.dto.ConviteAcessoResposta;
-import com.cursovalido.backend.authentication.dto.ConviteResumoResposta;
+import com.cursovalido.backend.authentication.dto.ConviteAcessoRequest;
+import com.cursovalido.backend.authentication.dto.ConviteAcessoResponse;
+import com.cursovalido.backend.authentication.dto.ConviteResumoResponse;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.ConviteAcessoService;
@@ -30,17 +30,17 @@ public class AdministracaoController {
     @PostMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void criar(@AuthenticationPrincipal UsuarioAutenticado administrador,
-            @Valid @RequestBody ConviteAcessoRequisicao requisicao) {
+            @Valid @RequestBody ConviteAcessoRequest requisicao) {
         convites.criar(requisicao.email(), requisicao.perfil(), administrador.getId());
     }
 
     @GetMapping("/pendentes")
-    public List<ConviteAcessoResposta> listarPendentes() {
+    public List<ConviteAcessoResponse> listarPendentes() {
         return convites.pendentes().stream().map(this::converter).toList();
     }
 
     @GetMapping
-    public List<ConviteResumoResposta> listarConvites() {
+    public List<ConviteResumoResponse> listarConvites() {
         return convites.convitesPendentes();
     }
 
@@ -74,8 +74,8 @@ public class AdministracaoController {
         convites.cancelarConvite(id, administrador.getId());
     }
 
-    private ConviteAcessoResposta converter(Usuario usuario) {
-        return new ConviteAcessoResposta(usuario.getId(), usuario.getEmail(), usuario.getPerfil(),
+    private ConviteAcessoResponse converter(Usuario usuario) {
+        return new ConviteAcessoResponse(usuario.getId(), usuario.getEmail(), usuario.getPerfil(),
                 usuario.getStatusAprovacao(), usuario.getNomeCompleto(), usuario.getCpf(),
                 usuario.getDataNascimento(), usuario.getTelefone());
     }

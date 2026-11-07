@@ -21,7 +21,7 @@ class DocumentoTermosRenderizacaoTest {
             try (var entrada = new org.springframework.core.io.ClassPathResource("static/" + recurso).getInputStream()) {
                 modelo = new String(entrada.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
             }
-            var politica = new com.cursovalido.backend.authentication.dto.PoliticaResposta("Documento", "1.0",
+            var politica = new com.cursovalido.backend.authentication.dto.PoliticaResponse("Documento", "1.0",
                 "<!DOCTYPE html><html><body><h1>Titulo antigo</h1><p><strong>Versao 1.0</strong></p><h2>Objeto</h2><p>Texto vigente</p></body></html>", java.time.LocalDateTime.now());
             String html = DocumentoTermosController.renderizarDocumento(modelo, politica);
             assertTrue(html.contains("onclick=\"voltar()\""));

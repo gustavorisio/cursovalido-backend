@@ -9,8 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
-import com.cursovalido.backend.forum.repository.TopicoRepositorio;
-import com.cursovalido.backend.forum.repository.UsuarioForumRepositorio;
+import com.cursovalido.backend.forum.repository.TopicoRepository;
+import com.cursovalido.backend.forum.repository.UsuarioForumRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,9 +28,9 @@ class ForumIntegracaoTest {
     @Autowired
     private MockMvc mockMvc;
     @Autowired
-    private UsuarioForumRepositorio usuarios;
+    private UsuarioForumRepository usuarios;
     @Autowired
-    private TopicoRepositorio topicos;
+    private TopicoRepository topicos;
 
     @Test
     void deveCriarTopicoPelaApiEPersistirNoBanco() throws Exception {

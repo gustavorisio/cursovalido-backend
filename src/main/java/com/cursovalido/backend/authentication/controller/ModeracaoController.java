@@ -37,13 +37,13 @@ public class ModeracaoController {
             }
             return new UsuarioAdministracaoResposta(usuario.getId(), usuario.getNomeCompleto(), usuario.getEmail(),
                     usuario.getPerfil(), usuario.isAtivo(), podeModerar,
-                    moderacao.vigentes(usuario.getId()).stream().map(SuspensaoResposta::de).toList());
+                    moderacao.vigentes(usuario.getId()).stream().map(SuspensaoResponse::de).toList());
         }).toList();
     }
 
     @PostMapping("/api/administracao/usuarios/{id}/suspensoes")
     @ResponseStatus(HttpStatus.CREATED)
-    public SuspensaoResposta aplicar(@PathVariable Long id, @Valid @RequestBody SuspensaoRequisicao dados,
+    public SuspensaoResponse aplicar(@PathVariable Long id, @Valid @RequestBody SuspensaoRequest dados,
             @AuthenticationPrincipal UsuarioAutenticado principal) {
         return moderacao.aplicar(id, dados, principal.getId());
     }
@@ -56,11 +56,11 @@ public class ModeracaoController {
     }
 
     @GetMapping("/api/autenticacao/restricoes")
-    public List<SuspensaoResposta> minhasRestricoes(@AuthenticationPrincipal UsuarioAutenticado principal) {
-        return moderacao.vigentes(principal.getId()).stream().map(SuspensaoResposta::de).toList();
+    public List<SuspensaoResponse> minhasRestricoes(@AuthenticationPrincipal UsuarioAutenticado principal) {
+        return moderacao.vigentes(principal.getId()).stream().map(SuspensaoResponse::de).toList();
     }
 
     public record UsuarioAdministracaoResposta(Long id, String nome, String email, Perfil perfil,
-            boolean ativo, boolean podeModerar, List<SuspensaoResposta> suspensoes) {
+            boolean ativo, boolean podeModerar, List<SuspensaoResponse> suspensoes) {
     }
 }

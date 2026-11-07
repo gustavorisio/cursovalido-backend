@@ -1,14 +1,14 @@
 package com.cursovalido.backend.authentication.controller;
 
-import com.cursovalido.backend.authentication.dto.AceiteTermosRequisicao;
-import com.cursovalido.backend.authentication.dto.AlteracaoSenhaRequisicao;
-import com.cursovalido.backend.authentication.dto.AutenticacaoResposta;
-import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequisicao;
-import com.cursovalido.backend.authentication.dto.Codigo2faRequisicao;
-import com.cursovalido.backend.authentication.dto.DadosPessoaisResposta;
-import com.cursovalido.backend.authentication.dto.EmailRequisicao;
-import com.cursovalido.backend.authentication.dto.LoginRequisicao;
-import com.cursovalido.backend.authentication.dto.TokenEmailRequisicao;
+import com.cursovalido.backend.authentication.dto.AceiteTermosRequest;
+import com.cursovalido.backend.authentication.dto.AlteracaoSenhaRequest;
+import com.cursovalido.backend.authentication.dto.AutenticacaoResponse;
+import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
+import com.cursovalido.backend.authentication.dto.Codigo2faRequest;
+import com.cursovalido.backend.authentication.dto.DadosPessoaisResponse;
+import com.cursovalido.backend.authentication.dto.EmailRequest;
+import com.cursovalido.backend.authentication.dto.LoginRequest;
+import com.cursovalido.backend.authentication.dto.TokenEmailRequest;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.AutenticacaoService;
 import com.cursovalido.backend.authentication.service.CadastroUsuarioService;
@@ -38,13 +38,13 @@ public class AutenticacaoController {
     private final LogAuditoriaService auditoria;
 
     @GetMapping("/meus-dados")
-    public DadosPessoaisResposta meusDados(
+    public DadosPessoaisResponse meusDados(
             @AuthenticationPrincipal UsuarioAutenticado usuario) {
         return contaUsuarios.consultarDados(usuario.getId());
     }
 
     @GetMapping("/exportar-dados")
-    public ResponseEntity<DadosPessoaisResposta> exportarDados(
+    public ResponseEntity<DadosPessoaisResponse> exportarDados(
             @AuthenticationPrincipal UsuarioAutenticado usuario) {
         var dados = contaUsuarios.consultarDados(usuario.getId());
         auditoria.registrar(usuario.getId(), "EXPORTACAO_DADOS", "Dados de cadastro exportados", null);
@@ -64,46 +64,46 @@ public class AutenticacaoController {
 
     @PostMapping("/cadastro")
     @ResponseStatus(HttpStatus.CREATED)
-    public void cadastrar(@Valid @RequestBody CadastroUsuarioRequisicao requisicao, HttpServletRequest request) {
+    public void cadastrar(@Valid @RequestBody CadastroUsuarioRequest requisicao, HttpServletRequest request) {
         cadastroUsuarios.cadastrar(requisicao, request.getRemoteAddr());
     }
 
     @PostMapping("/login")
-    public AutenticacaoResposta login(@Valid @RequestBody LoginRequisicao requisicao, HttpServletRequest request) {
+    public AutenticacaoResponse login(@Valid @RequestBody LoginRequest requisicao, HttpServletRequest request) {
         return autenticacao.autenticar(requisicao, request.getRemoteAddr());
     }
 
     @PostMapping("/confirmar-2fa")
-    public AutenticacaoResposta confirmar2fa(@Valid @RequestBody Codigo2faRequisicao requisicao,
+    public AutenticacaoResponse confirmar2fa(@Valid @RequestBody Codigo2faRequest requisicao,
             HttpServletRequest request) {
         return autenticacao.confirmarCodigo(requisicao.email(), requisicao.codigo(), request.getRemoteAddr());
     }
 
     @PostMapping("/reenviar-2fa")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reenviar2fa(@Valid @RequestBody EmailRequisicao requisicao, HttpServletRequest request) {
+    public void reenviar2fa(@Valid @RequestBody EmailRequest requisicao, HttpServletRequest request) {
         autenticacao.reenviarCodigo2fa(requisicao.email(), request.getRemoteAddr());
     }
 
     @PostMapping("/confirmar-email")
-    public void confirmarEmail(@Valid @RequestBody TokenEmailRequisicao requisicao) {
+    public void confirmarEmail(@Valid @RequestBody TokenEmailRequest requisicao) {
         cadastroUsuarios.confirmarEmail(requisicao.token());
     }
 
     @PostMapping("/reenviar-confirmacao")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reenviarConfirmacao(@Valid @RequestBody EmailRequisicao requisicao) {
+    public void reenviarConfirmacao(@Valid @RequestBody EmailRequest requisicao) {
         cadastroUsuarios.reenviarConfirmacao(requisicao.email());
     }
 
     @PostMapping("/solicitar-alteracao-senha")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void solicitarAlteracaoSenha(@Valid @RequestBody EmailRequisicao requisicao) {
+    public void solicitarAlteracaoSenha(@Valid @RequestBody EmailRequest requisicao) {
         senhasUsuarios.solicitarAlteracaoSenha(requisicao.email());
     }
 
     @PostMapping("/alterar-senha")
-    public void alterarSenha(@Valid @RequestBody AlteracaoSenhaRequisicao requisicao) {
+    public void alterarSenha(@Valid @RequestBody AlteracaoSenhaRequest requisicao) {
         senhasUsuarios.alterarSenha(requisicao.token(), requisicao.novaSenha(), requisicao.confirmacaoSenha());
     }
 
@@ -117,7 +117,7 @@ public class AutenticacaoController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void aceitarTermosNovamente(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestHeader("Authorization") String autorizacao,
-            @Valid @RequestBody AceiteTermosRequisicao requisicao) {
+            @Valid @RequestBody AceiteTermosRequest requisicao) {
         termosUsuarios.aceitarTermosNovamente(usuario.getId(), requisicao.versaoTermos());
         tokens.encerrar(autorizacao.substring(7));
     }
@@ -131,7 +131,7 @@ public class AutenticacaoController {
     @DeleteMapping("/conta")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluirConta(@AuthenticationPrincipal UsuarioAutenticado usuario,
-            @Valid @RequestBody com.cursovalido.backend.authentication.dto.ExclusaoContaRequisicao requisicao) {
+            @Valid @RequestBody com.cursovalido.backend.authentication.dto.ExclusaoContaRequest requisicao) {
         contaUsuarios.excluirConta(usuario.getId(), requisicao.codigo());
     }
 }
