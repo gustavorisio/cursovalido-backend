@@ -319,3 +319,15 @@ VALUES ('Politica de Privacidade', '1.0', $$<!DOCTYPE html>
     <p>A versao vigente permanece acessivel nesta politica. Quando uma alteracao exigir novo aceite, o sistema solicitara a confirmacao antes de liberar as funcionalidades correspondentes.</p>
 </body>
 </html>$$, TRUE, CURRENT_TIMESTAMP);
+
+CREATE TABLE tb_noticias (
+    id BIGSERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    conteudo VARCHAR(30000) NOT NULL,
+    autor_id BIGINT REFERENCES tb_usuarios(id) ON DELETE SET NULL,
+    criado_em TIMESTAMP NOT NULL,
+    atualizado_em TIMESTAMP,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX idx_noticias_recentes ON tb_noticias(criado_em DESC, id DESC) WHERE ativo = TRUE;
