@@ -1,8 +1,8 @@
 package com.cursovalido.backend.forum.configuration;
 
-import com.cursovalido.backend.authentication.configuration.HttpsFiltro;
-import com.cursovalido.backend.authentication.configuration.LimiteRequisicoesFiltro;
-import com.cursovalido.backend.authentication.configuration.TokenJwtFiltro;
+import com.cursovalido.backend.authentication.configuration.HttpsFilter;
+import com.cursovalido.backend.authentication.configuration.LimiteRequisicoesFilter;
+import com.cursovalido.backend.authentication.configuration.TokenJwtFilter;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -26,7 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final TokenJwtFiltro tokenJwtFiltro;
+    private final TokenJwtFilter tokenJwtFiltro;
     @Value("${aplicacao.frontend-origens:http://localhost:3000,http://localhost:5173}")
     private String origensFrontend;
     @Value("${seguranca.https-obrigatorio:false}")
@@ -127,10 +127,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/forum/topicos/*").hasRole("ADMINISTRADOR")
                         .anyRequest().denyAll())
                 .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new HttpsFiltro(httpsObrigatorio),
-                        TokenJwtFiltro.class)
-                .addFilterBefore(new LimiteRequisicoesFiltro(limiteRequisicoes),
-                        TokenJwtFiltro.class);
+                .addFilterBefore(new HttpsFilter(httpsObrigatorio),
+                        TokenJwtFilter.class)
+                .addFilterBefore(new LimiteRequisicoesFilter(limiteRequisicoes),
+                        TokenJwtFilter.class);
         return http.build();
     }
 

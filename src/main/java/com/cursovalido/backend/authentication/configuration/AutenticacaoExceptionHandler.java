@@ -1,7 +1,7 @@
 package com.cursovalido.backend.authentication.configuration;
 
-import com.cursovalido.backend.authentication.dto.RespostaCodigo2faErro;
-import com.cursovalido.backend.authentication.dto.RespostaTermosPendentes;
+import com.cursovalido.backend.authentication.dto.Codigo2faErroResponse;
+import com.cursovalido.backend.authentication.dto.TermosPendentesResponse;
 import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoException;
 import com.cursovalido.backend.authentication.exception.EmailNaoConfirmadoException;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
@@ -22,27 +22,27 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 public class AutenticacaoExceptionHandler {
     @ExceptionHandler(com.cursovalido.backend.authentication.exception.BanimentoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public RespostaCodigo2faErro banimento(com.cursovalido.backend.authentication.exception.BanimentoException excecao) {
-        return new RespostaCodigo2faErro(excecao.getReason(), "CONTA_SUSPENSA");
+    public Codigo2faErroResponse banimento(com.cursovalido.backend.authentication.exception.BanimentoException excecao) {
+        return new Codigo2faErroResponse(excecao.getReason(), "CONTA_SUSPENSA");
     }
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<RespostaCodigo2faErro> operacaoRecusada(ResponseStatusException excecao) {
+    public ResponseEntity<Codigo2faErroResponse> operacaoRecusada(ResponseStatusException excecao) {
         String motivo = excecao.getReason() == null ? "Operacao recusada" : excecao.getReason();
         return ResponseEntity.status(excecao.getStatusCode()).headers(excecao.getHeaders())
-                .body(new RespostaCodigo2faErro(motivo, "OPERACAO_RECUSADA"));
+                .body(new Codigo2faErroResponse(motivo, "OPERACAO_RECUSADA"));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public RespostaCodigo2faErro corpoInvalido(HttpMessageNotReadableException excecao) {
-        return new RespostaCodigo2faErro("Corpo JSON invalido. Verifique os campos e os valores informados.",
+    public Codigo2faErroResponse corpoInvalido(HttpMessageNotReadableException excecao) {
+        return new Codigo2faErroResponse("Corpo JSON invalido. Verifique os campos e os valores informados.",
                 "JSON_INVALIDO");
     }
 
     @ExceptionHandler(ConviteAcessoInvalidoException.class)
-    public ResponseEntity<RespostaCodigo2faErro> conviteInvalido(ConviteAcessoInvalidoException excecao) {
+    public ResponseEntity<Codigo2faErroResponse> conviteInvalido(ConviteAcessoInvalidoException excecao) {
         return ResponseEntity.status(excecao.getStatus())
-                .body(new RespostaCodigo2faErro(excecao.getMessage(), excecao.getCodigo()));
+                .body(new Codigo2faErroResponse(excecao.getMessage(), excecao.getCodigo()));
     }
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -54,32 +54,32 @@ public class AutenticacaoExceptionHandler {
     }
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public RespostaCodigo2faErro requisicaoInvalida(IllegalArgumentException excecao) {
-        return new RespostaCodigo2faErro(excecao.getMessage(), "REQUISICAO_INVALIDA");
+    public Codigo2faErroResponse requisicaoInvalida(IllegalArgumentException excecao) {
+        return new Codigo2faErroResponse(excecao.getMessage(), "REQUISICAO_INVALIDA");
     }
 
     @ExceptionHandler(EmailNaoConfirmadoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public RespostaCodigo2faErro emailNaoConfirmado(
+    public Codigo2faErroResponse emailNaoConfirmado(
             EmailNaoConfirmadoException excecao) {
-        return new RespostaCodigo2faErro(excecao.getReason(), EmailNaoConfirmadoException.CODIGO);
+        return new Codigo2faErroResponse(excecao.getReason(), EmailNaoConfirmadoException.CODIGO);
     }
     @ExceptionHandler(Codigo2faExpiradoException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public RespostaCodigo2faErro codigo2faExpirado(Codigo2faExpiradoException excecao) {
-        return new RespostaCodigo2faErro(excecao.getReason(), Codigo2faExpiradoException.CODIGO);
+    public Codigo2faErroResponse codigo2faExpirado(Codigo2faExpiradoException excecao) {
+        return new Codigo2faErroResponse(excecao.getReason(), Codigo2faExpiradoException.CODIGO);
     }
 
     @ExceptionHandler(ServicoEmailIndisponivelException.class)
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
-    public RespostaCodigo2faErro servicoEmailIndisponivel(ServicoEmailIndisponivelException excecao) {
-        return new RespostaCodigo2faErro(excecao.getReason(), ServicoEmailIndisponivelException.CODIGO);
+    public Codigo2faErroResponse servicoEmailIndisponivel(ServicoEmailIndisponivelException excecao) {
+        return new Codigo2faErroResponse(excecao.getReason(), ServicoEmailIndisponivelException.CODIGO);
     }
 
     @ExceptionHandler(TermosNaoAceitosException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public RespostaTermosPendentes termosPendentes(TermosNaoAceitosException excecao) {
-        return new RespostaTermosPendentes(excecao.getReason(), TermosNaoAceitosException.CODIGO,
+    public TermosPendentesResponse termosPendentes(TermosNaoAceitosException excecao) {
+        return new TermosPendentesResponse(excecao.getReason(), TermosNaoAceitosException.CODIGO,
                 excecao.getToken());
     }
 }

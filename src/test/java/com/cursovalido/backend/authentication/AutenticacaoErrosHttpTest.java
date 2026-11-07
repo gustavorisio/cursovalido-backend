@@ -5,8 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.cursovalido.backend.authentication.configuration.AutenticacaoExceptionHandler;
-import com.cursovalido.backend.authentication.controller.ConviteControlador;
-import com.cursovalido.backend.authentication.service.ConviteAcessoServico;
+import com.cursovalido.backend.authentication.controller.ConviteController;
+import com.cursovalido.backend.authentication.service.ConviteAcessoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,7 +14,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
 class AutenticacaoErrosHttpTest {
-    private final ConviteAcessoServico convites = mock(ConviteAcessoServico.class);
+    private final ConviteAcessoService convites = mock(ConviteAcessoService.class);
 
     @Test
     void preservaStatusEMotivoDaRecusa() throws Exception {
@@ -22,7 +22,7 @@ class AutenticacaoErrosHttpTest {
                 HttpStatus.SERVICE_UNAVAILABLE }) {
             doThrow(new ResponseStatusException(status, "Motivo da recusa"))
                     .when(convites).confirmarEmail("token");
-            MockMvcBuilders.standaloneSetup(new ConviteControlador(convites))
+            MockMvcBuilders.standaloneSetup(new ConviteController(convites))
                     .setControllerAdvice(new AutenticacaoExceptionHandler()).build()
                     .perform(post("/api/convites/confirmar-email").contentType(MediaType.APPLICATION_JSON)
                             .content("{\"token\":\"token\"}"))
@@ -34,7 +34,7 @@ class AutenticacaoErrosHttpTest {
 
     @Test
     void jsonInvalidoRetornaErroLegivel() throws Exception {
-        MockMvcBuilders.standaloneSetup(new ConviteControlador(convites))
+        MockMvcBuilders.standaloneSetup(new ConviteController(convites))
                 .setControllerAdvice(new AutenticacaoExceptionHandler()).build()
                 .perform(post("/api/convites/confirmar-email").contentType(MediaType.APPLICATION_JSON)
                         .content("{"))

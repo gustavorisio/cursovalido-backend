@@ -2,7 +2,7 @@ package com.cursovalido.backend.aulas.service;
 
 import com.cursovalido.backend.aulas.dto.AulaRequest;
 import com.cursovalido.backend.aulas.repository.*;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ class AulaServiceTest {
     @Mock private AulaRepository repositorio;
     @Mock private ModuloService modulos;
     @Mock private YoutubeService youtube;
-    @Mock private LogAuditoriaServico auditoria;
+    @Mock private LogAuditoriaService auditoria;
     @Mock private ProgressoAulaRepository progressos;
     @InjectMocks private AulaService servico;
     private final AulaRequest dados = new AulaRequest(" Java ", " Basico ", 2, "https://youtu.be/M7lc1UVf-VE");

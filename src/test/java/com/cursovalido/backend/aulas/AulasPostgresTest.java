@@ -10,10 +10,10 @@ import com.cursovalido.backend.aulas.service.ProgressoAulaService;
 import com.cursovalido.backend.aulas.dto.ModuloRequest;
 import com.cursovalido.backend.aulas.dto.AulaRequest;
 import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
-import com.cursovalido.backend.authentication.service.ContaUsuarioServico;
-import com.cursovalido.backend.authentication.service.AdministradorInicialServico;
-import com.cursovalido.backend.authentication.repository.InicializacaoAdministradorRepositorio;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.ContaUsuarioService;
+import com.cursovalido.backend.authentication.service.AdministradorInicialService;
+import com.cursovalido.backend.authentication.repository.InicializacaoAdministradorRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.test.util.ReflectionTestUtils;
 import javax.sql.DataSource;
@@ -40,14 +40,14 @@ import static org.assertj.core.api.Assertions.*;
 @Import(AulasPostgresTest.MigracaoTeste.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class AulasPostgresTest extends AulasIntegracaoTest {
-    @Autowired private AdministradorInicialServico administradorInicial;
-    @Autowired private InicializacaoAdministradorRepositorio inicializacao;
+    @Autowired private AdministradorInicialService administradorInicial;
+    @Autowired private InicializacaoAdministradorRepository inicializacao;
     @Autowired private EntityManager entidades;
     @Autowired private DataSource fonte;
-    @Autowired private UsuarioRepositorio usuarios;
+    @Autowired private UsuarioRepository usuarios;
     @Autowired private CursoService cursos;
-    @Autowired private ContaUsuarioServico contas;
-    @Autowired private com.cursovalido.backend.authentication.service.TokenEmailServico tokensEmail;
+    @Autowired private ContaUsuarioService contas;
+    @Autowired private com.cursovalido.backend.authentication.service.TokenEmailService tokensEmail;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private AlunoAulasService alunoAulas;
     @Autowired private ModuloService modulos;
@@ -173,12 +173,13 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     void v1CriaSchemaCompletoEDocumentosSeparados() {
         String schema = "v1_" + java.util.UUID.randomUUID().toString().replace("-", "");
         var flyway = Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("2");
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("1");
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select nome from " + schema + ".tb_politicas_privacidade", String.class)).isEqualTo("Politica de Privacidade");
         assertThat(jdbc.queryForObject("select concluida from " + schema + ".tb_inicializacao_administrador", Boolean.class)).isFalse();
+        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_contas_excluidas", Long.class)).isZero();
         assertThat(flyway.migrate().migrationsExecuted).isZero();
     }
     @TestConfiguration

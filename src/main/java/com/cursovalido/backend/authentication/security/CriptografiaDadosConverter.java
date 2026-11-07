@@ -19,7 +19,10 @@ public class CriptografiaDadosConverter implements AttributeConverter<String, St
 
     @Override
     public String convertToDatabaseColumn(String valor) {
-        if (valor == null || valor.isBlank()) {
+        if (valor == null) {
+            return null;
+        }
+        if (valor.isBlank()) {
             return valor;
         }
         try {
@@ -39,7 +42,10 @@ public class CriptografiaDadosConverter implements AttributeConverter<String, St
 
     @Override
     public String convertToEntityAttribute(String valor) {
-        if (valor == null || valor.isBlank()) {
+        if (valor == null) {
+            return null;
+        }
+        if (valor.isBlank()) {
             return valor;
         }
         try {
@@ -58,7 +64,10 @@ public class CriptografiaDadosConverter implements AttributeConverter<String, St
 
     private static SecretKeySpec criarChave() {
         String chave = System.getenv("DADOS_CRIPTOGRAFIA_CHAVE");
-        if (chave == null || chave.getBytes(StandardCharsets.UTF_8).length != 32) {
+        if (chave == null) {
+            throw new IllegalStateException("DADOS_CRIPTOGRAFIA_CHAVE deve ter 32 bytes");
+        }
+        if (chave.getBytes(StandardCharsets.UTF_8).length != 32) {
             throw new IllegalStateException("DADOS_CRIPTOGRAFIA_CHAVE deve ter 32 bytes");
         }
         return new SecretKeySpec(chave.getBytes(StandardCharsets.UTF_8), "AES");

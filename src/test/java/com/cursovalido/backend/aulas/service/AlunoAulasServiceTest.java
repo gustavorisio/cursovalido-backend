@@ -2,8 +2,8 @@ package com.cursovalido.backend.aulas.service;
 
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -18,12 +18,12 @@ import static com.cursovalido.backend.aulas.service.AulasTestSupport.*;
 
 @ExtendWith(MockitoExtension.class)
 class AlunoAulasServiceTest {
-    @Mock private UsuarioRepositorio usuarios;
+    @Mock private UsuarioRepository usuarios;
     @Mock private CursoRepository cursos;
     @Mock private ModuloRepository modulos;
     @Mock private AulaRepository aulas;
     @Mock private MatriculaRepository matriculas;
-    @Mock private LogAuditoriaServico auditoria;
+    @Mock private LogAuditoriaService auditoria;
     @InjectMocks private AlunoAulasService servico;
 
     private void autorizar() {

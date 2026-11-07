@@ -3,8 +3,8 @@ package com.cursovalido.backend.aulas.service;
 import com.cursovalido.backend.aulas.entity.*;
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,12 +16,12 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class AlunoAulasService {
-    private final UsuarioRepositorio usuarios;
+    private final UsuarioRepository usuarios;
     private final CursoRepository cursos;
     private final ModuloRepository modulos;
     private final AulaRepository aulas;
     private final MatriculaRepository matriculas;
-    private final LogAuditoriaServico auditoria;
+    private final LogAuditoriaService auditoria;
 
     // O catalogo mostra somente os dados dos cursos, sem os videos.
     public List<Curso> listarCursos(Long idAluno) {

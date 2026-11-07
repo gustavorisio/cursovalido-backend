@@ -7,7 +7,7 @@ import static org.mockito.Mockito.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.service.*;
-import com.cursovalido.backend.forum.service.UsuarioForumServico;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -29,17 +29,17 @@ import org.springframework.web.client.RestClient;
         properties = "security.bcrypt.strength=10")
 @ActiveProfiles("test")
 class AutenticacaoHttpTest {
-    @Autowired private com.cursovalido.backend.authentication.service.TokenEmailServico tokensExclusao;
+    @Autowired private com.cursovalido.backend.authentication.service.TokenEmailService tokensExclusao;
     @LocalServerPort private int porta;
-    @Autowired private UsuarioRepositorio usuarios;
-    @Autowired private PoliticaRepositorio politicas;
+    @Autowired private UsuarioRepository usuarios;
+    @Autowired private PoliticaRepository politicas;
     @Autowired private PasswordEncoder senhas;
     @Autowired private JdbcTemplate jdbc;
-    @Autowired private LogAuditoriaServico auditoria;
-    @Autowired private TokenJwtServico tokens;
-    @MockitoBean private EmailServico emails;
-    @MockitoBean private ValidacaoEmailServico validacaoEmail;
-    @MockitoBean private UsuarioForumServico usuariosForum;
+    @Autowired private LogAuditoriaService auditoria;
+    @Autowired private TokenJwtService tokens;
+    @MockitoBean private EmailService emails;
+    @MockitoBean private ValidacaoEmailService validacaoEmail;
+    @MockitoBean private UsuarioForumService usuariosForum;
     private RestClient cliente;
     private Usuario usuario;
     private final Map<String, String> codigos = new ConcurrentHashMap<>();

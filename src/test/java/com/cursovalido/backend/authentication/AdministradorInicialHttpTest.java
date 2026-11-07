@@ -3,9 +3,9 @@ package com.cursovalido.backend.authentication;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
-import com.cursovalido.backend.authentication.service.AdministradorInicialServico;
-import com.cursovalido.backend.authentication.service.EmailServico;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.AdministradorInicialService;
+import com.cursovalido.backend.authentication.service.EmailService;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +25,9 @@ import org.springframework.web.client.RestClient;
 @ActiveProfiles("test")
 class AdministradorInicialHttpTest {
     @LocalServerPort private int porta;
-    @Autowired private UsuarioRepositorio usuarios;
+    @Autowired private UsuarioRepository usuarios;
     @Autowired private PasswordEncoder senhas;
-    @MockitoBean private EmailServico emails;
+    @MockitoBean private EmailService emails;
 
     @Test
     void administradorCriadoNaInicializacaoAceitaSenhaConfigurada() {

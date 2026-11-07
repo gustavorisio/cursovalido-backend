@@ -12,7 +12,7 @@ import com.cursovalido.backend.aulas.service.AlunoAulasService;
 import com.cursovalido.backend.aulas.service.YoutubeClient;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,7 +38,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Transactional
 class AulasIntegracaoTest {
     @Autowired private MockMvc mvc;
-    @Autowired private UsuarioRepositorio usuarios;
+    @Autowired private UsuarioRepository usuarios;
     @Autowired private CursoRepository cursos;
     @Autowired private ModuloRepository modulos;
     @Autowired private AulaRepository aulas;
