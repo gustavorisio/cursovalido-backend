@@ -1,6 +1,6 @@
 package com.cursovalido.backend.address.service;
 
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.address.dto.EnderecoResposta;
 import com.cursovalido.backend.address.exception.CepInvalidoException;
 import org.springframework.stereotype.Service;
@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Service
 public class EnderecoServico {
     @Autowired
-    private LogAuditoriaServico auditoria;
+    private LogAuditoriaService auditoria;
 
     // Consulta os dados do endereco pelo CEP informado.
     public EnderecoResposta consultar(String cep, String enderecoIp) {

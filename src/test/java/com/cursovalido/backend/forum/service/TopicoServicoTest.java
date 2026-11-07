@@ -8,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
@@ -35,7 +35,7 @@ class TopicoServicoTest {
     @Mock
     private UsuarioForumServico usuarios;
     @Mock
-    private LogAuditoriaServico auditoria;
+    private LogAuditoriaService auditoria;
     @InjectMocks
     private TopicoServico servico;
 

@@ -6,7 +6,7 @@ import com.cursovalido.backend.forum.entity.Comentario;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.repository.ComentarioRepositorio;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.ConflitoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
@@ -24,7 +24,7 @@ public class ComentarioServico {
     private final ComentarioRepositorio repositorioComentarios;
     private final TopicoServico servicoTopicos;
     private final UsuarioForumServico servicoUsuarios;
-    private final LogAuditoriaServico auditoria;
+    private final LogAuditoriaService auditoria;
 
     // Lista os comentarios ativos de um topico.
     public List<Comentario> listarPorTopico(Long idTopico) {

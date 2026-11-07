@@ -6,7 +6,7 @@ import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
 import com.cursovalido.backend.forum.repository.TopicoRepositorio;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import org.springframework.data.domain.PageRequest;
@@ -21,7 +21,7 @@ import java.util.List;
 public class TopicoServico {
     private final TopicoRepositorio repositorioTopicos;
     private final UsuarioForumServico servicoUsuarios;
-    private final LogAuditoriaServico auditoria;
+    private final LogAuditoriaService auditoria;
 
     // Lista os topicos mais recentes.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho) {

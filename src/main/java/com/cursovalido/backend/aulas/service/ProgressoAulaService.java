@@ -6,7 +6,7 @@ import com.cursovalido.backend.aulas.entity.ProgressoAula;
 import com.cursovalido.backend.aulas.repository.MatriculaRepository;
 import com.cursovalido.backend.aulas.repository.ModuloRepository;
 import com.cursovalido.backend.aulas.repository.ProgressoAulaRepository;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,7 +21,7 @@ public class ProgressoAulaService {
     private final ModuloRepository modulos;
     private final MatriculaRepository matriculas;
     private final ProgressoAulaRepository progressos;
-    private final LogAuditoriaServico auditoria;
+    private final LogAuditoriaService auditoria;
 
     public ProgressoAula buscar(Long idAula, Long idAluno) {
         Matricula matricula = buscarMatriculaAutorizada(idAula, idAluno);

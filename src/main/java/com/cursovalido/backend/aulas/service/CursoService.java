@@ -4,8 +4,8 @@ import com.cursovalido.backend.aulas.dto.CursoRequest;
 import com.cursovalido.backend.aulas.entity.Curso;
 import com.cursovalido.backend.aulas.repository.CursoRepository;
 import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class CursoService {
     private final CursoRepository repositorio;
-    private final UsuarioRepositorio usuarios;
-    private final LogAuditoriaServico auditoria;
+    private final UsuarioRepository usuarios;
+    private final LogAuditoriaService auditoria;
 
     public List<Curso> listar(Long idProfessor) {
         verificarProfessor(idProfessor);

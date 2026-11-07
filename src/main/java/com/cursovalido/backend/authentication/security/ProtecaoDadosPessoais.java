@@ -24,7 +24,10 @@ public final class ProtecaoDadosPessoais {
 
     public static String mascararCpf(String cpf) {
         String normalizado = normalizarCpf(cpf);
-        if (normalizado == null || normalizado.length() != 11) {
+        if (normalizado == null) {
+            return "***.***.***-**";
+        }
+        if (normalizado.length() != 11) {
             return "***.***.***-**";
         }
         return "***.***.***-" + normalizado.substring(9);

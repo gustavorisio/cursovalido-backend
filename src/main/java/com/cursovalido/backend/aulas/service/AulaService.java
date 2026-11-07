@@ -4,7 +4,7 @@ import com.cursovalido.backend.aulas.dto.AulaRequest;
 import com.cursovalido.backend.aulas.entity.Aula;
 import com.cursovalido.backend.aulas.repository.AulaRepository;
 import com.cursovalido.backend.aulas.repository.ProgressoAulaRepository;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class AulaService {
     private final AulaRepository repositorio;
     private final ModuloService modulos;
     private final YoutubeService youtube;
-    private final LogAuditoriaServico auditoria;
+    private final LogAuditoriaService auditoria;
     private final ProgressoAulaRepository progressos;
 
     public List<Aula> listar(Long idModulo, Long idProfessor) {

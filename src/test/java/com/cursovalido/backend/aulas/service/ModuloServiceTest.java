@@ -2,7 +2,7 @@ package com.cursovalido.backend.aulas.service;
 
 import com.cursovalido.backend.aulas.dto.ModuloRequest;
 import com.cursovalido.backend.aulas.repository.ModuloRepository;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ import static com.cursovalido.backend.aulas.service.AulasTestSupport.*;
 class ModuloServiceTest {
     @Mock private ModuloRepository repositorio;
     @Mock private CursoService cursos;
-    @Mock private LogAuditoriaServico auditoria;
+    @Mock private LogAuditoriaService auditoria;
     @InjectMocks private ModuloService servico;
 
     @Test

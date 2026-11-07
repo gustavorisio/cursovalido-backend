@@ -43,16 +43,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class ModeracaoIntegracaoTest {
     @Autowired private MockMvc mvc;
-    @Autowired private UsuarioRepositorio usuarios;
-    @Autowired private InicializacaoAdministradorRepositorio inicializacao;
-    @Autowired private SuspensaoUsuarioRepositorio suspensoes;
-    @Autowired private ConviteAcessoRepositorio convites;
-    @Autowired private PoliticaRepositorio politicas;
-    @Autowired private ModeracaoUsuarioServico moderacao;
-    @Autowired private IdentidadeExcluidaServico identidades;
-    @Autowired private ContaExcluidaRepositorio contasExcluidas;
-    @Autowired private ContaUsuarioServico contas;
-    @Autowired private TokenEmailServico tokensEmail;
+    @Autowired private UsuarioRepository usuarios;
+    @Autowired private InicializacaoAdministradorRepository inicializacao;
+    @Autowired private SuspensaoUsuarioRepository suspensoes;
+    @Autowired private ConviteAcessoRepository convites;
+    @Autowired private PoliticaRepository politicas;
+    @Autowired private ModeracaoUsuarioService moderacao;
+    @Autowired private IdentidadeExcluidaService identidades;
+    @Autowired private ContaExcluidaRepository contasExcluidas;
+    @Autowired private ContaUsuarioService contas;
+    @Autowired private TokenEmailService tokensEmail;
 
     @ParameterizedTest
     @EnumSource(Perfil.class)
@@ -128,11 +128,11 @@ class ModeracaoIntegracaoTest {
         assertThat(usuarios.findById(aluno.getId())).isPresent();
     }
 
-    @Autowired private TokenJwtServico tokens;
+    @Autowired private TokenJwtService tokens;
     @MockitoBean private UsuarioForumServico forum;
     @Autowired private PasswordEncoder senhas;
-    @MockitoBean private EmailServico emails;
-    @MockitoBean private ValidacaoEmailServico validacaoEmail;
+    @MockitoBean private EmailService emails;
+    @MockitoBean private ValidacaoEmailService validacaoEmail;
     private Usuario principal;
     private Usuario administrador;
     private Usuario aluno;

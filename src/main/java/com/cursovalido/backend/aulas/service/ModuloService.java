@@ -3,7 +3,7 @@ package com.cursovalido.backend.aulas.service;
 import com.cursovalido.backend.aulas.dto.ModuloRequest;
 import com.cursovalido.backend.aulas.entity.Modulo;
 import com.cursovalido.backend.aulas.repository.ModuloRepository;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class ModuloService {
     private final ModuloRepository repositorio;
     private final CursoService cursos;
-    private final LogAuditoriaServico auditoria;
+    private final LogAuditoriaService auditoria;
 
     public List<Modulo> listar(Long idCurso, Long idProfessor) {
         cursos.buscarAtivo(idCurso, idProfessor);

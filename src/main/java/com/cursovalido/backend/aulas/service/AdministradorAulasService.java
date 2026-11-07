@@ -3,7 +3,7 @@ package com.cursovalido.backend.aulas.service;
 import com.cursovalido.backend.aulas.entity.*;
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepositorio;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,7 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class AdministradorAulasService {
-    private final UsuarioRepositorio usuarios;
+    private final UsuarioRepository usuarios;
     private final CursoRepository cursos;
     private final ModuloRepository modulos;
     private final AulaRepository aulas;

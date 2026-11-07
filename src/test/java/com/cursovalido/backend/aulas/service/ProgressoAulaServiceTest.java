@@ -3,7 +3,7 @@ package com.cursovalido.backend.aulas.service;
 import com.cursovalido.backend.aulas.dto.ProgressoAulaRequest;
 import com.cursovalido.backend.aulas.entity.ProgressoAula;
 import com.cursovalido.backend.aulas.repository.*;
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ class ProgressoAulaServiceTest {
     @Mock private ModuloRepository modulos;
     @Mock private MatriculaRepository matriculas;
     @Mock private ProgressoAulaRepository progressos;
-    @Mock private LogAuditoriaServico auditoria;
+    @Mock private LogAuditoriaService auditoria;
     @InjectMocks private ProgressoAulaService servico;
 
     private void autorizar() {

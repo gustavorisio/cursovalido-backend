@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import com.cursovalido.backend.authentication.service.LogAuditoriaServico;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.entity.*;
 import com.cursovalido.backend.forum.exception.*;
 import com.cursovalido.backend.forum.repository.ComentarioRepositorio;
@@ -23,7 +23,7 @@ class ComentarioServicoTest {
     @Mock private ComentarioRepositorio repositorio;
     @Mock private TopicoServico topicos;
     @Mock private UsuarioForumServico usuarios;
-    @Mock private LogAuditoriaServico auditoria;
+    @Mock private LogAuditoriaService auditoria;
     @InjectMocks private ComentarioServico servico;
     private UsuarioForum autor;
     private Topico topico;
