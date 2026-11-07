@@ -68,6 +68,11 @@ public class SecurityConfig {
                                 "/politica-privacidade.html", "/termos-aceite.html")
                         .permitAll()
                         // Administracao; os servicos exigem o principal nas operacoes exclusivas.
+                        .requestMatchers(HttpMethod.GET, "/api/administracao/dashboard/resumo",
+                                "/api/administracao/dashboard/matriculas-por-mes",
+                                "/api/administracao/dashboard/cursos-mais-procurados",
+                                "/api/administracao/dashboard/usuarios-por-perfil").hasRole("ADMINISTRADOR")
+                        .requestMatchers("/api/administracao/dashboard", "/api/administracao/dashboard/**").denyAll()
                         .requestMatchers(HttpMethod.POST, "/api/politicas", "/api/politicas/privacidade").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.GET, "/api/administracao/permissoes", "/api/administracao/usuarios",
                                 "/api/administracao/convites", "/api/administracao/convites/pendentes",
@@ -112,6 +117,12 @@ public class SecurityConfig {
                         .hasRole("PROFESSOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/cursos/*", "/api/modulos/*", "/api/aulas/*")
                         .hasRole("PROFESSOR")
+                        // Noticias: leitura para os tres perfis e gestao exclusiva do administrador.
+                        .requestMatchers(HttpMethod.GET, "/api/noticias", "/api/noticias/*")
+                        .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.POST, "/api/noticias").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/noticias/*").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/noticias/*").hasRole("ADMINISTRADOR")
                         // Forum: autoria e moderacao sao verificadas pelos servicos.
                         .requestMatchers(HttpMethod.GET, "/api/forum/topicos", "/api/forum/topicos/*/comentarios",
                                 "/api/forum/users")
