@@ -55,6 +55,12 @@ public class TokenJwtFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return "POST".equals(request.getMethod())
+                && "/api/suporte/solicitacoes".equals(request.getRequestURI());
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain cadeia) throws ServletException, IOException {
         String cabecalho = request.getHeader("Authorization");

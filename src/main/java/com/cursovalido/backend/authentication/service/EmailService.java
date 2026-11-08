@@ -6,12 +6,14 @@ import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivel
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 @Service
 public class EmailService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(EmailService.class);
     private final RestClient cliente;
     private final String enderecoRemetente;
     private final String urlAplicacao;
@@ -21,7 +23,11 @@ public class EmailService {
             @Value("${resend.api-key}") String chaveApi,
             @Value("${aplicacao.email-remetente}") String enderecoRemetente,
             @Value("${aplicacao.url}") String urlAplicacao) {
+        SimpleClientHttpRequestFactory transporte = new SimpleClientHttpRequestFactory();
+        transporte.setConnectTimeout(5000);
+        transporte.setReadTimeout(10000);
         this.cliente = RestClient.builder()
+                .requestFactory(transporte)
                 .baseUrl(urlApi)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + chaveApi)
                 .defaultHeader(HttpHeaders.USER_AGENT, "cursovalido-backend/1.0")
@@ -74,22 +80,39 @@ public class EmailService {
     }
 
     private void enviar(String destinatario, String assunto, String conteudo) {
-        if (chaveApi == null)
-            throw new IllegalStateException("RESEND_API_KEY nao configurada");
-        if (chaveApi.isBlank())
-            throw new IllegalStateException("RESEND_API_KEY nao configurada");
+        enviar(destinatario, assunto, conteudo, null);
+    }
+
+    public void enviarSuporte(String destinatario, String contato, String assunto, String conteudo) {
+        enviar(destinatario, assunto, conteudo, contato);
+    }
+
+    private void enviar(String destinatario, String assunto, String conteudo, String replyTo) {
+        if (chaveApi == null || chaveApi.isBlank() || enderecoRemetente == null || enderecoRemetente.isBlank()) {
+            log.warn("Envio de e-mail indisponivel: verifique RESEND_API_KEY e RESEND_FROM_EMAIL no ambiente do backend.");
+            throw new ServicoEmailIndisponivelException();
+        }
 
         try {
             cliente.post()
                     .uri("/emails")
-                    .body(new EmailRequest(enderecoRemetente, List.of(destinatario), assunto, conteudo))
+                    .body(new EmailRequest(enderecoRemetente, List.of(destinatario), assunto, conteudo, replyTo))
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientException excecao) {
+            if (excecao instanceof org.springframework.web.client.RestClientResponseException resposta) {
+                log.warn("Resend recusou o envio de e-mail (HTTP {}). Verifique os eventos no painel do provedor.",
+                        resposta.getStatusCode().value());
+            } else {
+                log.warn("Falha na conexao com o provedor de e-mail: {}", excecao.getClass().getSimpleName());
+            }
             throw new ServicoEmailIndisponivelException();
         }
     }
 
-    private record EmailRequest(String from, List<String> to, String subject, String text) {
+    private record EmailRequest(String from, List<String> to, String subject, String text,
+            @com.fasterxml.jackson.annotation.JsonProperty("reply_to")
+            @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+            String replyTo) {
     }
 }
