@@ -133,6 +133,7 @@ class ModeracaoIntegracaoTest {
     @Autowired private PasswordEncoder senhas;
     @MockitoBean private EmailService emails;
     @MockitoBean private ValidacaoEmailService validacaoEmail;
+    @MockitoBean private com.cursovalido.backend.authentication.service.ValidacaoCpfService validacaoCpf;
     private Usuario principal;
     private Usuario administrador;
     private Usuario aluno;
@@ -216,9 +217,17 @@ class ModeracaoIntegracaoTest {
         politicas.save(new Politica("Termos", "convite-v1", "Termos do convite"));
         String cadastro = """
                 {"token":"%s","cadastro":{"nomeCompleto":"Professor Convidado","email":"convite@example.com",
-                "senha":"SenhaTeste123!","cpf":"12345678901","dataNascimento":"1990-01-01","telefone":"11999999999",
+                "senha":"SenhaTeste123!","cpf":"52998224725","dataNascimento":"1990-01-01",
                 "declarouMaiorIdade":true,"aceitouTermosLgpd":true,"versaoTermos":"convite-v1"}}
                 """.formatted(token.get());
+        doThrow(new com.cursovalido.backend.authentication.exception.ValidacaoCpfException(
+                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "CPF_CONSULTA_INDISPONIVEL", "Indisponivel"))
+                .when(validacaoCpf).validar("52998224725", "Professor Convidado", java.time.LocalDate.of(1990, 1, 1));
+        mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON).content(cadastro))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.codigo").value("CPF_CONSULTA_INDISPONIVEL"));
+        assertThat(usuarios.findByEmail("convite@example.com")).isEmpty();
+        doNothing().when(validacaoCpf).validar("52998224725", "Professor Convidado", java.time.LocalDate.of(1990, 1, 1));
         mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON).content(cadastro))
                 .andExpect(status().isNoContent());
         var convidado = usuarios.findByEmail("convite@example.com").orElseThrow();

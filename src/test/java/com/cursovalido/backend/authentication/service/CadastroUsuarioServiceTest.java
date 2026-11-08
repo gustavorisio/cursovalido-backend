@@ -42,6 +42,8 @@ class CadastroUsuarioServiceTest {
     private ValidacaoEmailService validacaoEmail;
     @Mock
     private IdentidadeExcluidaService identidades;
+    @Mock
+    private ValidacaoCpfService validacaoCpf;
     @InjectMocks
     private CadastroUsuarioService servico;
 
@@ -75,6 +77,7 @@ class CadastroUsuarioServiceTest {
         assertEquals(salvo, resultado);
         verify(emails).enviarConfirmacao(salvo, "token");
         verify(repositorio).save(any(Usuario.class));
+        verify(validacaoCpf).validar(requisicao.cpf(), requisicao.nomeCompleto(), requisicao.dataNascimento());
     }
 
     @Test
@@ -124,14 +127,35 @@ class CadastroUsuarioServiceTest {
         return requisicaoComNascimento(LocalDate.now().minusYears(25));
     }
 
+    @Test
+    void consultaExternaRecusadaNaoPersisteUsuarioNemEnviaEmail() {
+        var requisicao = requisicaoPadrao();
+        when(politicas.versaoAtiva("1.0")).thenReturn(true);
+        org.mockito.Mockito.doThrow(new com.cursovalido.backend.authentication.exception.ValidacaoCpfException(
+                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "CPF_CONSULTA_INDISPONIVEL", "Indisponivel"))
+                .when(validacaoCpf).validar(requisicao.cpf(), requisicao.nomeCompleto(), requisicao.dataNascimento());
+        assertThrows(com.cursovalido.backend.authentication.exception.ValidacaoCpfException.class,
+                () -> servico.cadastrar(requisicao, "127.0.0.1"));
+        verify(repositorio, never()).save(any(Usuario.class));
+        org.mockito.Mockito.verifyNoInteractions(tokensEmail, emails);
+    }
+
+    @Test
+    void rejeitaCadastroNoDiaAnteriorACompletarDezoitoAnos() {
+        var requisicao = requisicaoComNascimento(LocalDate.now().minusYears(18).plusDays(1));
+        when(politicas.versaoAtiva("1.0")).thenReturn(true);
+        assertThrows(com.cursovalido.backend.authentication.exception.MenorDeIdadeException.class,
+                () -> servico.cadastrar(requisicao, "127.0.0.1"));
+        verify(repositorio, never()).save(any(Usuario.class));
+    }
+
     private CadastroUsuarioRequest requisicaoComNascimento(LocalDate dataNascimento) {
         return new CadastroUsuarioRequest(
                 "Aluno Teste",
                 "aluno@teste.com",
                 "senha-segura",
-                "12345678901",
+                "52998224725",
                 dataNascimento,
-                "11999999999",
                 true,
                 true,
                 "1.0");

@@ -42,7 +42,6 @@ CREATE TABLE tb_usuarios (
     cpf VARCHAR(52),
     cpf_hash VARCHAR(64),
     data_nascimento DATE,
-    telefone VARCHAR(64),
     matricula VARCHAR(50) NOT NULL,
     declarou_maior_idade BOOLEAN NOT NULL,
     aceitou_termos_lgpd BOOLEAN NOT NULL,
@@ -58,7 +57,7 @@ CREATE TABLE tb_usuarios (
     CONSTRAINT uk_tb_usuarios_matricula UNIQUE (matricula),
     CONSTRAINT ck_tb_usuarios_dados_cadastro CHECK (
         perfil = 'ADMINISTRADOR' OR (
-            cpf IS NOT NULL AND cpf_hash IS NOT NULL AND data_nascimento IS NOT NULL AND telefone IS NOT NULL
+            cpf IS NOT NULL AND cpf_hash IS NOT NULL AND data_nascimento IS NOT NULL
             AND data_hora_aceite IS NOT NULL AND versao_termos IS NOT NULL
         )
     )
@@ -152,7 +151,7 @@ VALUES
     <h2>3. Declaracoes do usuario</h2>
     <p>Ao criar ou utilizar uma conta, o usuario declara que forneceu informacoes verdadeiras, completas e atuais, que e maior de 18 anos e que informara a administracao sobre qualquer alteracao relevante em seus dados.</p>
     <h2>4. Dados e privacidade</h2>
-    <p>Este Termo apresenta diretamente os dados e usos essenciais para o aceite. No cadastro, o sistema coleta: nome completo, e-mail, senha, CPF, data de nascimento, telefone, declaracao de maioridade e aceite dos documentos. Durante o uso, tambem trata matricula, perfil, status da conta, confirmacao de e-mail, versao/data/hora do aceite, tokens de confirmacao e 2FA, IP, registros de auditoria e topicos e comentarios publicados no forum.</p>
+    <p>Este Termo apresenta diretamente os dados e usos essenciais para o aceite. No cadastro, o sistema coleta: nome completo, e-mail, senha, CPF, data de nascimento, declaracao de maioridade e aceite dos documentos. Durante o uso, tambem trata matricula, perfil, status da conta, confirmacao de e-mail, versao/data/hora do aceite, tokens de confirmacao e 2FA, IP, registros de auditoria e topicos e comentarios publicados no forum.</p>
     <p>Esses dados sao utilizados diretamente para criar a conta, verificar que o usuario tem 18 anos ou mais, autenticar o acesso, enviar e-mails de confirmacao, redefinicao de senha e 2FA, aplicar permissoes, disponibilizar o forum, proteger o sistema e cumprir obrigacoes legais. O Resend recebe somente o e-mail e o conteudo necessario para as mensagens transacionais. O projeto nao coleta dados de pagamento, nao vende dados pessoais e nao usa os dados para publicidade direcionada.</p>
     <p>As senhas e tokens nao sao armazenados em texto puro. O aceite registra a versao, a data e a hora; tokens possuem prazo de expiracao. Os dados sao mantidos enquanto necessarios para a conta, seguranca, auditoria ou obrigacao legal, podendo ser removidos ou anonimizados quando a conta for excluida. O titular pode solicitar confirmacao, acesso, correcao, atualizacao, anonimização, eliminacao quando aplicavel, informacoes sobre compartilhamento, portabilidade quando regulamentada e revogacao do consentimento pelo canal oficial do Curso Valido.</p>
     <h2>5. Aceite e registro</h2>
@@ -167,6 +166,7 @@ VALUES
     <p>Uma nova versao pode ser publicada para refletir alteracoes no sistema, na finalidade do tratamento ou na legislacao. A versao aceita deve corresponder a uma politica ativa publicada pelo Curso Valido. Quando necessario, o sistema solicitara novo aceite e registrara a versao antes de liberar o acesso.</p>
     <h2>10. Direitos e contato</h2>
     <p>O usuario pode exercer os direitos descritos neste Termo e solicitar esclarecimentos a administracao do Curso Valido pelo canal oficial da instituicao.</p>
+<h2>Consulta cadastral no cadastro</h2><p>Ao enviar o cadastro publico ou por convite, o CPF e compartilhado com a CPF.CNPJ para consulta cadastral. O servico retorna nome, data de nascimento e situacao cadastral; o Curso Valido confere o CPF, o nome completo e a data de nascimento e aplica a idade minima de 18 anos. A resposta integral da consulta nao e armazenada nem disponibilizada ao navegador. O resultado nao comprova, isoladamente, que a pessoa que preenche o formulario e titular do documento. A consulta nao e utilizada para analise de credito. Falha de verificacao ou indisponibilidade impede a conclusao do cadastro. A CPF.CNPJ e um fornecedor externo e seu uso nao estabelece vinculo institucional do Curso Valido com o governo.</p>
 </body>
 </html>$$, TRUE, CURRENT_TIMESTAMP);
 
@@ -278,7 +278,6 @@ VALUES ('Politica de Privacidade', '1.0', $$<!DOCTYPE html>
     <h2>2. Dados pessoais coletados</h2>
     <p><strong>Dados:</strong> nome completo e e-mail.</p><p><strong>Origem e funcionalidade:</strong> formulario de cadastro, login, convite e recuperacao de conta.</p><p><strong>Finalidade e acesso:</strong> identificar a conta e enviar confirmacao, redefinicao de senha e codigo 2FA. O e-mail e acessado pela administracao autorizada e pelo servico de envio Resend.</p><p><strong>Retencao:</strong> enquanto a conta existir e pelo periodo necessario para obrigacoes e auditoria.</p>
     <p><strong>Dados:</strong> CPF, data de nascimento e declaracao de maioridade.</p><p><strong>Origem e funcionalidade:</strong> formulario de cadastro e validacoes de identidade e idade.</p><p><strong>Finalidade e acesso:</strong> evitar contas duplicadas, verificar o requisito de 18 anos e atender regras de acesso. Administradores autorizados podem consultar esses dados.</p><p><strong>Retencao:</strong> enquanto necessarios a conta, seguranca, auditoria ou obrigacao legal.</p>
-    <p><strong>Dados:</strong> telefone.</p><p><strong>Origem e funcionalidade:</strong> formulario de cadastro.</p><p><strong>Finalidade e acesso:</strong> manter o cadastro e permitir contato institucional quando necessario. Nao e usado para publicidade.</p><p><strong>Retencao:</strong> enquanto mantido no cadastro ou ate pedido de exclusao, ressalvadas obrigacoes legais.</p>
 
     <p><strong>Dados:</strong> hash BCrypt da senha.</p><p><strong>Origem e funcionalidade:</strong> cadastro e login.</p><p><strong>Finalidade e acesso:</strong> autenticar o usuario. A senha original nao e armazenada; o hash BCrypt ja contem o salt necessario a verificacao.</p><p><strong>Retencao:</strong> enquanto a conta estiver ativa, com exclusao quando deixar de ser necessaria.</p>
     <p><strong>Dados:</strong> matricula, perfil, status, conta ativa e e-mail confirmado.</p><p><strong>Origem e funcionalidade:</strong> gerados ou atualizados pelo cadastro, aprovacao e administracao.</p><p><strong>Finalidade e acesso:</strong> aplicar RBAC e liberar as funcionalidades de aluno, professor ou administrador.</p><p><strong>Retencao:</strong> enquanto a conta e os registros de responsabilizacao forem necessarios.</p>
@@ -303,6 +302,7 @@ VALUES ('Politica de Privacidade', '1.0', $$<!DOCTYPE html>
     <p>Solicitacoes devem ser encaminhadas a administracao do Curso Valido pelo canal informado pela instituicao, com identificacao suficiente para evitar atendimento a pessoa incorreta. A solicitacao sera analisada e respondida conforme a legislacao aplicavel.</p>
     <h2>10. Atualizacoes</h2>
     <p>A versao vigente permanece acessivel nesta politica. Quando uma alteracao exigir novo aceite, o sistema solicitara a confirmacao antes de liberar as funcionalidades correspondentes.</p>
+<h2>Consulta cadastral no cadastro</h2><p>Ao enviar o cadastro publico ou por convite, o CPF e compartilhado com a CPF.CNPJ para consulta cadastral. O servico retorna nome, data de nascimento e situacao cadastral; o Curso Valido confere o CPF, o nome completo e a data de nascimento e aplica a idade minima de 18 anos. A resposta integral da consulta nao e armazenada nem disponibilizada ao navegador. O resultado nao comprova, isoladamente, que a pessoa que preenche o formulario e titular do documento. A consulta nao e utilizada para analise de credito. Falha de verificacao ou indisponibilidade impede a conclusao do cadastro. A CPF.CNPJ e um fornecedor externo e seu uso nao estabelece vinculo institucional do Curso Valido com o governo.</p>
 </body>
 </html>$$, TRUE, CURRENT_TIMESTAMP);
 

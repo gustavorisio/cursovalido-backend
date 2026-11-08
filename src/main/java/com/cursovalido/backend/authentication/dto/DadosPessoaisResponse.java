@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record DadosPessoaisResponse(Long id, String nomeCompleto, String email, String cpf,
-        LocalDate dataNascimento, String telefone, String matricula,
+        LocalDate dataNascimento, String matricula,
         Perfil perfil, boolean ativo, boolean emailConfirmado,
         StatusAprovacao statusAprovacao,
         Boolean declarouMaiorIdade, Boolean aceitouTermosLgpd, String versaoTermos,

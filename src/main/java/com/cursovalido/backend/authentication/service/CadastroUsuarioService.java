@@ -33,6 +33,7 @@ public class CadastroUsuarioService {
     private final EmailService emails;
     private final ValidacaoEmailService validacaoEmail;
     private final IdentidadeExcluidaService identidades;
+    private final ValidacaoCpfService validacaoCpf;
     private final SecureRandom geradorRa = new SecureRandom();
 
     @Transactional
@@ -51,13 +52,14 @@ public class CadastroUsuarioService {
         if (repositorio.existsByCpf(requisicao.cpf()))
             throw new CadastroDuplicadoException("CPF");
 
+        validacaoCpf.validar(requisicao.cpf(), requisicao.nomeCompleto(), requisicao.dataNascimento());
+
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(requisicao.nomeCompleto());
         usuario.setEmail(requisicao.email());
         usuario.setSenha(codificadorSenha.encode(requisicao.senha()));
         usuario.setCpf(requisicao.cpf());
         usuario.setDataNascimento(requisicao.dataNascimento());
-        usuario.setTelefone(requisicao.telefone());
         usuario.setMatricula(gerarRa());
         usuario.setDeclarouMaiorIdade(requisicao.declarouMaiorIdade());
         usuario.setAceitouTermosLgpd(requisicao.aceitouTermosLgpd());
