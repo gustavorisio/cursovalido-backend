@@ -58,13 +58,14 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Rotas publicas de autenticacao e cadastro.
+                        .requestMatchers(HttpMethod.POST, "/api/suporte/solicitacoes").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/autenticacao/cadastro", "/api/autenticacao/login",
                                 "/api/autenticacao/confirmar-2fa",
                                 "/api/autenticacao/reenviar-2fa",
                                 "/api/autenticacao/confirmar-email", "/api/autenticacao/reenviar-confirmacao",
                                 "/api/autenticacao/solicitar-alteracao-senha", "/api/autenticacao/alterar-senha",
                                 "/api/convites/confirmar-email", "/api/convites/completar-cadastro").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/enderecos/consultar/*", "/api/politicas/ativas", "/api/politicas/privacidade/ativa",
+                        .requestMatchers(HttpMethod.GET, "/api/politicas/ativas", "/api/politicas/privacidade/ativa",
                                 "/politica-privacidade.html", "/termos-aceite.html")
                         .permitAll()
                         // Administracao; os servicos exigem o principal nas operacoes exclusivas.
@@ -98,6 +99,8 @@ public class SecurityConfig {
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/administracao/aulas/*", "/api/administracao/aulas/*/arquivar", "/api/administracao/aulas/*/reabrir").hasRole("ADMINISTRADOR")
                         // Catalogo, matriculas e progresso pessoais do aluno.
                         .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas").hasRole("ALUNO")
                         .requestMatchers(HttpMethod.PUT, "/api/aluno/aulas/*/progresso").hasRole("ALUNO")
@@ -117,15 +120,14 @@ public class SecurityConfig {
                         .hasRole("PROFESSOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/cursos/*", "/api/modulos/*", "/api/aulas/*")
                         .hasRole("PROFESSOR")
-                        // Noticias: leitura para os tres perfis e gestao exclusiva do administrador.
-                        .requestMatchers(HttpMethod.GET, "/api/noticias", "/api/noticias/*")
-                        .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                        // Noticias: leitura publica e gestao exclusiva do administrador.
+                        .requestMatchers(HttpMethod.GET, "/api/noticias", "/api/noticias/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/noticias").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.PUT, "/api/noticias/*").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/noticias/*").hasRole("ADMINISTRADOR")
                         // Forum: autoria e moderacao sao verificadas pelos servicos.
-                        .requestMatchers(HttpMethod.GET, "/api/forum/topicos", "/api/forum/topicos/*/comentarios",
-                                "/api/forum/users")
+                        .requestMatchers(HttpMethod.GET, "/api/forum/topicos", "/api/forum/topicos/*/comentarios").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/forum/users")
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                         .requestMatchers(HttpMethod.POST, "/api/forum/topicos", "/api/forum/topicos/*/comentarios")
                         .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
@@ -161,7 +163,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuracao = new CorsConfiguration();
         configuracao.setAllowedOrigins(List.of(origensFrontend.split(",")));
-        configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-User-Id"));
         configuracao.setExposedHeaders(List.of("Authorization"));
         configuracao.setAllowCredentials(true);

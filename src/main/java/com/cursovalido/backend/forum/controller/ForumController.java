@@ -36,7 +36,7 @@ public class ForumController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(defaultValue = "") String busca) {
-        return servicoTopicos.listarRecentes(page, size, busca, usuario.getId());
+        return servicoTopicos.listarRecentes(page, size, busca, usuario == null ? null : usuario.getId());
     }
 
     @PostMapping("/topicos")
@@ -79,7 +79,7 @@ public class ForumController {
     @GetMapping("/topicos/{idTopico}/comentarios")
     public List<ComentarioResponse> listarComentarios(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @PathVariable Long idTopico) {
-        return servicoComentarios.listarPorTopico(idTopico, usuario.getId()).stream()
+        return servicoComentarios.listarPorTopico(idTopico, usuario == null ? null : usuario.getId()).stream()
                 .map(this::converter)
                 .toList();
     }
