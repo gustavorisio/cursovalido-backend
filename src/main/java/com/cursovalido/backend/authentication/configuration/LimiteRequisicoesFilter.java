@@ -45,6 +45,9 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
             return false;
         }
         String caminho = request.getRequestURI();
+        if ("/api/suporte/solicitacoes".equals(caminho)) {
+            return true;
+        }
         if (caminho.startsWith("/api/autenticacao/")) {
             return true;
         }

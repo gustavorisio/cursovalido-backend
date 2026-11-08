@@ -20,6 +20,21 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @RestControllerAdvice(basePackages = "com.cursovalido.backend.authentication")
 public class AutenticacaoExceptionHandler {
+    @ExceptionHandler(com.cursovalido.backend.authentication.suporte.LimiteSuporteException.class)
+    public ResponseEntity<Codigo2faErroResponse> limiteSuporte(
+            com.cursovalido.backend.authentication.suporte.LimiteSuporteException excecao) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).headers(excecao.getHeaders())
+                .body(new Codigo2faErroResponse(excecao.getReason(),
+                        com.cursovalido.backend.authentication.suporte.LimiteSuporteException.CODIGO));
+    }
+    @ExceptionHandler(com.cursovalido.backend.authentication.exception.SuporteIndisponivelException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Codigo2faErroResponse suporteIndisponivel(
+            com.cursovalido.backend.authentication.exception.SuporteIndisponivelException excecao) {
+        return new Codigo2faErroResponse(excecao.getReason(),
+                com.cursovalido.backend.authentication.exception.SuporteIndisponivelException.CODIGO);
+    }
+
     @ExceptionHandler(com.cursovalido.backend.authentication.exception.BanimentoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Codigo2faErroResponse banimento(com.cursovalido.backend.authentication.exception.BanimentoException excecao) {
