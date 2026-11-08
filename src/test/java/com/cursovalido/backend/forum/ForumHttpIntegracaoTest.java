@@ -93,6 +93,22 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
+    void visitantePodeLerMasNaoPodeAlterarConteudo() {
+        var criado = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
+                new TopicoRequest("Leitura publica", "Descricao publica"), TopicoResponse.class).getBody();
+        String caminho = "/api/forum/topicos/" + criado.id();
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(enviar(HttpMethod.GET, caminho + "/comentarios", null, null, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(enviar(HttpMethod.GET, "/api/noticias", null, null, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/users", null, null, String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", null, new TopicoRequest("Teste", "Descricao"), String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(enviar(HttpMethod.POST, caminho + "/comentarios", null, Map.of("conteudo", "Resposta"), String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(enviar(HttpMethod.PUT, caminho, null, new TopicoRequest("Teste", "Descricao"), String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(enviar(HttpMethod.DELETE, caminho, null, null, String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(enviar(HttpMethod.POST, "/api/noticias", null, Map.of("titulo", "Teste", "conteudo", "Texto"), String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
     void criarTopico_comDadosValidos_deveRetornarAutorIdEPersistir() {
         var resposta = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), new TopicoRequest("Java", "Duvida"), TopicoResponse.class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -492,7 +508,7 @@ class ForumHttpIntegracaoTest {
                 .isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(usuarios.findByEmail(email)).isEmpty();
         assertThat(convites.findByEmail(email)).isEmpty();
-        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", sessaoAnterior, null, String.class).getStatusCode())
+        assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", sessaoAnterior, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
         jdbc.update("update tb_contas_excluidas set bloqueada_ate = ? where id = ?",
                 java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(1)), idAnterior);
@@ -500,10 +516,10 @@ class ForumHttpIntegracaoTest {
         assertThat(idNovo).isNotEqualTo(idAnterior);
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", linkAnterior), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", sessaoAnterior, null, String.class).getStatusCode())
+        assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", sessaoAnterior, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
         String sessaoNova = autenticarConvidado(email);
-        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", sessaoNova, null, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", sessaoNova, null, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @ParameterizedTest
@@ -556,7 +572,7 @@ class ForumHttpIntegracaoTest {
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", token), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA, cpf,
-                LocalDate.of(1990, 1, 1), "11999999999", new EnderecoRequest("01001000", "Rua Teste", "Centro", "Sao Paulo", "SP"),
+                LocalDate.of(1990, 1, 1), "11999999999",
                 true, true, "teste-v1");
         assertThat(enviar(HttpMethod.POST, "/api/convites/completar-cadastro", null,
                 Map.of("token", token, "cadastro", cadastro), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -584,7 +600,7 @@ class ForumHttpIntegracaoTest {
         String email = emailPrincipal == null ? "forum-" + numero + "@example.com" : emailPrincipal;
         String nome = "Participante " + numero;
         var requisicao = new CadastroUsuarioRequest(nome, email, SENHA, String.format("%011d", numero),
-                LocalDate.of(2000, 1, 1), "11999999999", new EnderecoRequest("01001000", "Rua Teste", "Centro", "Sao Paulo", "SP"), true, true, "teste-v1");
+                LocalDate.of(2000, 1, 1), "11999999999", true, true, "teste-v1");
         assertThat(enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, requisicao, String.class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(confirmacoes.get(email)).isNotBlank();
         assertThat(enviar(HttpMethod.POST, "/api/autenticacao/confirmar-email", null, Map.of("token", confirmacoes.get(email)), String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
