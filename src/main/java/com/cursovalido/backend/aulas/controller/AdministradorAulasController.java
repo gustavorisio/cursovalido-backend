@@ -5,6 +5,7 @@ import com.cursovalido.backend.aulas.entity.*;
 import com.cursovalido.backend.aulas.service.AdministradorAulasService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import java.util.List;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -31,12 +32,12 @@ public class AdministradorAulasController {
     }
 
     @GetMapping("/modulos/{id}/aulas")
-    public List<AulaResponse> listarAulas(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+    public List<AulaAdministrativaResponse> listarAulas(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) {
         return servico.listarAulas(id, usuario.getId()).stream().map(this::converter).toList();
     }
 
     @GetMapping("/aulas/{id}")
-    public AulaResponse buscarAula(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+    public AulaAdministrativaResponse buscarAula(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) {
         return converter(servico.buscarAula(id, usuario.getId()));
     }
 
@@ -48,7 +49,26 @@ public class AdministradorAulasController {
         return new ModuloResponse(modulo.getId(), modulo.getTitulo(), modulo.getDescricao(), modulo.getIdCurso(), modulo.getOrdem());
     }
 
-    private AulaResponse converter(Aula aula) {
-        return new AulaResponse(aula.getId(), aula.getTitulo(), aula.getDescricao(), aula.getIdModulo(), aula.getOrdem(), aula.getYoutubeVideoId());
+    public record AulaAdministrativaResponse(Long id, String titulo, String descricao, Long idModulo,
+            int ordem, String youtubeVideoId, boolean ativo) {}
+
+    @PutMapping("/aulas/{id}")
+    public AulaAdministrativaResponse editarAula(@PathVariable Long id, @Valid @RequestBody AulaRequest dados,
+            @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return converter(servico.editarAula(id, dados, usuario.getId()));
+    }
+
+    @PutMapping("/aulas/{id}/arquivar")
+    public AulaAdministrativaResponse arquivarAula(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return converter(servico.alterarDisponibilidade(id, false, usuario.getId()));
+    }
+
+    @PutMapping("/aulas/{id}/reabrir")
+    public AulaAdministrativaResponse reabrirAula(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return converter(servico.alterarDisponibilidade(id, true, usuario.getId()));
+    }
+
+    private AulaAdministrativaResponse converter(Aula aula) {
+        return new AulaAdministrativaResponse(aula.getId(), aula.getTitulo(), aula.getDescricao(), aula.getIdModulo(), aula.getOrdem(), aula.getYoutubeVideoId(), aula.isAtivo());
     }
 }

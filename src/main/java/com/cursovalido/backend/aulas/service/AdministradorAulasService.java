@@ -5,6 +5,9 @@ import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import java.util.List;
+import com.cursovalido.backend.aulas.dto.AulaRequest;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,6 +20,9 @@ public class AdministradorAulasService {
     private final CursoRepository cursos;
     private final ModuloRepository modulos;
     private final AulaRepository aulas;
+    private final YoutubeService youtube;
+    private final ProgressoAulaRepository progressos;
+    private final LogAuditoriaService auditoria;
 
     public List<Curso> listarCursos(Long idAdministrador) {
         verificarAdministrador(idAdministrador);
@@ -47,15 +53,40 @@ public class AdministradorAulasService {
 
     public List<Aula> listarAulas(Long idModulo, Long idAdministrador) {
         buscarModulo(idModulo, idAdministrador);
-        return aulas.findByIdModuloAndAtivoTrueOrderByOrdemAscIdAsc(idModulo);
+        return aulas.findByIdModuloOrderByOrdemAscIdAsc(idModulo);
     }
 
     public Aula buscarAula(Long id, Long idAdministrador) {
         verificarAdministrador(idAdministrador);
         Aula aula = aulas.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aula nao encontrada"));
-        if (!aula.isAtivo()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Aula inativa");
+
         buscarModulo(aula.getIdModulo(), idAdministrador);
+        return aula;
+    }
+
+    @Transactional
+    public Aula editarAula(Long id, AulaRequest dados, Long idAdministrador) {
+        Aula aula = buscarAula(id, idAdministrador);
+        String videoId = youtube.validarVideo(dados.youtubeUrl());
+        if (!videoId.equals(aula.getYoutubeVideoId())) progressos.deleteByIdAula(id);
+        aula.setTitulo(dados.titulo().trim());
+        aula.setDescricao(dados.descricao().trim());
+        aula.setOrdem(dados.ordem());
+        aula.setYoutubeVideoId(videoId);
+        aulas.save(aula);
+        auditoria.registrar(idAdministrador, "EDICAO_AULA_ADMINISTRADOR", "Aula " + id, null);
+        return aula;
+    }
+
+    @Transactional
+    public Aula alterarDisponibilidade(Long id, boolean ativo, Long idAdministrador) {
+        Aula aula = buscarAula(id, idAdministrador);
+        if (aula.isAtivo() != ativo) {
+            aula.setAtivo(ativo);
+            aulas.save(aula);
+            auditoria.registrar(idAdministrador, ativo ? "REABERTURA_AULA" : "ARQUIVAMENTO_AULA", "Aula " + id, null);
+        }
         return aula;
     }
 
