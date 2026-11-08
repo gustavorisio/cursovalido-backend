@@ -40,8 +40,6 @@ public class Usuario {
     private String telefone;
     @Column(nullable = false, unique = true, length = 50)
     private String matricula;
-    @Embedded
-    private Endereco endereco;
     @Column(name = "declarou_maior_idade", nullable = false)
     private Boolean declarouMaiorIdade;
     @Column(name = "aceitou_termos_lgpd", nullable = false)

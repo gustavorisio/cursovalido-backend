@@ -1,7 +1,6 @@
 package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
-import com.cursovalido.backend.authentication.entity.Endereco;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
@@ -60,9 +59,6 @@ public class CadastroUsuarioService {
         usuario.setDataNascimento(requisicao.dataNascimento());
         usuario.setTelefone(requisicao.telefone());
         usuario.setMatricula(gerarRa());
-        var endereco = requisicao.endereco();
-        usuario.setEndereco(new Endereco(endereco.cep(), endereco.logradouro(), endereco.bairro(), endereco.cidade(),
-                endereco.estado()));
         usuario.setDeclarouMaiorIdade(requisicao.declarouMaiorIdade());
         usuario.setAceitouTermosLgpd(requisicao.aceitouTermosLgpd());
         usuario.setDataHoraAceite(LocalDateTime.now());

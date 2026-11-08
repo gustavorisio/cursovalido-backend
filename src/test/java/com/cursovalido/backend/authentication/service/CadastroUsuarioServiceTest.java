@@ -8,7 +8,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
-import com.cursovalido.backend.authentication.dto.EnderecoRequest;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
 import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
@@ -133,7 +132,6 @@ class CadastroUsuarioServiceTest {
                 "12345678901",
                 dataNascimento,
                 "11999999999",
-                new EnderecoRequest("01001000", "Rua A", "Centro", "Sao Paulo", "SP"),
                 true,
                 true,
                 "1.0");

@@ -3,7 +3,6 @@ package com.cursovalido.backend.authentication.service;
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.dto.ConviteResumoResponse;
 import com.cursovalido.backend.authentication.entity.ConviteAcesso;
-import com.cursovalido.backend.authentication.entity.Endereco;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.StatusConvite;
@@ -117,9 +116,6 @@ public class ConviteAcessoService {
         usuario.setDataNascimento(cadastro.dataNascimento());
         usuario.setTelefone(cadastro.telefone());
         usuario.setMatricula(gerarMatricula());
-        var endereco = cadastro.endereco();
-        usuario.setEndereco(new Endereco(endereco.cep(), endereco.logradouro(), endereco.bairro(), endereco.cidade(),
-                endereco.estado()));
         usuario.setDeclarouMaiorIdade(cadastro.declarouMaiorIdade());
         usuario.setAceitouTermosLgpd(true);
         usuario.setDataHoraAceite(LocalDateTime.now());

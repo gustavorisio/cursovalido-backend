@@ -1,7 +1,6 @@
 package com.cursovalido.backend.authentication.dto;
 
 import com.cursovalido.backend.authentication.validation.SenhaValida;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.time.LocalDate;
 import java.util.Locale;
@@ -13,7 +12,6 @@ public record CadastroUsuarioRequest(
                 @NotBlank @Pattern(regexp = "\\d{11}") String cpf,
                 @NotNull @Past LocalDate dataNascimento,
                 @NotBlank @Size(min = 8, max = 20) @Pattern(regexp = "[+0-9() .-]+") String telefone,
-                @NotNull @Valid EnderecoRequest endereco,
                 @NotNull @AssertTrue Boolean declarouMaiorIdade,
                 @NotNull @AssertTrue Boolean aceitouTermosLgpd,
                 @NotBlank @Size(max = 30) String versaoTermos) {

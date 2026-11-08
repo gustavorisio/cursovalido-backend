@@ -129,13 +129,6 @@
         <p><strong>Retencao:</strong> enquanto mantido no cadastro ou ate pedido de exclusao, ressalvadas obrigacoes
             legais.</p>
 
-        <p><strong>Dados:</strong> CEP, logradouro, bairro, cidade e estado.</p>
-        <p><strong>Origem e funcionalidade:</strong> endereco informado no cadastro e consulta do CEP ao ViaCEP.</p>
-        <p><strong>Finalidade e acesso:</strong> completar e validar o endereco do usuario. O ViaCEP recebe o CEP
-            consultado.</p>
-        <p><strong>Retencao:</strong> enquanto fizerem parte do cadastro ou forem necessarios para a finalidade
-            informada.</p>
-
         <p><strong>Dados:</strong> hash BCrypt da senha.</p>
         <p><strong>Origem e funcionalidade:</strong> cadastro e login.</p>
         <p><strong>Finalidade e acesso:</strong> autenticar o usuario. A senha original nao e armazenada; somente os
@@ -187,7 +180,6 @@
             <li>aplicar perfis e permissoes de aluno, professor e administrador;</li>
             <li>verificar a maioridade obrigatoria, o aceite dos termos e os requisitos de cadastro;</li>
             <li>disponibilizar o forum e vincular publicacoes aos seus autores;</li>
-            <li>consultar dados de endereco a partir do CEP informado;</li>
             <li>prevenir uso indevido, investigar incidentes e manter auditoria das operacoes;</li>
             <li>atender obrigacoes legais e solicitacoes do titular.</li>
         </ul>
@@ -205,8 +197,7 @@
             que armazena o hash com o salt incorporado.</p>
 
         <h2>6. Compartilhamento e servicos externos</h2>
-        <p>O CEP informado pode ser enviado a API publica ViaCEP exclusivamente para retornar logradouro, bairro,
-            cidade e estado. O sistema utiliza o Resend para enviar confirmacao, convite, redefinicao de senha e
+        <p>O sistema utiliza o Resend para enviar confirmacao, convite, redefinicao de senha e
             autenticacao 2FA; para isso, compartilha o e-mail do destinatario e o conteudo da mensagem. O Curso Valido
             nao vende dados pessoais. Compartilhamentos legais podem ocorrer quando exigidos por autoridade competente.
         </p>
