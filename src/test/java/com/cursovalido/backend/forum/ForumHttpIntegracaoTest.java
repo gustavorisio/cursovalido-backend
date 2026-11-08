@@ -39,7 +39,7 @@ import org.springframework.web.client.RestClient;
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ForumHttpIntegracaoTest {
-    private static final AtomicLong SEQUENCIA = new AtomicLong(System.nanoTime() % 10_000_000_000L);
+    private static final AtomicLong SEQUENCIA = new AtomicLong(100_000_000L);
     private static final String SENHA = "SenhaTeste123!";
     @LocalServerPort private int porta;
     @Autowired private JdbcTemplate jdbc;
@@ -53,6 +53,7 @@ class ForumHttpIntegracaoTest {
     @Autowired private com.cursovalido.backend.authentication.service.TokenEmailService tokensEmail;
     @MockitoBean private EmailService emails;
     @MockitoBean private ValidacaoEmailService validacaoEmail;
+    @MockitoBean private com.cursovalido.backend.authentication.service.ValidacaoCpfService validacaoCpf;
     private final Map<String, String> confirmacoes = new ConcurrentHashMap<>();
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
     private final Map<String, String> convitesEnviados = new ConcurrentHashMap<>();
@@ -498,7 +499,7 @@ class ForumHttpIntegracaoTest {
     void excluirProfessorAutenticadoPermiteNovoConviteSemReutilizarSessaoAntiga() {
         var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-convite@example.com");
         String email = "professor-reconvite@example.com";
-        String cpf = String.format("%011d", SEQUENCIA.incrementAndGet());
+        String cpf = cpfValido(SEQUENCIA.incrementAndGet());
         long idAnterior = cadastrarConvidado(email, cpf, principal.token());
         String linkAnterior = convitesEnviados.get(email);
         String sessaoAnterior = autenticarConvidado(email);
@@ -565,6 +566,17 @@ class ForumHttpIntegracaoTest {
         assertThat(convitesEnviados).doesNotContainKey(existente.getEmail());
     }
 
+    private static String cpfValido(long numero) {
+        String base = String.format("%09d", numero);
+        for (int tamanho = 9; tamanho <= 10; tamanho++) {
+            int soma = 0;
+            for (int i = 0; i < tamanho; i++) soma += (base.charAt(i) - '0') * (tamanho + 1 - i);
+            int resto = soma % 11;
+            base += resto < 2 ? 0 : 11 - resto;
+        }
+        return base;
+    }
+
     private long cadastrarConvidado(String email, String cpf, String tokenPrincipal) {
         assertThat(enviar(HttpMethod.POST, "/api/administracao/convites", tokenPrincipal,
                 new ConviteAcessoRequest(email, Perfil.PROFESSOR), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -572,7 +584,7 @@ class ForumHttpIntegracaoTest {
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", token), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA, cpf,
-                LocalDate.of(1990, 1, 1), "11999999999",
+                LocalDate.of(1990, 1, 1),
                 true, true, "teste-v1");
         assertThat(enviar(HttpMethod.POST, "/api/convites/completar-cadastro", null,
                 Map.of("token", token, "cadastro", cadastro), String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -599,8 +611,8 @@ class ForumHttpIntegracaoTest {
         long numero = SEQUENCIA.incrementAndGet();
         String email = emailPrincipal == null ? "forum-" + numero + "@example.com" : emailPrincipal;
         String nome = "Participante " + numero;
-        var requisicao = new CadastroUsuarioRequest(nome, email, SENHA, String.format("%011d", numero),
-                LocalDate.of(2000, 1, 1), "11999999999", true, true, "teste-v1");
+        var requisicao = new CadastroUsuarioRequest(nome, email, SENHA, cpfValido(numero),
+                LocalDate.of(2000, 1, 1), true, true, "teste-v1");
         assertThat(enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, requisicao, String.class).getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(confirmacoes.get(email)).isNotBlank();
         assertThat(enviar(HttpMethod.POST, "/api/autenticacao/confirmar-email", null, Map.of("token", confirmacoes.get(email)), String.class).getStatusCode()).isEqualTo(HttpStatus.OK);

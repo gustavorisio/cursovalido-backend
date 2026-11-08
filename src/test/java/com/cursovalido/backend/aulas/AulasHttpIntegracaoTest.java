@@ -102,22 +102,20 @@ class AulasHttpIntegracaoTest {
     }
 
     @Test
-    void telefoneNaoPodeSerEditadoEDadosPessoaisSaoCompletos() {
+    void dadosPessoaisNaoIncluemTelefoneNemPermitemEdicao() {
         var resposta = enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokenAluno, null, com.cursovalido.backend.authentication.dto.DadosPessoaisResponse.class);
         assertThat(resposta.getBody().nomeCompleto()).isEqualTo(aluno.getNomeCompleto());
         assertThat(resposta.getBody().email()).isEqualTo(aluno.getEmail());
-        assertThat(resposta.getBody().telefone()).isEqualTo("11999999999");
         assertThat(resposta.getBody().dataNascimento()).isEqualTo(aluno.getDataNascimento());
         var contato = java.util.Map.of("telefone", "21988888888");
         assertThat(enviar(HttpMethod.PATCH, "/api/autenticacao/meus-dados", null, contato, String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(enviar(HttpMethod.PATCH, "/api/autenticacao/meus-dados", tokenAluno, contato, String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         var atualizado = usuarios.findById(aluno.getId()).orElseThrow();
-        assertThat(atualizado.getTelefone()).isEqualTo("11999999999");
         assertThat(atualizado.getEmail()).isEqualTo(aluno.getEmail());
         assertThat(atualizado.getNomeCompleto()).isEqualTo(aluno.getNomeCompleto());
         var exportacao = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", tokenAluno, null, String.class);
         assertThat(exportacao.getHeaders().getCacheControl()).contains("no-store");
-        assertThat(exportacao.getBody()).contains("11999999999").doesNotContain("senha", "password", "token", "registrosAuditoria");
+        assertThat(exportacao.getBody()).contains(aluno.getCpf()).doesNotContain("telefone", "11999999999", "senha", "password", "token", "registrosAuditoria");
         assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = ?", Long.class, aluno.getId(), "EXPORTACAO_DADOS")).isGreaterThan(0);
     }
 
@@ -338,7 +336,6 @@ class AulasHttpIntegracaoTest {
         usuario.setSenha("hash-de-teste");
         usuario.setCpf(String.valueOf(numero));
         usuario.setMatricula("http-" + numero);
-        usuario.setTelefone("11999999999");
         usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
         usuario.setDeclarouMaiorIdade(true);
         usuario.setAceitouTermosLgpd(true);

@@ -57,7 +57,6 @@ class AutenticacaoHttpTest {
         usuario.setCpf(String.format("%011d", Math.abs(UUID.randomUUID().getMostSignificantBits() % 100_000_000_000L)));
         usuario.setMatricula(UUID.randomUUID().toString());
         usuario.setDataNascimento(LocalDate.of(1990, 1, 1));
-        usuario.setTelefone("11999999999");
         usuario.setPerfil(Perfil.ALUNO);
         usuario.setEmailConfirmado(true);
         usuario.setAceitouTermosLgpd(true);
@@ -225,11 +224,10 @@ class AutenticacaoHttpTest {
     }
 
     @Test
-    void cpfETelefoneFicamCifradosELogsSaoVerificaveis() {
-        var dados = jdbc.queryForMap("select cpf, telefone from tb_usuarios where id = ?", usuario.getId());
+    void cpfFicaCifradoELogsSaoVerificaveis() {
+        var dados = jdbc.queryForMap("select cpf from tb_usuarios where id = ?", usuario.getId());
         assertTrue(usuarios.existsByCpf(usuario.getCpf()));
         assertNotEquals(usuario.getCpf(), dados.get("CPF"));
-        assertNotEquals(usuario.getTelefone(), dados.get("TELEFONE"));
         entrar();
         assertTrue(auditoria.verificarIntegridade());
         Long id = jdbc.queryForObject("select max(id) from tb_logs_auditoria", Long.class);

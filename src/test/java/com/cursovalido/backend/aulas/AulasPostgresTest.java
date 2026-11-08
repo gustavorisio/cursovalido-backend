@@ -173,21 +173,20 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     void migracoesCriamSchemaSemEnderecoEDocumentosSeparados() {
         String schema = "v1_" + java.util.UUID.randomUUID().toString().replace("-", "");
         var flyway = Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
-        assertThat(Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema)
-                .target("1").load().migrate().migrationsExecuted).isEqualTo(1);
-        assertThat(flyway.migrate().migrationsExecuted).isZero();
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.info().applied()).filteredOn(item -> item.getVersion() != null).hasSize(1);
         assertThat(flyway.info().current().getVersion().toString()).isEqualTo("1");
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select nome from " + schema + ".tb_politicas_privacidade", String.class)).isEqualTo("Politica de Privacidade");
+        assertThat(jdbc.queryForObject("select nome from " + schema + ".tb_politicas_privacidade where ativa = true", String.class)).isEqualTo("Politica de Privacidade");
         assertThat(jdbc.queryForObject("select concluida from " + schema + ".tb_inicializacao_administrador", Boolean.class)).isFalse();
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_contas_excluidas", Long.class)).isZero();
         assertThat(jdbc.queryForList("select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_usuarios'", String.class, schema))
-                .doesNotContain("cep", "logradouro", "bairro", "cidade", "estado");
-        assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas", String.class))
-                .doesNotContain("ViaCEP", "logradouro");
-        assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas_privacidade", String.class))
-                .doesNotContain("ViaCEP", "logradouro");
+                .doesNotContain("telefone", "cep", "logradouro", "bairro", "cidade", "estado");
+        assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas where ativa = true", String.class))
+                .contains("CPF.CNPJ").doesNotContain("telefone", "ViaCEP", "logradouro");
+        assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas_privacidade where ativa = true", String.class))
+                .contains("CPF.CNPJ").doesNotContain("telefone", "ViaCEP", "logradouro");
         assertThat(flyway.migrate().migrationsExecuted).isZero();
     }
     @TestConfiguration

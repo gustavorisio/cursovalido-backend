@@ -529,7 +529,6 @@ class AulasIntegracaoTest {
         usuario.setSenha("hash-teste");
         usuario.setCpf(String.format("%011d", usuarios.count() + 1));
         usuario.setMatricula("aulas-" + nome);
-        usuario.setTelefone("11999999999");
         usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
         usuario.setDeclarouMaiorIdade(true);
         usuario.setAceitouTermosLgpd(true);
