@@ -21,6 +21,10 @@ public class CursoService {
     private final UsuarioRepository usuarios;
     private final LogAuditoriaService auditoria;
 
+    public List<Curso> listarPublicos() {
+        return repositorio.findByAtivoTrueOrderByIdDesc();
+    }
+
     public List<Curso> listar(Long idProfessor) {
         verificarProfessor(idProfessor);
         return repositorio.findByIdProfessorAndAtivoTrueOrderByIdDesc(idProfessor);
