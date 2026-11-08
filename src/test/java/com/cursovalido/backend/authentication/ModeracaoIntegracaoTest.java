@@ -217,7 +217,6 @@ class ModeracaoIntegracaoTest {
         String cadastro = """
                 {"token":"%s","cadastro":{"nomeCompleto":"Professor Convidado","email":"convite@example.com",
                 "senha":"SenhaTeste123!","cpf":"12345678901","dataNascimento":"1990-01-01","telefone":"11999999999",
-                "endereco":{"cep":"01001000","logradouro":"Rua A","bairro":"Centro","cidade":"Sao Paulo","estado":"SP"},
                 "declarouMaiorIdade":true,"aceitouTermosLgpd":true,"versaoTermos":"convite-v1"}}
                 """.formatted(token.get());
         mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON).content(cadastro))

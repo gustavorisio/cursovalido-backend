@@ -58,7 +58,6 @@ class AutenticacaoHttpTest {
         usuario.setMatricula(UUID.randomUUID().toString());
         usuario.setDataNascimento(LocalDate.of(1990, 1, 1));
         usuario.setTelefone("11999999999");
-        usuario.setEndereco(new Endereco("01001000", "Rua A", "Centro", "Sao Paulo", "SP"));
         usuario.setPerfil(Perfil.ALUNO);
         usuario.setEmailConfirmado(true);
         usuario.setAceitouTermosLgpd(true);
@@ -226,12 +225,11 @@ class AutenticacaoHttpTest {
     }
 
     @Test
-    void cpfTelefoneEEnderecoFicamCifradosELogsSaoVerificaveis() {
-        var dados = jdbc.queryForMap("select cpf, telefone, logradouro from tb_usuarios where id = ?", usuario.getId());
+    void cpfETelefoneFicamCifradosELogsSaoVerificaveis() {
+        var dados = jdbc.queryForMap("select cpf, telefone from tb_usuarios where id = ?", usuario.getId());
         assertTrue(usuarios.existsByCpf(usuario.getCpf()));
         assertNotEquals(usuario.getCpf(), dados.get("CPF"));
         assertNotEquals(usuario.getTelefone(), dados.get("TELEFONE"));
-        assertNotEquals("Rua A", dados.get("LOGRADOURO"));
         entrar();
         assertTrue(auditoria.verificarIntegridade());
         Long id = jdbc.queryForObject("select max(id) from tb_logs_auditoria", Long.class);

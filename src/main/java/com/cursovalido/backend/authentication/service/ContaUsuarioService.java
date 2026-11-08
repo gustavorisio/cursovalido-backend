@@ -1,7 +1,6 @@
 package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.dto.DadosPessoaisResponse;
-import com.cursovalido.backend.authentication.dto.EnderecoRequest;
 import com.cursovalido.backend.authentication.entity.AceiteTermoArquivado;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.AceiteTermoArquivadoRepository;
@@ -47,15 +46,20 @@ public class ContaUsuarioService {
 
     @Transactional(readOnly = true)
     public DadosPessoaisResponse consultarDados(Long idUsuario) {
+        return consultarDados(idUsuario, true);
+    }
+
+    @Transactional(readOnly = true)
+    public DadosPessoaisResponse consultarDadosParaExportacao(Long idUsuario) {
+        return consultarDados(idUsuario, false);
+    }
+
+    private DadosPessoaisResponse consultarDados(Long idUsuario, boolean incluirAuditoria) {
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
-        var endereco = usuario.getEndereco();
-        var respostaEndereco = endereco == null ? null
-                : new EnderecoRequest(endereco.getCep(),
-                        endereco.getLogradouro(), endereco.getBairro(), endereco.getCidade(), endereco.getEstado());
         return new DadosPessoaisResponse(usuario.getId(),
                 usuario.getNomeCompleto(), usuario.getEmail(), usuario.getCpf(), usuario.getDataNascimento(),
-                usuario.getTelefone(), usuario.getMatricula(), respostaEndereco, usuario.getPerfil(),
+                usuario.getTelefone(), usuario.getMatricula(), usuario.getPerfil(),
                 usuario.isAtivo(), usuario.isEmailConfirmado(), usuario.getStatusAprovacao(),
                 usuario.getDeclarouMaiorIdade(), usuario.getAceitouTermosLgpd(), usuario.getVersaoTermos(),
                 usuario.getDataHoraAceite(),
@@ -63,10 +67,10 @@ public class ContaUsuarioService {
                         .map(aceite -> new DadosPessoaisResponse.Consentimento(
                                 aceite.getVersao(), aceite.getDataHoraAceite(), aceite.getDataHoraArquivamento(), aceite.getMotivo()))
                         .toList(),
-                repositorioAuditoria.findByUsuarioIdOrderByDataHoraAsc(idUsuario).stream()
+                incluirAuditoria ? repositorioAuditoria.findByUsuarioIdOrderByDataHoraAsc(idUsuario).stream()
                         .map(log -> new DadosPessoaisResponse.RegistroAuditoria(
                                 log.getTipoAcao(), log.getDetalhes(), log.getEnderecoIp(), log.getDataHora()))
-                        .toList());
+                        .toList() : null);
     }
 
     @Transactional

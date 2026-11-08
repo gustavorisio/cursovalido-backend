@@ -46,7 +46,7 @@ public class AutenticacaoController {
     @GetMapping("/exportar-dados")
     public ResponseEntity<DadosPessoaisResponse> exportarDados(
             @AuthenticationPrincipal UsuarioAutenticado usuario) {
-        var dados = contaUsuarios.consultarDados(usuario.getId());
+        var dados = contaUsuarios.consultarDadosParaExportacao(usuario.getId());
         auditoria.registrar(usuario.getId(), "EXPORTACAO_DADOS", "Dados de cadastro exportados", null);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=meus-dados.json")
