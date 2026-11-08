@@ -18,6 +18,14 @@ import org.springframework.web.bind.annotation.*;
 public class CursoController {
     private final CursoService servico;
 
+    public record CursoPublico(Long id, String titulo, String descricao) {}
+
+    @GetMapping("/catalogo/cursos")
+    public List<CursoPublico> catalogoPublico() {
+        return servico.listarPublicos().stream()
+                .map(curso -> new CursoPublico(curso.getId(), curso.getTitulo(), curso.getDescricao())).toList();
+    }
+
     @GetMapping("/cursos")
     public List<CursoResponse> listar(@AuthenticationPrincipal UsuarioAutenticado usuario) {
         return servico.listar(usuario.getId()).stream().map(this::converter).toList();
