@@ -59,7 +59,7 @@ public class ContaUsuarioService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
         return new DadosPessoaisResponse(usuario.getId(),
                 usuario.getNomeCompleto(), usuario.getEmail(), usuario.getCpf(), usuario.getDataNascimento(),
-                usuario.getTelefone(), usuario.getMatricula(), usuario.getPerfil(),
+                usuario.getMatricula(), usuario.getPerfil(),
                 usuario.isAtivo(), usuario.isEmailConfirmado(), usuario.getStatusAprovacao(),
                 usuario.getDeclarouMaiorIdade(), usuario.getAceitouTermosLgpd(), usuario.getVersaoTermos(),
                 usuario.getDataHoraAceite(),

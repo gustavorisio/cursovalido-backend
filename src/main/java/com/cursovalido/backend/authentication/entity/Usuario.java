@@ -35,9 +35,6 @@ public class Usuario {
     private String cpfHash;
     @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
-    @Convert(converter = CriptografiaDadosConverter.class)
-    @Column(length = 64)
-    private String telefone;
     @Column(nullable = false, unique = true, length = 50)
     private String matricula;
     @Column(name = "declarou_maior_idade", nullable = false)
