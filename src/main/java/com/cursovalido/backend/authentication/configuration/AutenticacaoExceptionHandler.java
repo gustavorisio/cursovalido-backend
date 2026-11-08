@@ -20,6 +20,12 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @RestControllerAdvice(basePackages = "com.cursovalido.backend.authentication")
 public class AutenticacaoExceptionHandler {
+    @ExceptionHandler(com.cursovalido.backend.authentication.exception.ValidacaoCpfException.class)
+    public ResponseEntity<Codigo2faErroResponse> validacaoCpf(
+            com.cursovalido.backend.authentication.exception.ValidacaoCpfException excecao) {
+        return ResponseEntity.status(excecao.getStatusCode())
+                .body(new Codigo2faErroResponse(excecao.getReason(), excecao.getCodigo()));
+    }
     @ExceptionHandler(com.cursovalido.backend.authentication.suporte.LimiteSuporteException.class)
     public ResponseEntity<Codigo2faErroResponse> limiteSuporte(
             com.cursovalido.backend.authentication.suporte.LimiteSuporteException excecao) {
