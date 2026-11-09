@@ -47,7 +47,8 @@ public class ValidacaoCpfService {
         if (Period.between(nascimentoInformado, LocalDate.now()).getYears() < 18)
             throw new MenorDeIdadeException();
         // O token publico retorna dados ficticios e nunca pode liberar cadastros.
-        if (token.isBlank() || token.equals(TOKEN_PUBLICO_TESTE)) throw indisponivel();
+        if (token.isBlank() || token.equals(TOKEN_PUBLICO_TESTE))
+            throw indisponivel();
         JsonNode resposta;
         try {
             String corpo = cliente.get().uri("/{token}/26/{cpf}", token, cpf)
@@ -61,15 +62,18 @@ public class ValidacaoCpfService {
             throw indisponivel();
         if (resposta.path("status").intValue() == 0) {
             int codigo = resposta.path("erroCodigo").asInt(-1);
-            if (codigo == 100 || codigo == 101 || codigo == 102) throw dadosInvalidos();
+            if (codigo == 100 || codigo == 101 || codigo == 102)
+                throw dadosInvalidos();
             throw indisponivel();
         }
         if (resposta.path("status").intValue() != 1
-                || resposta.path("pacoteUsado").asInt(-1) != 26) throw indisponivel();
+                || resposta.path("pacoteUsado").asInt(-1) != 26)
+            throw indisponivel();
         String retornado = resposta.path("cpf").asText("");
         if (!retornado.matches("(?:[0-9]{11}|[0-9]{3}\\.[0-9]{3}\\.[0-9]{3}-[0-9]{2})"))
             throw indisponivel();
-        if (!cpf.equals(retornado.replaceAll("\\D", ""))) throw indisponivel();
+        if (!cpf.equals(retornado.replaceAll("\\D", "")))
+            throw indisponivel();
         LocalDate nascimento;
         try {
             nascimento = LocalDate.parse(resposta.path("nascimento").asText(""), NASCIMENTO);
@@ -78,7 +82,8 @@ public class ValidacaoCpfService {
         }
         if (Period.between(nascimento, LocalDate.now()).getYears() < 18)
             throw new MenorDeIdadeException();
-        if (!nascimento.equals(nascimentoInformado)) throw dadosInvalidos();
+        if (!nascimento.equals(nascimentoInformado))
+            throw dadosInvalidos();
         if (!resposta.path("nome").isTextual() || resposta.path("nome").asText().isBlank())
             throw indisponivel();
         if (!normalizarNome(resposta.path("nome").asText()).equals(normalizarNome(nomeInformado)))

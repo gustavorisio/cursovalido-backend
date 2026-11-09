@@ -57,10 +57,12 @@ public class YoutubeClient {
                         "Consulta ao YouTube indisponivel: verifique a quota e as permissoes da chave");
             }
             if (ex.getStatusCode().value() == 429) {
-                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Limite de consultas ao YouTube atingido");
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Limite de consultas ao YouTube atingido");
             }
             if (ex.getStatusCode().is5xxServerError()) {
-                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "YouTube temporariamente indisponivel");
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "YouTube temporariamente indisponivel");
             }
             throw respostaInvalida();
         } catch (ResourceAccessException ex) {

@@ -17,12 +17,18 @@ import static com.cursovalido.backend.aulas.service.AulasTestSupport.*;
 
 @ExtendWith(MockitoExtension.class)
 class AulaServiceTest {
-    @Mock private AulaRepository repositorio;
-    @Mock private ModuloService modulos;
-    @Mock private YoutubeService youtube;
-    @Mock private LogAuditoriaService auditoria;
-    @Mock private ProgressoAulaRepository progressos;
-    @InjectMocks private AulaService servico;
+    @Mock
+    private AulaRepository repositorio;
+    @Mock
+    private ModuloService modulos;
+    @Mock
+    private YoutubeService youtube;
+    @Mock
+    private LogAuditoriaService auditoria;
+    @Mock
+    private ProgressoAulaRepository progressos;
+    @InjectMocks
+    private AulaService servico;
     private final AulaRequest dados = new AulaRequest(" Java ", " Basico ", 2, "https://youtu.be/M7lc1UVf-VE");
 
     @Test
@@ -75,7 +81,8 @@ class AulaServiceTest {
     void falhaDoYoutubePreservaDadosEProgresso() {
         var aula = aula();
         when(repositorio.findById(30L)).thenReturn(Optional.of(aula));
-        when(youtube.validarVideo(dados.youtubeUrl())).thenThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE));
+        when(youtube.validarVideo(dados.youtubeUrl()))
+                .thenThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE));
         erro(() -> servico.editar(30L, dados, 1L), 503);
         assertThat(aula.getOrdem()).isEqualTo(1);
         assertThat(aula.getYoutubeVideoId()).isEqualTo("M7lc1UVf-VE");

@@ -18,8 +18,10 @@ public class PrivilegiosAdministrativosService {
     public Usuario verificarAdministrador(Long id) {
         Usuario usuario = usuarios.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrador nao encontrado"));
-        if (!usuario.isAtivo()) throw negado();
-        if (usuario.getPerfil() != Perfil.ADMINISTRADOR) throw negado();
+        if (!usuario.isAtivo())
+            throw negado();
+        if (usuario.getPerfil() != Perfil.ADMINISTRADOR)
+            throw negado();
         return usuario;
     }
 
@@ -30,7 +32,8 @@ public class PrivilegiosAdministrativosService {
     }
 
     public void verificarPrincipal(Long id) {
-        if (!ehPrincipal(verificarAdministrador(id))) throw negado();
+        if (!ehPrincipal(verificarAdministrador(id)))
+            throw negado();
     }
 
     private ResponseStatusException negado() {

@@ -23,31 +23,43 @@ public class ModeracaoConfiguration implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new HandlerInterceptor() {
             @Override
-            public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+            public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+                    throws Exception {
                 var autenticacao = SecurityContextHolder.getContext().getAuthentication();
-                if (autenticacao == null) return true;
-                if (!(autenticacao.getPrincipal() instanceof UsuarioAutenticado usuario)) return true;
+                if (autenticacao == null)
+                    return true;
+                if (!(autenticacao.getPrincipal() instanceof UsuarioAutenticado usuario))
+                    return true;
                 String caminho = request.getRequestURI().substring(request.getContextPath().length());
-                if (caminho.equals("/api/autenticacao/logout")) return true;
-                if (caminho.equals("/api/autenticacao/restricoes")) return true;
+                if (caminho.equals("/api/autenticacao/logout"))
+                    return true;
+                if (caminho.equals("/api/autenticacao/restricoes"))
+                    return true;
                 if (moderacao.restrito(usuario.getId(), EscopoSuspensao.CONTA)) {
-                    return bloquear(response, "CONTA_SUSPENSA", moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.CONTA));
+                    return bloquear(response, "CONTA_SUSPENSA",
+                            moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.CONTA));
                 }
-                if (caminho.startsWith("/api/administracao/convites")) privilegios.verificarPrincipal(usuario.getId());
+                if (caminho.startsWith("/api/administracao/convites"))
+                    privilegios.verificarPrincipal(usuario.getId());
                 if (caminho.equals("/api/politicas")) {
-                    if (request.getMethod().equals("POST")) privilegios.verificarPrincipal(usuario.getId());
+                    if (request.getMethod().equals("POST"))
+                        privilegios.verificarPrincipal(usuario.getId());
                 }
-                if (!caminho.startsWith("/api/forum/")) return true;
+                if (!caminho.startsWith("/api/forum/"))
+                    return true;
                 if (moderacao.restrito(usuario.getId(), EscopoSuspensao.FORUM)) {
-                    return bloquear(response, "FORUM_SUSPENSO", moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.FORUM));
+                    return bloquear(response, "FORUM_SUSPENSO",
+                            moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.FORUM));
                 }
                 boolean conteudoForum = caminhoDeConteudoForum(caminho);
                 if (conteudoForum) {
                     if (moderacao.restrito(usuario.getId(), EscopoSuspensao.TOPICOS)) {
-                        return bloquear(response, "TOPICOS_SUSPENSOS", moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.TOPICOS));
+                        return bloquear(response, "TOPICOS_SUSPENSOS",
+                                moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.TOPICOS));
                     }
                     if (moderacao.restrito(usuario.getId(), EscopoSuspensao.COMENTARIOS)) {
-                        return bloquear(response, "COMENTARIOS_SUSPENSOS", moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.TOPICOS));
+                        return bloquear(response, "COMENTARIOS_SUSPENSOS",
+                                moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.TOPICOS));
                     }
                 }
                 return true;

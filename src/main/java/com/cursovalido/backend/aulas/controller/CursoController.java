@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.*;
 public class CursoController {
     private final CursoService servico;
 
-    public record CursoPublico(Long id, String titulo, String descricao) {}
+    public record CursoPublico(Long id, String titulo, String descricao) {
+    }
 
     @GetMapping("/catalogo/cursos")
     public List<CursoPublico> catalogoPublico() {

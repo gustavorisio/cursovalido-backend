@@ -35,10 +35,12 @@ public class AdministradorInicialService {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void criar() {
-        // A migracao cria a linha unica; o fallback atende bancos temporarios com ddl-auto.
+        // A migracao cria a linha unica; o fallback atende bancos temporarios com
+        // ddl-auto.
         var registro = inicializacao.buscarParaAtualizar()
                 .orElseGet(() -> inicializacao.saveAndFlush(new InicializacaoAdministrador()));
-        if (registro.isConcluida()) return;
+        if (registro.isConcluida())
+            return;
         if (usuarios.existsByPerfil(Perfil.ADMINISTRADOR)) {
             registro.concluir(null);
             inicializacao.save(registro);
@@ -56,7 +58,8 @@ public class AdministradorInicialService {
         if (!validador.validate(configuracao).isEmpty()) {
             throw new IllegalStateException("Defina ADMIN_EMAIL com um endereco de e-mail valido.");
         }
-        if (!new SenhaValidaValidator().isValid(senha, null)) throw senhaInvalida();
+        if (!new SenhaValidaValidator().isValid(senha, null))
+            throw senhaInvalida();
         if (usuarios.existsByEmail(endereco)) {
             throw new IllegalStateException("ADMIN_EMAIL ja pertence a uma conta. Nenhuma conta sera promovida.");
         }
@@ -77,6 +80,7 @@ public class AdministradorInicialService {
     }
 
     private IllegalStateException senhaInvalida() {
-        return new IllegalStateException("ADMIN_PASSWORD deve ter pelo menos 8 caracteres, uma maiuscula, um especial e no maximo 72 bytes.");
+        return new IllegalStateException(
+                "ADMIN_PASSWORD deve ter pelo menos 8 caracteres, uma maiuscula, um especial e no maximo 72 bytes.");
     }
 }

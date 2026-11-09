@@ -33,7 +33,8 @@ public class AdministradorAulasService {
         verificarAdministrador(idAdministrador);
         Curso curso = cursos.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Curso nao encontrado"));
-        if (!curso.isAtivo()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Curso inativo");
+        if (!curso.isAtivo())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Curso inativo");
         return curso;
     }
 
@@ -46,7 +47,8 @@ public class AdministradorAulasService {
         verificarAdministrador(idAdministrador);
         Modulo modulo = modulos.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Modulo nao encontrado"));
-        if (!modulo.isAtivo()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Modulo inativo");
+        if (!modulo.isAtivo())
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Modulo inativo");
         buscarCurso(modulo.getIdCurso(), idAdministrador);
         return modulo;
     }
@@ -69,7 +71,8 @@ public class AdministradorAulasService {
     public Aula editarAula(Long id, AulaRequest dados, Long idAdministrador) {
         Aula aula = buscarAula(id, idAdministrador);
         String videoId = youtube.validarVideo(dados.youtubeUrl());
-        if (!videoId.equals(aula.getYoutubeVideoId())) progressos.deleteByIdAula(id);
+        if (!videoId.equals(aula.getYoutubeVideoId()))
+            progressos.deleteByIdAula(id);
         aula.setTitulo(dados.titulo().trim());
         aula.setDescricao(dados.descricao().trim());
         aula.setOrdem(dados.ordem());
@@ -93,7 +96,8 @@ public class AdministradorAulasService {
     private void verificarAdministrador(Long id) {
         var usuario = usuarios.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrador nao encontrado"));
-        if (!usuario.isAtivo()) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrador inativo");
+        if (!usuario.isAtivo())
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrador inativo");
         if (usuario.getPerfil() != Perfil.ADMINISTRADOR) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso exclusivo de administrador");
         }

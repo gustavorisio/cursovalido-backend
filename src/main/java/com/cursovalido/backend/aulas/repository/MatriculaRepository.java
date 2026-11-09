@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface MatriculaRepository extends JpaRepository<Matricula, Long> {
     Optional<Matricula> findByIdAlunoAndIdCurso(Long idAluno, Long idCurso);
+
     List<Matricula> findByIdAlunoOrderByIdDesc(Long idAluno);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

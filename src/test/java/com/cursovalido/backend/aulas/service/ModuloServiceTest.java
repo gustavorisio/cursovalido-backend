@@ -17,10 +17,14 @@ import static com.cursovalido.backend.aulas.service.AulasTestSupport.*;
 
 @ExtendWith(MockitoExtension.class)
 class ModuloServiceTest {
-    @Mock private ModuloRepository repositorio;
-    @Mock private CursoService cursos;
-    @Mock private LogAuditoriaService auditoria;
-    @InjectMocks private ModuloService servico;
+    @Mock
+    private ModuloRepository repositorio;
+    @Mock
+    private CursoService cursos;
+    @Mock
+    private LogAuditoriaService auditoria;
+    @InjectMocks
+    private ModuloService servico;
 
     @Test
     void criarVinculaCursoNormalizaEAudita() {

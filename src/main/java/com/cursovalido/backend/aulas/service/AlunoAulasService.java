@@ -37,7 +37,8 @@ public class AlunoAulasService {
     @Transactional
     public Matricula matricular(Long idCurso, Long idAluno) {
         verificarAluno(idAluno);
-        // O bloqueio aguarda outra matricula no mesmo curso terminar antes de conferir duplicidade.
+        // O bloqueio aguarda outra matricula no mesmo curso terminar antes de conferir
+        // duplicidade.
         Curso curso = cursos.buscarParaMatricula(idCurso)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Curso nao encontrado"));
         verificarCursoAtivo(curso);

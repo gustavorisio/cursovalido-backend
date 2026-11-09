@@ -26,6 +26,7 @@ public class AutenticacaoExceptionHandler {
         return ResponseEntity.status(excecao.getStatusCode())
                 .body(new Codigo2faErroResponse(excecao.getReason(), excecao.getCodigo()));
     }
+
     @ExceptionHandler(com.cursovalido.backend.authentication.suporte.LimiteSuporteException.class)
     public ResponseEntity<Codigo2faErroResponse> limiteSuporte(
             com.cursovalido.backend.authentication.suporte.LimiteSuporteException excecao) {
@@ -33,6 +34,7 @@ public class AutenticacaoExceptionHandler {
                 .body(new Codigo2faErroResponse(excecao.getReason(),
                         com.cursovalido.backend.authentication.suporte.LimiteSuporteException.CODIGO));
     }
+
     @ExceptionHandler(com.cursovalido.backend.authentication.exception.SuporteIndisponivelException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     public Codigo2faErroResponse suporteIndisponivel(
@@ -43,9 +45,11 @@ public class AutenticacaoExceptionHandler {
 
     @ExceptionHandler(com.cursovalido.backend.authentication.exception.BanimentoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public Codigo2faErroResponse banimento(com.cursovalido.backend.authentication.exception.BanimentoException excecao) {
+    public Codigo2faErroResponse banimento(
+            com.cursovalido.backend.authentication.exception.BanimentoException excecao) {
         return new Codigo2faErroResponse(excecao.getReason(), "CONTA_SUSPENSA");
     }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Codigo2faErroResponse> operacaoRecusada(ResponseStatusException excecao) {
         String motivo = excecao.getReason() == null ? "Operacao recusada" : excecao.getReason();
@@ -65,6 +69,7 @@ public class AutenticacaoExceptionHandler {
         return ResponseEntity.status(excecao.getStatus())
                 .body(new Codigo2faErroResponse(excecao.getMessage(), excecao.getCodigo()));
     }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> camposInvalidos(MethodArgumentNotValidException excecao) {
@@ -73,6 +78,7 @@ public class AutenticacaoExceptionHandler {
             campos.put(erro.getField(), erro.getDefaultMessage());
         return Map.of("erro", "Verifique os campos informados", "codigo", "CAMPOS_INVALIDOS", "campos", campos);
     }
+
     @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> parametroInvalido(
@@ -88,6 +94,7 @@ public class AutenticacaoExceptionHandler {
         return Map.of("erro", "Verifique os parametros informados", "codigo", "PARAMETRO_INVALIDO",
                 "campos", Map.of(excecao.getParameterName(), "Parametro obrigatorio"));
     }
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Codigo2faErroResponse requisicaoInvalida(IllegalArgumentException excecao) {
@@ -100,6 +107,7 @@ public class AutenticacaoExceptionHandler {
             EmailNaoConfirmadoException excecao) {
         return new Codigo2faErroResponse(excecao.getReason(), EmailNaoConfirmadoException.CODIGO);
     }
+
     @ExceptionHandler(Codigo2faExpiradoException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Codigo2faErroResponse codigo2faExpirado(Codigo2faExpiradoException excecao) {

@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.util.Locale;
 
 public record ConviteAcessoRequest(@Email @Size(max = 254) @NotBlank String email,
-                @NotNull Perfil perfil) {
+        @NotNull Perfil perfil) {
     public ConviteAcessoRequest {
         if (email != null)
             email = email.trim().toLowerCase(Locale.ROOT);

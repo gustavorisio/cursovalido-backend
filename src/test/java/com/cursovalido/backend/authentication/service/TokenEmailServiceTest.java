@@ -36,7 +36,8 @@ class TokenEmailServiceTest {
     @Test
     void recuperacaoExpiradaNaoConsomeToken() {
         var registro = new TokenEmail("hash", new Usuario(), "ALTERACAO_SENHA", LocalDateTime.now().minusMinutes(1));
-        when(repositorio.findByTokenHashAndFinalidade(anyString(), eq("ALTERACAO_SENHA"))).thenReturn(Optional.of(registro));
+        when(repositorio.findByTokenHashAndFinalidade(anyString(), eq("ALTERACAO_SENHA")))
+                .thenReturn(Optional.of(registro));
         assertThrows(IllegalArgumentException.class, () -> servico.validar("token", "ALTERACAO_SENHA"));
         assertFalse(registro.isUtilizado());
         verify(repositorio, never()).save(any());

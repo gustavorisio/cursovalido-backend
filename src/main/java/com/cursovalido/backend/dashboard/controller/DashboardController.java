@@ -21,7 +21,7 @@ public class DashboardController {
 
     @GetMapping("/matriculas-por-mes")
     public List<MatriculasMes> matriculasPorMes(@AuthenticationPrincipal UsuarioAutenticado usuario,
-                                              @RequestParam(defaultValue = "12") int meses) {
+            @RequestParam(defaultValue = "12") int meses) {
         return servico.matriculasPorMes(usuario.getId(), meses);
     }
 

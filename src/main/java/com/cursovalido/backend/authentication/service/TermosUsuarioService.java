@@ -47,7 +47,7 @@ public class TermosUsuarioService {
         Usuario usuario = buscarUsuario(idUsuario);
         if (possuiAceiteRegistrado(usuario)) {
             aceitesArquivados.save(new AceiteTermoArquivado(idUsuario, usuario.getVersaoTermos(),
-                usuario.getDataHoraAceite(), "NOVA_VERSAO_DOCUMENTOS"));
+                    usuario.getDataHoraAceite(), "NOVA_VERSAO_DOCUMENTOS"));
         }
         usuario.setAceitouTermosLgpd(true);
         usuario.setVersaoTermos(versaoTermos);

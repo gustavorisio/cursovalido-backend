@@ -21,18 +21,26 @@ import org.springframework.test.annotation.DirtiesContext;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class ForumRepositoriesTest {
-    @Autowired private UsuarioForumRepository usuarios;
-    @Autowired private TopicoRepository topicos;
-    @Autowired private ComentarioRepository comentarios;
-    @Autowired private EntityManager entityManager;
+    @Autowired
+    private UsuarioForumRepository usuarios;
+    @Autowired
+    private TopicoRepository topicos;
+    @Autowired
+    private ComentarioRepository comentarios;
+    @Autowired
+    private EntityManager entityManager;
     private UsuarioForum autor;
     private final LocalDateTime base = LocalDateTime.of(2026, 1, 1, 12, 0);
 
     @DynamicPropertySource
-    static void banco(DynamicPropertyRegistry registry) { PostgresTeste.configurar(registry, "forum_repository"); }
+    static void banco(DynamicPropertyRegistry registry) {
+        PostgresTeste.configurar(registry, "forum_repository");
+    }
 
     @BeforeEach
-    void criarAutor() { autor = usuarios.save(new UsuarioForum(7L, "Autor", "autor@example.com", "ALUNO")); }
+    void criarAutor() {
+        autor = usuarios.save(new UsuarioForum(7L, "Autor", "autor@example.com", "ALUNO"));
+    }
 
     @Test
     void listarRecentes_comFiltros_deveIgnorarArquivadosEBuscarSemDistinguirMaiusculas() {
@@ -51,8 +59,10 @@ class ForumRepositoriesTest {
         var primeiro = topico("Primeiro", 1);
         var segundo = topico("Segundo", 2);
         topicos.flush();
-        assertThat(topicos.listarRecentes(PageRequest.of(0, 1), "")).extracting(t -> t.id()).containsExactly(segundo.getId());
-        assertThat(topicos.listarRecentes(PageRequest.of(1, 1), "")).extracting(t -> t.id()).containsExactly(primeiro.getId());
+        assertThat(topicos.listarRecentes(PageRequest.of(0, 1), "")).extracting(t -> t.id())
+                .containsExactly(segundo.getId());
+        assertThat(topicos.listarRecentes(PageRequest.of(1, 1), "")).extracting(t -> t.id())
+                .containsExactly(primeiro.getId());
     }
 
     @Test
@@ -173,7 +183,8 @@ class ForumRepositoriesTest {
         topico.setDescricao("Sem autor existente");
         topico.setIdAutor(999999L);
         topico.setCriadoEm(base);
-        assertThatThrownBy(() -> topicos.saveAndFlush(topico)).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> topicos.saveAndFlush(topico))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     private Topico topico(String titulo, int minuto) {

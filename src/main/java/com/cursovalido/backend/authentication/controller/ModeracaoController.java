@@ -31,9 +31,11 @@ public class ModeracaoController {
         var administrador = privilegios.verificarAdministrador(principal.getId());
         return usuarios.findAll().stream().map(usuario -> {
             boolean podeModerar = !usuario.getId().equals(administrador.getId());
-            if (privilegios.ehPrincipal(usuario)) podeModerar = false;
+            if (privilegios.ehPrincipal(usuario))
+                podeModerar = false;
             if (usuario.getPerfil() == Perfil.ADMINISTRADOR) {
-                if (!privilegios.ehPrincipal(administrador)) podeModerar = false;
+                if (!privilegios.ehPrincipal(administrador))
+                    podeModerar = false;
             }
             return new UsuarioAdministracaoResposta(usuario.getId(), usuario.getNomeCompleto(), usuario.getEmail(),
                     usuario.getPerfil(), usuario.isAtivo(), podeModerar,

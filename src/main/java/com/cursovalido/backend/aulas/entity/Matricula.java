@@ -10,8 +10,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "tb_matriculas", uniqueConstraints = @UniqueConstraint(
-        name = "uk_matricula_aluno_curso", columnNames = { "aluno_id", "curso_id" }))
+@Table(name = "tb_matriculas", uniqueConstraints = @UniqueConstraint(name = "uk_matricula_aluno_curso", columnNames = {
+        "aluno_id", "curso_id" }))
 public class Matricula {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

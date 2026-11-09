@@ -38,7 +38,8 @@ public class CursoService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Curso inativo");
         }
         if (!idProfessor.equals(curso.getIdProfessor())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente o professor responsavel pode acessar o curso");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Somente o professor responsavel pode acessar o curso");
         }
         return curso;
     }

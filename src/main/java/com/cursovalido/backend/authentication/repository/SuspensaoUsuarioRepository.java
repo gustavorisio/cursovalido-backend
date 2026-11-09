@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SuspensaoUsuarioRepository extends JpaRepository<SuspensaoUsuario, Long> {
     List<SuspensaoUsuario> findByIdUsuarioAndRevogadaEmIsNullOrderByIdDesc(Long idUsuario);
+
     List<SuspensaoUsuario> findByIdUsuarioInAndRevogadaEmIsNullOrderByIdDesc(java.util.Collection<Long> ids);
 }

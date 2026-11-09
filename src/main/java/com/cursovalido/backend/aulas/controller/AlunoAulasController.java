@@ -20,7 +20,8 @@ public class AlunoAulasController {
         return servico.listarCursos(usuario.getId()).stream().map(this::converter).toList();
     }
 
-    // Repetir a chamada devolve a mesma matricula, sem cobrar ou criar outro registro.
+    // Repetir a chamada devolve a mesma matricula, sem cobrar ou criar outro
+    // registro.
     @PostMapping("/cursos/{idCurso}/matriculas")
     public MatriculaResponse matricular(@PathVariable Long idCurso,
             @AuthenticationPrincipal UsuarioAutenticado usuario) {

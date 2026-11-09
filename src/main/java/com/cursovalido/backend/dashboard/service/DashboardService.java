@@ -54,7 +54,8 @@ public class DashboardService {
     }
 
     private void verificarAdministrador(Long id) {
-        if (id == null) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrador necessario");
+        if (id == null)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrador necessario");
         var usuario = usuarios.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrador nao encontrado"));
         if (!usuario.isAtivo() || usuario.getPerfil() != Perfil.ADMINISTRADOR)

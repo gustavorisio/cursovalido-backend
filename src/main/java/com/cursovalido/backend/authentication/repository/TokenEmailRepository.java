@@ -11,20 +11,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface TokenEmailRepository extends JpaRepository<TokenEmail, Long> {
-    boolean existsByTokenHash(String tokenHash);
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<TokenEmail> findByTokenHashAndFinalidade(String tokenHash, String finalidade);
+        boolean existsByTokenHash(String tokenHash);
 
-    boolean existsByUsuarioIdAndFinalidadeAndUtilizadoFalseAndExpiraEmAfter(
-            Long usuarioId, String finalidade, LocalDateTime agora);
+        @Lock(LockModeType.PESSIMISTIC_WRITE)
+        Optional<TokenEmail> findByTokenHashAndFinalidade(String tokenHash, String finalidade);
 
-    long countByUsuarioIdAndFinalidadeAndCriadoEmAfter(Long usuarioId, String finalidade, LocalDateTime criadoEm);
+        boolean existsByUsuarioIdAndFinalidadeAndUtilizadoFalseAndExpiraEmAfter(
+                        Long usuarioId, String finalidade, LocalDateTime agora);
 
-    @Modifying
-    @Query("update TokenEmail token set token.utilizado = true "
-            + "where token.usuario.id = :usuarioId and token.finalidade = :finalidade "
-            + "and token.utilizado = false")
-    void invalidarTokensAtivos(@Param("usuarioId") Long usuarioId, @Param("finalidade") String finalidade);
+        long countByUsuarioIdAndFinalidadeAndCriadoEmAfter(Long usuarioId, String finalidade, LocalDateTime criadoEm);
 
-    void deleteByUsuarioId(Long usuarioId);
+        @Modifying
+        @Query("update TokenEmail token set token.utilizado = true "
+                        + "where token.usuario.id = :usuarioId and token.finalidade = :finalidade "
+                        + "and token.utilizado = false")
+        void invalidarTokensAtivos(@Param("usuarioId") Long usuarioId, @Param("finalidade") String finalidade);
+
+        void deleteByUsuarioId(Long usuarioId);
 }

@@ -163,17 +163,18 @@ class TopicoServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"arquivar", "fechar"})
+    @ValueSource(strings = { "arquivar", "fechar" })
     void alterarEstado_comAutor_devePersistirERegistrarAuditoria(String operacao) {
         Topico topico = prepararTopico(7L);
         alterarEstado(operacao);
         conferirEstado(topico, operacao);
         verify(repositorio).save(topico);
-        verify(auditoria).registrar(7L, operacao.equals("arquivar") ? "ARQUIVAMENTO_TOPICO" : "FECHAMENTO_TOPICO", "Topico 10", null);
+        verify(auditoria).registrar(7L, operacao.equals("arquivar") ? "ARQUIVAMENTO_TOPICO" : "FECHAMENTO_TOPICO",
+                "Topico 10", null);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"arquivar", "fechar"})
+    @ValueSource(strings = { "arquivar", "fechar" })
     void alterarEstado_comAdministrador_devePermitirAlterarOutroAutor(String operacao) {
         Topico topico = prepararTopico(99L);
         when(usuarios.ehAdministrador(usuario)).thenReturn(true);
@@ -183,7 +184,7 @@ class TopicoServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"arquivar", "fechar"})
+    @ValueSource(strings = { "arquivar", "fechar" })
     void alterarEstado_comOutroUsuario_deveNegarSemPersistir(String operacao) {
         prepararTopico(99L);
         assertThrows(AcessoNegadoException.class, () -> alterarEstado(operacao));
@@ -220,12 +221,16 @@ class TopicoServiceTest {
     }
 
     private void alterarEstado(String operacao) {
-        if (operacao.equals("arquivar")) servico.arquivar(10L, 7L);
-        else servico.fechar(10L, 7L);
+        if (operacao.equals("arquivar"))
+            servico.arquivar(10L, 7L);
+        else
+            servico.fechar(10L, 7L);
     }
 
     private void conferirEstado(Topico topico, String operacao) {
-        if (operacao.equals("arquivar")) assertThat(topico.isAtivo()).isFalse();
-        else assertThat(topico.isFechado()).isTrue();
+        if (operacao.equals("arquivar"))
+            assertThat(topico.isAtivo()).isFalse();
+        else
+            assertThat(topico.isFechado()).isTrue();
     }
 }

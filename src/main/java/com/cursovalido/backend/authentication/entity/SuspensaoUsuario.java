@@ -12,13 +12,15 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class SuspensaoUsuario {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(name = "id_usuario", nullable = false)
     private Long idUsuario;
     @Column(name = "id_administrador")
     private Long idAdministrador;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private EscopoSuspensao escopo;
     @Column(nullable = false, length = 1000)
     private String motivo;
@@ -30,8 +32,10 @@ public class SuspensaoUsuario {
     private Instant revogadaEm;
 
     public boolean vigente(Instant agora) {
-        if (revogadaEm != null) return false;
-        if (expiraEm == null) return true;
+        if (revogadaEm != null)
+            return false;
+        if (expiraEm == null)
+            return true;
         return expiraEm.isAfter(agora);
     }
 }

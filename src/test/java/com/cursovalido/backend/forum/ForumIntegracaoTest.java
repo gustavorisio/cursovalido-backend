@@ -25,33 +25,33 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class ForumIntegracaoTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private UsuarioForumRepository usuarios;
-    @Autowired
-    private TopicoRepository topicos;
+        @Autowired
+        private MockMvc mockMvc;
+        @Autowired
+        private UsuarioForumRepository usuarios;
+        @Autowired
+        private TopicoRepository topicos;
 
-    @Test
-    void deveCriarTopicoPelaApiEPersistirNoBanco() throws Exception {
-        usuarios.save(new UsuarioForum(7L, "Aluno", "aluno@teste.com", "ALUNO"));
-        UsuarioAutenticado principal = new UsuarioAutenticado(
-                7L, "aluno@teste.com", "senha", Perfil.ALUNO, true, true, true);
-        var autenticacao = new UsernamePasswordAuthenticationToken(
-                principal, null, principal.getAuthorities());
+        @Test
+        void deveCriarTopicoPelaApiEPersistirNoBanco() throws Exception {
+                usuarios.save(new UsuarioForum(7L, "Aluno", "aluno@teste.com", "ALUNO"));
+                UsuarioAutenticado principal = new UsuarioAutenticado(
+                                7L, "aluno@teste.com", "senha", Perfil.ALUNO, true, true, true);
+                var autenticacao = new UsernamePasswordAuthenticationToken(
+                                principal, null, principal.getAuthorities());
 
-        // A requisição valida segurança, controlador, serviço e persistência.
-        mockMvc.perform(post("/api/forum/topicos")
-                .with(authentication(autenticacao))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"titulo":"Fluxo completo","descricao":"Criado pela API"}
-                        """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.titulo").value("Fluxo completo"))
-                .andExpect(jsonPath("$.idAutor").value(7));
+                // A requisição valida segurança, controlador, serviço e persistência.
+                mockMvc.perform(post("/api/forum/topicos")
+                                .with(authentication(autenticacao))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                                {"titulo":"Fluxo completo","descricao":"Criado pela API"}
+                                                """))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.titulo").value("Fluxo completo"))
+                                .andExpect(jsonPath("$.idAutor").value(7));
 
-        assertEquals(1, topicos.count());
-        assertEquals("Fluxo completo", topicos.findAll().getFirst().getTitulo());
-    }
+                assertEquals(1, topicos.count());
+                assertEquals("Fluxo completo", topicos.findAll().getFirst().getTitulo());
+        }
 }

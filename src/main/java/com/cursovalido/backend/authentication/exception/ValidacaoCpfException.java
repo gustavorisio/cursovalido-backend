@@ -11,5 +11,7 @@ public class ValidacaoCpfException extends ResponseStatusException {
         this.codigo = codigo;
     }
 
-    public String getCodigo() { return codigo; }
+    public String getCodigo() {
+        return codigo;
+    }
 }

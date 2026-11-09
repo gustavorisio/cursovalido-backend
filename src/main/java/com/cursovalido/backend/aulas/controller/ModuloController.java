@@ -19,7 +19,8 @@ public class ModuloController {
     private final ModuloService servico;
 
     @GetMapping("/cursos/{idCurso}/modulos")
-    public List<ModuloResponse> listar(@PathVariable Long idCurso, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+    public List<ModuloResponse> listar(@PathVariable Long idCurso,
+            @AuthenticationPrincipal UsuarioAutenticado usuario) {
         return servico.listar(idCurso, usuario.getId()).stream().map(this::converter).toList();
     }
 
@@ -48,6 +49,7 @@ public class ModuloController {
     }
 
     private ModuloResponse converter(Modulo item) {
-        return new ModuloResponse(item.getId(), item.getTitulo(), item.getDescricao(), item.getIdCurso(), item.getOrdem());
+        return new ModuloResponse(item.getId(), item.getTitulo(), item.getDescricao(), item.getIdCurso(),
+                item.getOrdem());
     }
 }

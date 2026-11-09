@@ -19,10 +19,14 @@ import static com.cursovalido.backend.aulas.service.AulasTestSupport.*;
 
 @ExtendWith(MockitoExtension.class)
 class CursoServiceTest {
-    @Mock private CursoRepository repositorio;
-    @Mock private UsuarioRepository usuarios;
-    @Mock private LogAuditoriaService auditoria;
-    @InjectMocks private CursoService servico;
+    @Mock
+    private CursoRepository repositorio;
+    @Mock
+    private UsuarioRepository usuarios;
+    @Mock
+    private LogAuditoriaService auditoria;
+    @InjectMocks
+    private CursoService servico;
 
     private void autorizar() {
         when(usuarios.findById(1L)).thenReturn(Optional.of(usuario(Perfil.PROFESSOR)));

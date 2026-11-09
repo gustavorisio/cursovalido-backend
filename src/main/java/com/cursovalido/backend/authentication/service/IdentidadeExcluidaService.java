@@ -46,13 +46,15 @@ public class IdentidadeExcluidaService {
         emails.add(hashEmail(email));
         cpfs.add(cpf == null ? "" : ProtecaoDadosPessoais.hashCpf(cpf));
         boolean mudou;
-        // Percorre tambem os vinculos de exclusoes sucessivas com outros identificadores.
+        // Percorre tambem os vinculos de exclusoes sucessivas com outros
+        // identificadores.
         do {
             mudou = false;
             for (var item : registros.findByEmailHashInOrCpfHashIn(emails, cpfs)) {
                 if (encontrados.putIfAbsent(item.getId(), item) == null) {
                     emails.add(item.getEmailHash());
-                    if (item.getCpfHash() != null) cpfs.add(item.getCpfHash());
+                    if (item.getCpfHash() != null)
+                        cpfs.add(item.getCpfHash());
                     mudou = true;
                 }
             }

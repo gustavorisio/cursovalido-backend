@@ -54,7 +54,8 @@ public class DominioEmailService {
         }
         // Na ausencia de MX, SMTP permite entrega ao endereco do proprio dominio.
         Attribute ipv4 = contexto.getAttributes(dominio, new String[] { "A" }).get("A");
-        if (possuiRegistros(ipv4)) return true;
+        if (possuiRegistros(ipv4))
+            return true;
         Attribute ipv6 = contexto.getAttributes(dominio, new String[] { "AAAA" }).get("AAAA");
         return possuiRegistros(ipv6);
     }
