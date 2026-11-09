@@ -46,5 +46,6 @@ public class SuporteController {
         return new SuporteResponse(protocolo, "Solicitacao enviada. O suporte respondera pelo e-mail de contato.");
     }
 
-    public record SuporteResponse(String protocolo, String mensagem) {}
+    public record SuporteResponse(String protocolo, String mensagem) {
+    }
 }

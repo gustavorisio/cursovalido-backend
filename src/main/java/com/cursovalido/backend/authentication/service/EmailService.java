@@ -74,9 +74,9 @@ public class EmailService {
     public void enviarExclusaoConta(Usuario usuario, String codigo) {
         enviar(usuario.getEmail(), "Confirme a exclusao da sua conta",
                 "Seu codigo para excluir a conta e: " + codigo
-                + "\nO codigo expira em 10 minutos e so pode ser usado uma vez."
-                + "\nAo confirmar, sua conta sera excluida. Um novo cadastro com o mesmo e-mail ou CPF"
-                + " ficara bloqueado por 15 dias. As punicoes permanecem ate expirar ou serem revogadas.");
+                        + "\nO codigo expira em 10 minutos e so pode ser usado uma vez."
+                        + "\nAo confirmar, sua conta sera excluida. Um novo cadastro com o mesmo e-mail ou CPF"
+                        + " ficara bloqueado por 15 dias. As punicoes permanecem ate expirar ou serem revogadas.");
     }
 
     private void enviar(String destinatario, String assunto, String conteudo) {
@@ -89,7 +89,8 @@ public class EmailService {
 
     private void enviar(String destinatario, String assunto, String conteudo, String replyTo) {
         if (chaveApi == null || chaveApi.isBlank() || enderecoRemetente == null || enderecoRemetente.isBlank()) {
-            log.warn("Envio de e-mail indisponivel: verifique RESEND_API_KEY e RESEND_FROM_EMAIL no ambiente do backend.");
+            log.warn(
+                    "Envio de e-mail indisponivel: verifique RESEND_API_KEY e RESEND_FROM_EMAIL no ambiente do backend.");
             throw new ServicoEmailIndisponivelException();
         }
 
@@ -111,8 +112,6 @@ public class EmailService {
     }
 
     private record EmailRequest(String from, List<String> to, String subject, String text,
-            @com.fasterxml.jackson.annotation.JsonProperty("reply_to")
-            @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-            String replyTo) {
+            @com.fasterxml.jackson.annotation.JsonProperty("reply_to") @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String replyTo) {
     }
 }

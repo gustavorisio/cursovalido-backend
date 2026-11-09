@@ -18,7 +18,9 @@ class CadastroValidacaoTest {
     private static final Validator VALIDATOR = FACTORY.getValidator();
 
     @AfterAll
-    static void fechar() { FACTORY.close(); }
+    static void fechar() {
+        FACTORY.close();
+    }
 
     @ParameterizedTest
     @ValueSource(strings = { "nomeCompleto", "email", "senha", "cpf", "dataNascimento",

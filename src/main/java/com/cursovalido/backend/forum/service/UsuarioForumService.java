@@ -16,7 +16,6 @@ import java.util.List;
 public class UsuarioForumService {
     private final UsuarioForumRepository repositorioUsuarios;
 
-
     // Busca um usuario ativo para as operacoes do forum.
     public UsuarioForum buscarAtivo(Long idUsuario) {
         if (idUsuario == null) {

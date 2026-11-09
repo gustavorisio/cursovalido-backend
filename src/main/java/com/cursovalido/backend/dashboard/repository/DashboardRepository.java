@@ -14,19 +14,21 @@ public class DashboardRepository {
     private final JdbcTemplate jdbc;
 
     public Resumo resumo() {
-        return jdbc.queryForObject("""
-                SELECT
-                  (SELECT count(*) FROM tb_usuarios WHERE ativo AND perfil='ALUNO') AS alunos,
-                  (SELECT count(*) FROM tb_usuarios WHERE ativo AND perfil='PROFESSOR') AS professores,
-                  (SELECT count(*) FROM tb_cursos WHERE ativo) AS cursos,
-                  (SELECT count(*) FROM tb_aulas a JOIN tb_modulos m ON m.id=a.modulo_id
-                     JOIN tb_cursos c ON c.id=m.curso_id WHERE a.ativo AND m.ativo AND c.ativo) AS aulas,
-                  (SELECT count(*) FROM tb_matriculas m JOIN tb_cursos c ON c.id=m.curso_id WHERE c.ativo) AS matriculas,
-                  (SELECT count(*) FROM tb_topics WHERE active) AS topicos,
-                  (SELECT count(*) FROM tb_noticias WHERE ativo) AS noticias
-                """, (rs, row) -> new Resumo(rs.getLong("alunos"), rs.getLong("professores"),
-                rs.getLong("cursos"), rs.getLong("aulas"), rs.getLong("matriculas"),
-                rs.getLong("topicos"), rs.getLong("noticias")));
+        return jdbc.queryForObject(
+                """
+                        SELECT
+                          (SELECT count(*) FROM tb_usuarios WHERE ativo AND perfil='ALUNO') AS alunos,
+                          (SELECT count(*) FROM tb_usuarios WHERE ativo AND perfil='PROFESSOR') AS professores,
+                          (SELECT count(*) FROM tb_cursos WHERE ativo) AS cursos,
+                          (SELECT count(*) FROM tb_aulas a JOIN tb_modulos m ON m.id=a.modulo_id
+                             JOIN tb_cursos c ON c.id=m.curso_id WHERE a.ativo AND m.ativo AND c.ativo) AS aulas,
+                          (SELECT count(*) FROM tb_matriculas m JOIN tb_cursos c ON c.id=m.curso_id WHERE c.ativo) AS matriculas,
+                          (SELECT count(*) FROM tb_topics WHERE active) AS topicos,
+                          (SELECT count(*) FROM tb_noticias WHERE ativo) AS noticias
+                        """,
+                (rs, row) -> new Resumo(rs.getLong("alunos"), rs.getLong("professores"),
+                        rs.getLong("cursos"), rs.getLong("aulas"), rs.getLong("matriculas"),
+                        rs.getLong("topicos"), rs.getLong("noticias")));
     }
 
     public List<MatriculasMes> matriculasPorMes(LocalDate inicio, LocalDate fimExclusivo) {
@@ -52,7 +54,8 @@ public class DashboardRepository {
     }
 
     public List<UsuariosPerfil> usuariosPorPerfil() {
-        return jdbc.query("SELECT perfil, count(*) AS quantidade FROM tb_usuarios WHERE ativo GROUP BY perfil ORDER BY perfil",
+        return jdbc.query(
+                "SELECT perfil, count(*) AS quantidade FROM tb_usuarios WHERE ativo GROUP BY perfil ORDER BY perfil",
                 (rs, row) -> new UsuariosPerfil(rs.getString("perfil"), rs.getLong("quantidade")));
     }
 }

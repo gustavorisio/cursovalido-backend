@@ -48,7 +48,8 @@ public class ModeracaoUsuarioService {
             return "Você foi banido permanentemente" + acesso + ".";
         }
         var fim = aplicaveis.stream().map(SuspensaoUsuario::getExpiraEm).max(Instant::compareTo).orElse(null);
-        if (fim == null) return "Seu acesso está restrito.";
+        if (fim == null)
+            return "Seu acesso está restrito.";
         String data = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
                 .withZone(java.time.ZoneId.of("America/Sao_Paulo")).format(fim);
         return "Você foi banido temporariamente" + acesso + " até " + data + " (horário de Brasília).";
@@ -76,7 +77,8 @@ public class ModeracaoUsuarioService {
         suspensoes.save(suspensao);
         sessoes.revogarPorUsuario(idUsuario);
         tokensEmail.invalidarAcessos(usuarios.findById(idUsuario).orElseThrow());
-        auditoria.registrar(idAdministrador, "SUSPENSAO_APLICADA", "Usuario " + idUsuario + ": " + dados.escopo(), null);
+        auditoria.registrar(idAdministrador, "SUSPENSAO_APLICADA", "Usuario " + idUsuario + ": " + dados.escopo(),
+                null);
         return SuspensaoResponse.de(suspensao);
     }
 
@@ -88,7 +90,8 @@ public class ModeracaoUsuarioService {
         if (!suspensaoPertenceAoUsuario(suspensao, idUsuario)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Suspensao nao encontrada");
         }
-        if (suspensao.getRevogadaEm() != null) return;
+        if (suspensao.getRevogadaEm() != null)
+            return;
         suspensao.setRevogadaEm(Instant.now());
         auditoria.registrar(idAdministrador, "SUSPENSAO_REVOGADA", "Usuario " + idUsuario + ": " + idSuspensao, null);
     }
@@ -126,10 +129,13 @@ public class ModeracaoUsuarioService {
         var administrador = privilegios.verificarAdministrador(idAdministrador);
         var alvo = usuarios.findById(idUsuario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
-        if (idUsuario.equals(idAdministrador)) throw negado();
-        if (privilegios.ehPrincipal(alvo)) throw negado();
+        if (idUsuario.equals(idAdministrador))
+            throw negado();
+        if (privilegios.ehPrincipal(alvo))
+            throw negado();
         if (alvo.getPerfil() == Perfil.ADMINISTRADOR) {
-            if (!privilegios.ehPrincipal(administrador)) throw negado();
+            if (!privilegios.ehPrincipal(administrador))
+                throw negado();
         }
     }
 

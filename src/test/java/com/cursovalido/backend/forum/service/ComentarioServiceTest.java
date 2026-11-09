@@ -20,11 +20,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ComentarioServiceTest {
-    @Mock private ComentarioRepository repositorio;
-    @Mock private TopicoService topicos;
-    @Mock private UsuarioForumService usuarios;
-    @Mock private LogAuditoriaService auditoria;
-    @InjectMocks private ComentarioService servico;
+    @Mock
+    private ComentarioRepository repositorio;
+    @Mock
+    private TopicoService topicos;
+    @Mock
+    private UsuarioForumService usuarios;
+    @Mock
+    private LogAuditoriaService auditoria;
+    @InjectMocks
+    private ComentarioService servico;
     private UsuarioForum autor;
     private Topico topico;
     private Comentario comentario;
@@ -119,7 +124,8 @@ class ComentarioServiceTest {
     void editar_comComentarioApagado_deveRejeitar() {
         comentario.setAtivo(false);
         prepararEdicao();
-        assertThatThrownBy(() -> servico.editar(20L, new Comentario(), 7L)).isInstanceOf(RequisicaoInvalidaException.class);
+        assertThatThrownBy(() -> servico.editar(20L, new Comentario(), 7L))
+                .isInstanceOf(RequisicaoInvalidaException.class);
         verify(repositorio, never()).save(any());
     }
 
@@ -127,7 +133,8 @@ class ComentarioServiceTest {
     void editar_comIdInexistente_deveRetornarNaoEncontrado() {
         when(usuarios.buscarAtivo(7L)).thenReturn(autor);
         when(repositorio.findById(20L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> servico.editar(20L, new Comentario(), 7L)).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThatThrownBy(() -> servico.editar(20L, new Comentario(), 7L))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
         verify(repositorio, never()).save(any());
     }
 
@@ -170,7 +177,8 @@ class ComentarioServiceTest {
     @Test
     void apagarDoTopico_comOutroTopico_deveRetornarNaoEncontrado() {
         when(repositorio.findById(20L)).thenReturn(Optional.of(comentario));
-        assertThatThrownBy(() -> servico.apagarDoTopico(99L, 20L, 7L)).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThatThrownBy(() -> servico.apagarDoTopico(99L, 20L, 7L))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
         verify(repositorio, never()).save(any());
     }
 
@@ -178,7 +186,8 @@ class ComentarioServiceTest {
     void apagarDoTopico_semTopico_deveRetornarNaoEncontrado() {
         comentario.setTopico(null);
         when(repositorio.findById(20L)).thenReturn(Optional.of(comentario));
-        assertThatThrownBy(() -> servico.apagarDoTopico(10L, 20L, 7L)).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThatThrownBy(() -> servico.apagarDoTopico(10L, 20L, 7L))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
         verify(repositorio, never()).save(any());
     }
 

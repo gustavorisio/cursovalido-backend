@@ -27,5 +27,7 @@ public class Sessao {
         this.expiraEm = expiraEm;
     }
 
-    public void revogar() { revogada = true; }
+    public void revogar() {
+        revogada = true;
+    }
 }

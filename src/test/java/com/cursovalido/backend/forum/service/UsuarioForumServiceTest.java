@@ -22,8 +22,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UsuarioForumServiceTest {
-    @Mock private UsuarioForumRepository repositorio;
-    @InjectMocks private UsuarioForumService servico;
+    @Mock
+    private UsuarioForumRepository repositorio;
+    @InjectMocks
+    private UsuarioForumService servico;
 
     @Test
     void buscarAtivo_comUsuarioAtivo_deveRetornarUsuario() {
@@ -72,14 +74,14 @@ class UsuarioForumServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"ADMINISTRADOR", "administrador", "Administrador"})
+    @ValueSource(strings = { "ADMINISTRADOR", "administrador", "Administrador" })
     void ehAdministrador_comPerfilAdministrador_deveRetornarVerdadeiro(String perfil) {
         assertThat(servico.ehAdministrador(new UsuarioForum(7L, "Nome", "email@teste.com", perfil))).isTrue();
     }
 
     @ParameterizedTest
     @NullSource
-    @ValueSource(strings = {"ALUNO", "PROFESSOR", ""})
+    @ValueSource(strings = { "ALUNO", "PROFESSOR", "" })
     void ehAdministrador_comOutroPerfil_deveRetornarFalso(String perfil) {
         assertThat(servico.ehAdministrador(new UsuarioForum(7L, "Nome", "email@teste.com", perfil))).isFalse();
     }

@@ -1,4 +1,5 @@
 package com.cursovalido.backend.authentication.service;
+
 import com.cursovalido.backend.authentication.dto.PoliticaRequest;
 import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.entity.PoliticaPrivacidade;
@@ -7,6 +8,7 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @RequiredArgsConstructor
 public class PrivacidadeService {
@@ -16,7 +18,7 @@ public class PrivacidadeService {
 
     public PoliticaResponse buscarAtiva() {
         return repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().stream()
-            .findFirst().map(this::converter).orElse(null);
+                .findFirst().map(this::converter).orElse(null);
     }
 
     public boolean atualizadaDesde(LocalDateTime aceite) {
@@ -39,12 +41,14 @@ public class PrivacidadeService {
             politica.setAtiva(false);
             repositorio.save(politica);
         });
-        var publicada = repositorio.save(new PoliticaPrivacidade(dados.nome().trim(), dados.versao().trim(), dados.conteudo().trim()));
+        var publicada = repositorio
+                .save(new PoliticaPrivacidade(dados.nome().trim(), dados.versao().trim(), dados.conteudo().trim()));
         auditoria.registrar(administradorId, "PRIVACIDADE_PUBLICADA", publicada.getVersao(), null);
         return converter(publicada);
     }
 
     private PoliticaResponse converter(PoliticaPrivacidade politica) {
-        return new PoliticaResponse(politica.getNome(), politica.getVersao(), politica.getConteudo(), politica.getDataPublicacao());
+        return new PoliticaResponse(politica.getNome(), politica.getVersao(), politica.getConteudo(),
+                politica.getDataPublicacao());
     }
 }

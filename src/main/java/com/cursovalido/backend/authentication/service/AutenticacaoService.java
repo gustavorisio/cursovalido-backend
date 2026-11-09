@@ -45,7 +45,6 @@ public class AutenticacaoService {
         return !privacidade.atualizadaDesde(usuario.getDataHoraAceite());
     }
 
-
     // Valida a senha e inicia o login com o envio do codigo 2FA.
     public AutenticacaoResponse autenticar(LoginRequest requisicao, String enderecoIp) {
         String identificador = identificador(requisicao.email(), enderecoIp);

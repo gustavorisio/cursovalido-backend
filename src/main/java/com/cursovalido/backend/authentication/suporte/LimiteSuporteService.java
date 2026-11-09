@@ -37,7 +37,8 @@ public class LimiteSuporteService {
         var chaves = Stream.of("ip:" + ip, "email:" + normalizar(emailConta), "email:" + normalizar(emailContato))
                 .map(LimiteSuporteService::hash).distinct().toList();
         transacao.executeWithoutResult(status -> {
-            // Trava compartilhada entre instancias: duas requisicoes simultaneas nao ultrapassam o limite.
+            // Trava compartilhada entre instancias: duas requisicoes simultaneas nao
+            // ultrapassam o limite.
             jdbc.queryForObject("SELECT id FROM tb_suporte_controle WHERE id = 1 FOR UPDATE", Integer.class);
             Instant agora = relogio.instant();
             Instant liberacao = agora;
@@ -45,18 +46,21 @@ public class LimiteSuporteService {
                 var expiracoes = jdbc.query("SELECT expira_em FROM tb_suporte_limites WHERE chave = ?",
                         (rs, linha) -> rs.getTimestamp(1).toInstant(), chave);
                 for (Instant expiracao : expiracoes) {
-                    if (expiracao.isAfter(liberacao)) liberacao = expiracao;
+                    if (expiracao.isAfter(liberacao))
+                        liberacao = expiracao;
                 }
             }
             if (liberacao.isAfter(agora)) {
-                throw new LimiteSuporteException(Math.max(1, (Duration.between(agora, liberacao).toMillis() + 999) / 1000));
+                throw new LimiteSuporteException(
+                        Math.max(1, (Duration.between(agora, liberacao).toMillis() + 999) / 1000));
             }
             envio.run();
             // Falha no provedor desfaz a transacao e nao consome a cota diaria.
             Instant fim = relogio.instant().plus(Duration.ofHours(24));
             jdbc.update("DELETE FROM tb_suporte_limites WHERE expira_em <= ?", Timestamp.from(agora));
             for (String chave : chaves) {
-                jdbc.update("INSERT INTO tb_suporte_limites (chave, expira_em) VALUES (?, ?)", chave, Timestamp.from(fim));
+                jdbc.update("INSERT INTO tb_suporte_limites (chave, expira_em) VALUES (?, ?)", chave,
+                        Timestamp.from(fim));
             }
         });
     }
@@ -67,7 +71,8 @@ public class LimiteSuporteService {
 
     private static String hash(String valor) {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(valor.getBytes(StandardCharsets.UTF_8)));
+            return HexFormat.of()
+                    .formatHex(MessageDigest.getInstance("SHA-256").digest(valor.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException excecao) {
             throw new IllegalStateException(excecao);
         }

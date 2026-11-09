@@ -15,25 +15,30 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"aplicacao.suporte.email=suporte@example.com", "security.bcrypt.strength=10",
-                "spring.datasource.url=jdbc:h2:mem:suporte-http;DB_CLOSE_DELAY=-1"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "aplicacao.suporte.email=suporte@example.com", "security.bcrypt.strength=10",
+        "spring.datasource.url=jdbc:h2:mem:suporte-http;DB_CLOSE_DELAY=-1" })
 @ActiveProfiles("test")
 class SuporteHttpLimiteTest {
-    @LocalServerPort int porta;
-    @Autowired JdbcTemplate jdbc;
-    @MockitoBean EmailService emails;
+    @LocalServerPort
+    int porta;
+    @Autowired
+    JdbcTemplate jdbc;
+    @MockitoBean
+    EmailService emails;
     RestClient cliente;
 
     @BeforeEach
     void preparar() {
         jdbc.execute("CREATE TABLE IF NOT EXISTS tb_suporte_controle (id INTEGER PRIMARY KEY)");
-        jdbc.execute("CREATE TABLE IF NOT EXISTS tb_suporte_limites (chave VARCHAR(80) PRIMARY KEY, expira_em TIMESTAMP WITH TIME ZONE NOT NULL)");
+        jdbc.execute(
+                "CREATE TABLE IF NOT EXISTS tb_suporte_limites (chave VARCHAR(80) PRIMARY KEY, expira_em TIMESTAMP WITH TIME ZONE NOT NULL)");
         jdbc.update("DELETE FROM tb_suporte_limites");
         jdbc.update("DELETE FROM tb_suporte_controle");
         jdbc.update("INSERT INTO tb_suporte_controle VALUES (1)");
         cliente = RestClient.builder().baseUrl("http://127.0.0.1:" + porta)
-                .defaultStatusHandler(status -> true, (req, res) -> {}).build();
+                .defaultStatusHandler(status -> true, (req, res) -> {
+                }).build();
     }
 
     private ResponseEntity<String> enviar(String conta) {

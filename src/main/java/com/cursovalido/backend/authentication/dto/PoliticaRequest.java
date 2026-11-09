@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record PoliticaRequest(
-                @NotBlank @Size(max = 255) String nome,
-                @NotBlank @Size(max = 30) String versao,
-                @NotBlank @Size(max = 10000) String conteudo) {
+        @NotBlank @Size(max = 255) String nome,
+        @NotBlank @Size(max = 30) String versao,
+        @NotBlank @Size(max = 10000) String conteudo) {
 }

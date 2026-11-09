@@ -14,5 +14,7 @@ public class LimiteSuporteException extends ResponseStatusException {
     }
 
     @Override
-    public org.springframework.http.HttpHeaders getHeaders() { return cabecalhos; }
+    public org.springframework.http.HttpHeaders getHeaders() {
+        return cabecalhos;
+    }
 }

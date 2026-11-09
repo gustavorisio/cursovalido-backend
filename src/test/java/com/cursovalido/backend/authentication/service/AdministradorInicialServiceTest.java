@@ -36,7 +36,9 @@ class AdministradorInicialServiceTest {
     }
 
     @AfterAll
-    static void encerrarValidadores() { VALIDADORES.close(); }
+    static void encerrarValidadores() {
+        VALIDADORES.close();
+    }
 
     @Test
     void criaComEmailConfiguradoEHashSemInventarDadosOuAceite() {

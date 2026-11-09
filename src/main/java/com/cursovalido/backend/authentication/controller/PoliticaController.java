@@ -30,7 +30,6 @@ public class PoliticaController {
         return privacidade.publicar(requisicao, administrador.getId());
     }
 
-
     @GetMapping("/ativas")
     public List<PoliticaResponse> listarAtivas() {
         return servico.listarAtivas();

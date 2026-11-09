@@ -18,13 +18,20 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/** Conversao dos DTOs e delegacao; validacao HTTP e seguranca ficam na integracao real. */
+/**
+ * Conversao dos DTOs e delegacao; validacao HTTP e seguranca ficam na
+ * integracao real.
+ */
 @ExtendWith(MockitoExtension.class)
 class ForumControllerTest {
-    @Mock private TopicoService topicos;
-    @Mock private ComentarioService comentarios;
-    @Mock private UsuarioForumService usuarios;
-    @InjectMocks private ForumController controlador;
+    @Mock
+    private TopicoService topicos;
+    @Mock
+    private ComentarioService comentarios;
+    @Mock
+    private UsuarioForumService usuarios;
+    @InjectMocks
+    private ForumController controlador;
     private UsuarioAutenticado principal;
     private UsuarioForum autor;
     private Topico topico;
@@ -51,7 +58,8 @@ class ForumControllerTest {
 
     @Test
     void listarTopicos_comParametros_deveEncaminharBuscaPaginaEUsuario() {
-        var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "ALUNO", 7L, topico.getCriadoEm(), 2, true, false);
+        var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "ALUNO", 7L, topico.getCriadoEm(), 2, true,
+                false);
         when(topicos.listarRecentes(1, 3, "java", 7L)).thenReturn(List.of(resumo));
         assertThat(controlador.listarTopicosRecentes(principal, 1, 3, "java")).containsExactly(resumo);
     }
@@ -64,7 +72,8 @@ class ForumControllerTest {
         verify(topicos).criar(captor.capture(), eq(7L));
         assertThat(captor.getValue().getTitulo()).isEqualTo("Java");
         assertThat(captor.getValue().getDescricao()).isEqualTo("Duvida");
-        assertThat(resposta).isEqualTo(new TopicoResponse(10L, "Java", "Duvida", "Autor", "ALUNO", 7L, topico.getCriadoEm(), 0, true, false));
+        assertThat(resposta).isEqualTo(
+                new TopicoResponse(10L, "Java", "Duvida", "Autor", "ALUNO", 7L, topico.getCriadoEm(), 0, true, false));
     }
 
     @Test

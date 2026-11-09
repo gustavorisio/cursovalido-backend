@@ -94,11 +94,12 @@ class YoutubeClientTest {
     }
 
     private void esperarErro(int status) {
-        assertThatThrownBy(() -> cliente.validarVideo(ID)).isInstanceOfSatisfying(ResponseStatusException.class, erro -> {
-            assertThat(erro.getStatusCode().value()).isEqualTo(status);
-            assertThat(erro.getMessage()).doesNotContain("chave-ficticia");
-            assertThat(erro.getCause()).isNull();
-        });
+        assertThatThrownBy(() -> cliente.validarVideo(ID)).isInstanceOfSatisfying(ResponseStatusException.class,
+                erro -> {
+                    assertThat(erro.getStatusCode().value()).isEqualTo(status);
+                    assertThat(erro.getMessage()).doesNotContain("chave-ficticia");
+                    assertThat(erro.getCause()).isNull();
+                });
         servidor.verify();
     }
 

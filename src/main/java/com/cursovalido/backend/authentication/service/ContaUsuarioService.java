@@ -65,7 +65,8 @@ public class ContaUsuarioService {
                 usuario.getDataHoraAceite(),
                 repositorioAceitesArquivados.findByUsuarioIdOriginalOrderByDataHoraArquivamentoAsc(idUsuario).stream()
                         .map(aceite -> new DadosPessoaisResponse.Consentimento(
-                                aceite.getVersao(), aceite.getDataHoraAceite(), aceite.getDataHoraArquivamento(), aceite.getMotivo()))
+                                aceite.getVersao(), aceite.getDataHoraAceite(), aceite.getDataHoraArquivamento(),
+                                aceite.getMotivo()))
                         .toList(),
                 incluirAuditoria ? repositorioAuditoria.findByUsuarioIdOrderByDataHoraAsc(idUsuario).stream()
                         .map(log -> new DadosPessoaisResponse.RegistroAuditoria(

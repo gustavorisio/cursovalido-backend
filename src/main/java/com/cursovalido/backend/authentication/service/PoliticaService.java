@@ -5,7 +5,6 @@ import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 
 import com.cursovalido.backend.authentication.entity.Politica;
 
-
 import com.cursovalido.backend.authentication.repository.PoliticaRepository;
 
 import java.util.List;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PoliticaService {
     private final PoliticaRepository repositorio;
-
 
     private final LogAuditoriaService auditoria;
     private final PrivilegiosAdministrativosService privilegios;

@@ -17,7 +17,9 @@ class YoutubeClientHttpTest {
 
     @AfterEach
     void encerrar() {
-        if (servidor != null) { servidor.stop(0); }
+        if (servidor != null) {
+            servidor.stop(0);
+        }
     }
 
     @Test
@@ -34,7 +36,9 @@ class YoutubeClientHttpTest {
                     """.getBytes(StandardCharsets.UTF_8);
             troca.getResponseHeaders().set("Content-Type", "application/json");
             troca.sendResponseHeaders(200, corpo.length);
-            try (var saida = troca.getResponseBody()) { saida.write(corpo); }
+            try (var saida = troca.getResponseBody()) {
+                saida.write(corpo);
+            }
         });
         servidor.start();
         new YoutubeClient(url(), "chave-ficticia", 1000, 1000).validarVideo("M7lc1UVf-VE");
@@ -52,13 +56,17 @@ class YoutubeClientHttpTest {
                 liberar.await(5, TimeUnit.SECONDS);
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
-            } finally { troca.close(); }
+            } finally {
+                troca.close();
+            }
         });
         servidor.start();
         try {
             var cliente = new YoutubeClient(url(), "chave-ficticia", 1000, 250);
             erro(() -> cliente.validarVideo("M7lc1UVf-VE"), 503);
-        } finally { liberar.countDown(); }
+        } finally {
+            liberar.countDown();
+        }
     }
 
     private String url() {

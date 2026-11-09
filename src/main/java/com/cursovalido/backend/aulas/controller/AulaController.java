@@ -48,6 +48,7 @@ public class AulaController {
     }
 
     private AulaResponse converter(Aula item) {
-        return new AulaResponse(item.getId(), item.getTitulo(), item.getDescricao(), item.getIdModulo(), item.getOrdem(), item.getYoutubeVideoId());
+        return new AulaResponse(item.getId(), item.getTitulo(), item.getDescricao(), item.getIdModulo(),
+                item.getOrdem(), item.getYoutubeVideoId());
     }
 }

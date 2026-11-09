@@ -25,21 +25,31 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "security.bcrypt.strength=10")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "security.bcrypt.strength=10")
 @ActiveProfiles("test")
 class AutenticacaoHttpTest {
-    @Autowired private com.cursovalido.backend.authentication.service.TokenEmailService tokensExclusao;
-    @LocalServerPort private int porta;
-    @Autowired private UsuarioRepository usuarios;
-    @Autowired private PoliticaRepository politicas;
-    @Autowired private PasswordEncoder senhas;
-    @Autowired private JdbcTemplate jdbc;
-    @Autowired private LogAuditoriaService auditoria;
-    @Autowired private TokenJwtService tokens;
-    @MockitoBean private EmailService emails;
-    @MockitoBean private ValidacaoEmailService validacaoEmail;
-    @MockitoBean private UsuarioForumService usuariosForum;
+    @Autowired
+    private com.cursovalido.backend.authentication.service.TokenEmailService tokensExclusao;
+    @LocalServerPort
+    private int porta;
+    @Autowired
+    private UsuarioRepository usuarios;
+    @Autowired
+    private PoliticaRepository politicas;
+    @Autowired
+    private PasswordEncoder senhas;
+    @Autowired
+    private JdbcTemplate jdbc;
+    @Autowired
+    private LogAuditoriaService auditoria;
+    @Autowired
+    private TokenJwtService tokens;
+    @MockitoBean
+    private EmailService emails;
+    @MockitoBean
+    private ValidacaoEmailService validacaoEmail;
+    @MockitoBean
+    private UsuarioForumService usuariosForum;
     private RestClient cliente;
     private Usuario usuario;
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
@@ -48,7 +58,8 @@ class AutenticacaoHttpTest {
     @BeforeEach
     void preparar() {
         cliente = RestClient.builder().baseUrl("http://localhost:" + porta)
-                .defaultStatusHandler(status -> true, (request, response) -> {}).build();
+                .defaultStatusHandler(status -> true, (request, response) -> {
+                }).build();
         usuario = new Usuario();
         usuario.setNomeCompleto("Aluno Teste");
         usuario.setEmail(UUID.randomUUID() + "@example.com");
@@ -105,7 +116,8 @@ class AutenticacaoHttpTest {
         var primeiraEtapa = post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!"));
         assertEquals(200, primeiraEtapa.getStatusCode().value());
         assertNull(primeiraEtapa.getBody().get("token"));
-        var segundaEtapa = post("confirmar-2fa", Map.of("email", usuario.getEmail(), "codigo", codigos.get(usuario.getEmail())));
+        var segundaEtapa = post("confirmar-2fa",
+                Map.of("email", usuario.getEmail(), "codigo", codigos.get(usuario.getEmail())));
         assertEquals(200, segundaEtapa.getStatusCode().value());
         assertEquals("ALUNO", segundaEtapa.getBody().get("perfil"));
         return (String) segundaEtapa.getBody().get("token");
@@ -129,11 +141,13 @@ class AutenticacaoHttpTest {
 
     @Test
     void naoEnviaCodigoSemSenhaCorretaOuSemConfirmacaoDoEmail() {
-        assertEquals(401, post("login", Map.of("email", usuario.getEmail(), "senha", "incorreta")).getStatusCode().value());
+        assertEquals(401,
+                post("login", Map.of("email", usuario.getEmail(), "senha", "incorreta")).getStatusCode().value());
         assertEquals(204, post("reenviar-2fa", Map.of("email", usuario.getEmail())).getStatusCode().value());
         usuario.setEmailConfirmado(false);
         usuarios.save(usuario);
-        assertEquals(403, post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!")).getStatusCode().value());
+        assertEquals(403,
+                post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!")).getStatusCode().value());
         verify(emails, never()).enviarCodigo2fa(any(), anyString());
     }
 
@@ -158,7 +172,8 @@ class AutenticacaoHttpTest {
     @Test
     void recuperacaoInvalidaTokenUsadoESessoesAntigas() {
         String sessao = entrar();
-        assertEquals(204, post("solicitar-alteracao-senha", Map.of("email", usuario.getEmail())).getStatusCode().value());
+        assertEquals(204,
+                post("solicitar-alteracao-senha", Map.of("email", usuario.getEmail())).getStatusCode().value());
         String token = recuperacoes.get(usuario.getEmail());
         var corpo = Map.of("token", token, "novaSenha", "NovaSenha123!", "confirmacaoSenha", "NovaSenha123!");
         assertEquals(200, post("alterar-senha", corpo).getStatusCode().value());
@@ -171,7 +186,8 @@ class AutenticacaoHttpTest {
     @Test
     void codigo2faNaoPodeSerUsadoDuasVezes() {
         entrar();
-        var resposta = post("confirmar-2fa", Map.of("email", usuario.getEmail(), "codigo", codigos.get(usuario.getEmail())));
+        var resposta = post("confirmar-2fa",
+                Map.of("email", usuario.getEmail(), "codigo", codigos.get(usuario.getEmail())));
         assertEquals(400, resposta.getStatusCode().value());
     }
 
@@ -180,11 +196,13 @@ class AutenticacaoHttpTest {
         usuario.setAtivo(false);
         usuario.setAceitouTermosLgpd(false);
         usuarios.save(usuario);
-        assertEquals(401, post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!")).getStatusCode().value());
+        assertEquals(401,
+                post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!")).getStatusCode().value());
         usuario.setAtivo(true);
         usuario.setStatusAprovacao(StatusAprovacao.PENDENTE_APROVACAO);
         usuarios.save(usuario);
-        assertEquals(403, post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!")).getStatusCode().value());
+        assertEquals(403,
+                post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!")).getStatusCode().value());
         verify(emails, never()).enviarCodigo2fa(any(), anyString());
     }
 
@@ -196,7 +214,8 @@ class AutenticacaoHttpTest {
         assertEquals(400, post("alterar-senha", Map.of("token", recuperacoes.get(usuario.getEmail()),
                 "novaSenha", "NovaSenha123!", "confirmacaoSenha", "NovaSenha123!")).getStatusCode().value());
         assertTrue(senhas.matches("SenhaTeste123!", usuarios.findById(usuario.getId()).orElseThrow().getSenha()));
-        assertTrue(jdbc.queryForObject("select count(*) from tb_logs_auditoria where tipo_acao = 'RECUPERACAO_FALHOU'", Long.class) > 0);
+        assertTrue(jdbc.queryForObject("select count(*) from tb_logs_auditoria where tipo_acao = 'RECUPERACAO_FALHOU'",
+                Long.class) > 0);
     }
 
     @Test

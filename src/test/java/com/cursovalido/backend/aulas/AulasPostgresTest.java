@@ -35,24 +35,38 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import static org.assertj.core.api.Assertions.*;
 
 // Repete o fluxo HTTP em PostgreSQL temporario, com as migracoes e validacao JPA reais.
-@SpringBootTest(properties = { "spring.jpa.hibernate.ddl-auto=validate", "aplicacao.admin.email=", "aplicacao.admin.senha=" })
+@SpringBootTest(properties = { "spring.jpa.hibernate.ddl-auto=validate", "aplicacao.admin.email=",
+        "aplicacao.admin.senha=" })
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @Import(AulasPostgresTest.MigracaoTeste.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class AulasPostgresTest extends AulasIntegracaoTest {
-    @Autowired private AdministradorInicialService administradorInicial;
-    @Autowired private InicializacaoAdministradorRepository inicializacao;
-    @Autowired private EntityManager entidades;
-    @Autowired private DataSource fonte;
-    @Autowired private UsuarioRepository usuarios;
-    @Autowired private CursoService cursos;
-    @Autowired private ContaUsuarioService contas;
-    @Autowired private com.cursovalido.backend.authentication.service.TokenEmailService tokensEmail;
-    @Autowired private JdbcTemplate jdbc;
-    @Autowired private AlunoAulasService alunoAulas;
-    @Autowired private ModuloService modulos;
-    @Autowired private AulaService aulas;
-    @Autowired private ProgressoAulaService progressos;
+    @Autowired
+    private AdministradorInicialService administradorInicial;
+    @Autowired
+    private InicializacaoAdministradorRepository inicializacao;
+    @Autowired
+    private EntityManager entidades;
+    @Autowired
+    private DataSource fonte;
+    @Autowired
+    private UsuarioRepository usuarios;
+    @Autowired
+    private CursoService cursos;
+    @Autowired
+    private ContaUsuarioService contas;
+    @Autowired
+    private com.cursovalido.backend.authentication.service.TokenEmailService tokensEmail;
+    @Autowired
+    private JdbcTemplate jdbc;
+    @Autowired
+    private AlunoAulasService alunoAulas;
+    @Autowired
+    private ModuloService modulos;
+    @Autowired
+    private AulaService aulas;
+    @Autowired
+    private ProgressoAulaService progressos;
 
     @Test
     void excluirContaDoAlunoRemoveMatriculaEPreservaCurso() {
@@ -68,11 +82,13 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         progressos.concluir(aula.getId(), aluno.getId());
         contas.excluirConta(aluno.getId(), tokensEmail.criarExclusao(aluno));
         usuarios.flush();
-        assertThat(jdbc.queryForObject("select count(*) from tb_matriculas where aluno_id = ?", Long.class, aluno.getId()))
+        assertThat(
+                jdbc.queryForObject("select count(*) from tb_matriculas where aluno_id = ?", Long.class, aluno.getId()))
                 .isZero();
         assertThat(jdbc.queryForObject("select count(*) from tb_cursos where id = ?", Long.class, curso.getId()))
                 .isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from tb_progresso_aulas where aula_id = ?", Long.class, aula.getId()))
+        assertThat(jdbc.queryForObject("select count(*) from tb_progresso_aulas where aula_id = ?", Long.class,
+                aula.getId()))
                 .isZero();
     }
 
@@ -115,7 +131,8 @@ class AulasPostgresTest extends AulasIntegracaoTest {
             "insert into tb_matriculas (aluno_id, curso_id, matriculado_em) values (-1, -1, CURRENT_TIMESTAMP)",
             "insert into tb_progresso_aulas (matricula_id, aula_id, posicao_segundos, atualizado_em) values (-1, -1, 0, CURRENT_TIMESTAMP)" })
     void bancoRejeitaVinculosInexistentes(String sql) {
-        assertThatThrownBy(() -> jdbc.update(sql)).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update(sql))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @Test
@@ -141,7 +158,8 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         progressos.concluir(aula.getId(), aluno.getId());
         assertThatThrownBy(() -> jdbc.update(
                 "insert into tb_progresso_aulas (matricula_id, aula_id, atualizado_em) values (?, ?, CURRENT_TIMESTAMP)",
-                matricula.getId(), aula.getId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+                matricula.getId(), aula.getId()))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 
     @Test
@@ -177,18 +195,26 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         assertThat(flyway.info().applied()).filteredOn(item -> item.getVersion() != null).hasSize(1);
         assertThat(flyway.info().current().getVersion().toString()).isEqualTo("1");
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select nome from " + schema + ".tb_politicas_privacidade where ativa = true", String.class)).isEqualTo("Politica de Privacidade");
-        assertThat(jdbc.queryForObject("select concluida from " + schema + ".tb_inicializacao_administrador", Boolean.class)).isFalse();
+        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class))
+                .isEqualTo(1);
+        assertThat(jdbc.queryForObject("select nome from " + schema + ".tb_politicas_privacidade where ativa = true",
+                String.class)).isEqualTo("Politica de Privacidade");
+        assertThat(jdbc.queryForObject("select concluida from " + schema + ".tb_inicializacao_administrador",
+                Boolean.class)).isFalse();
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_contas_excluidas", Long.class)).isZero();
-        assertThat(jdbc.queryForList("select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_usuarios'", String.class, schema))
+        assertThat(jdbc.queryForList(
+                "select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_usuarios'",
+                String.class, schema))
                 .doesNotContain("telefone", "cep", "logradouro", "bairro", "cidade", "estado");
-        assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas where ativa = true", String.class))
+        assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas where ativa = true",
+                String.class))
                 .contains("CPF.CNPJ").doesNotContain("telefone", "ViaCEP", "logradouro");
-        assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas_privacidade where ativa = true", String.class))
+        assertThat(jdbc.queryForObject(
+                "select conteudo from " + schema + ".tb_politicas_privacidade where ativa = true", String.class))
                 .contains("CPF.CNPJ").doesNotContain("telefone", "ViaCEP", "logradouro");
         assertThat(flyway.migrate().migrationsExecuted).isZero();
     }
+
     @TestConfiguration
     static class MigracaoTeste {
         @Bean(initMethod = "migrate")

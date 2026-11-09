@@ -13,6 +13,7 @@ public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long
 	Optional<LogAuditoria> findTopByOrderByIdDesc();
 
 	List<LogAuditoria> findAllByOrderByIdAsc();
+
 	List<LogAuditoria> findByUsuarioIdOrderByDataHoraAsc(Long usuarioId);
 
 	@Modifying

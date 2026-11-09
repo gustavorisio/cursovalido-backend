@@ -6,7 +6,8 @@ import org.springframework.web.server.ResponseStatusException;
 import static org.assertj.core.api.Assertions.*;
 
 final class AulasTestSupport {
-    private AulasTestSupport() { }
+    private AulasTestSupport() {
+    }
 
     static Curso curso() {
         Curso curso = new Curso();

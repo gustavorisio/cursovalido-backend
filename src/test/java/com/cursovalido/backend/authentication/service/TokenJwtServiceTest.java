@@ -29,7 +29,10 @@ class TokenJwtServiceTest {
         sessoes = org.mockito.Mockito.mock(SessaoRepository.class);
         servico = new TokenJwtService(sessoes);
         registros = new HashMap<>();
-        org.mockito.Mockito.doAnswer(chamada -> { registros.values().forEach(Sessao::revogar); return null; })
+        org.mockito.Mockito.doAnswer(chamada -> {
+            registros.values().forEach(Sessao::revogar);
+            return null;
+        })
                 .when(sessoes).revogarTodas();
         org.mockito.Mockito.when(sessoes.save(org.mockito.ArgumentMatchers.any())).thenAnswer(chamada -> {
             Sessao sessao = chamada.getArgument(0);
@@ -50,7 +53,7 @@ class TokenJwtServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"aluno@teste.com", "professor@teste.com"})
+    @ValueSource(strings = { "aluno@teste.com", "professor@teste.com" })
     void deveGerarTokenComEmailInformado(String email) {
         usuario.setEmail(email);
         String token = servico.gerar(usuario);
