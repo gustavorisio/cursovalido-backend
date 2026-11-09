@@ -79,7 +79,7 @@ class CadastroValidacaoTest {
 
     @Test
     void senhaRespeitaLimiteEmBytesDoBcrypt() {
-        assertTrue(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "a".repeat(72)).isEmpty());
+        assertTrue(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "A!" + "a".repeat(70)).isEmpty());
         assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "á".repeat(37)).isEmpty());
         assertFalse(VALIDATOR.validateValue(AlteracaoSenhaRequest.class, "novaSenha", "á".repeat(37)).isEmpty());
     }
