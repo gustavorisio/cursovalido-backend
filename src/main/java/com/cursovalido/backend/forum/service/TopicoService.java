@@ -35,6 +35,10 @@ public class TopicoService {
 
     // Lista os topicos e registra a consulta quando houver usuario.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca, Long idUsuario) {
+        if (pagina < 0 || tamanho < 1 || tamanho > 100) {
+            throw new com.cursovalido.backend.forum.exception.RequisicaoInvalidaException(
+                    "Pagina deve ser maior ou igual a zero e tamanho deve estar entre 1 e 100");
+        }
         String termo = busca == null ? "" : busca.trim();
         registrar(idUsuario, "CONSULTA_TOPICOS", termo);
         return repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho), termo);

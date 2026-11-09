@@ -40,7 +40,7 @@ class AdministradorInicialServiceTest {
 
     @Test
     void criaComEmailConfiguradoEHashSemInventarDadosOuAceite() {
-        servico(" Inicial@Example.com ", "senha-admin-segura").criar();
+        servico(" Inicial@Example.com ", "Senha-admin-segura").criar();
         var captura = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarios).saveAndFlush(captura.capture());
         var admin = captura.getValue();
@@ -48,8 +48,8 @@ class AdministradorInicialServiceTest {
         assertEquals(Perfil.ADMINISTRADOR, admin.getPerfil());
         assertTrue(admin.isAtivo());
         assertTrue(admin.isEmailConfirmado());
-        assertTrue(senhas.matches("senha-admin-segura", admin.getSenha()));
-        assertNotEquals("senha-admin-segura", admin.getSenha());
+        assertTrue(senhas.matches("Senha-admin-segura", admin.getSenha()));
+        assertNotEquals("Senha-admin-segura", admin.getSenha());
         assertFalse(admin.getAceitouTermosLgpd());
         assertNull(admin.getCpf());
         assertNull(admin.getDataHoraAceite());
@@ -60,18 +60,18 @@ class AdministradorInicialServiceTest {
 
     @Test
     void reiniciarComOutrasCredenciaisNaoCriaContaNemAlteraSenha() {
-        servico("inicial@example.com", "senha-original").criar();
-        servico("outro@example.com", "senha-diferente").criar();
+        servico("inicial@example.com", "Senha-original").criar();
+        servico("outro@example.com", "Senha-diferente").criar();
         var captura = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarios, times(1)).saveAndFlush(captura.capture());
-        assertTrue(senhas.matches("senha-original", captura.getValue().getSenha()));
+        assertTrue(senhas.matches("Senha-original", captura.getValue().getSenha()));
         assertEquals(10L, registro.getIdUsuario());
     }
 
     @Test
     void exclusaoDaContaNaoPermiteRecriar() {
         registro.concluir(null);
-        servico("novo@example.com", "senha-admin-segura").criar();
+        servico("novo@example.com", "Senha-admin-segura").criar();
         verifyNoInteractions(usuarios);
         assertTrue(registro.isConcluida());
     }
@@ -94,7 +94,7 @@ class AdministradorInicialServiceTest {
     @Test
     void administradorPreexistenteEncerraInicializacaoSemPromoverOutraConta() {
         when(usuarios.existsByPerfil(Perfil.ADMINISTRADOR)).thenReturn(true);
-        servico("outro@example.com", "senha-admin-segura").criar();
+        servico("outro@example.com", "Senha-admin-segura").criar();
         assertTrue(registro.isConcluida());
         assertNull(registro.getIdUsuario());
         verify(usuarios, never()).saveAndFlush(any());
@@ -103,7 +103,7 @@ class AdministradorInicialServiceTest {
     @Test
     void emailJaUsadoNaoPromoveContaExistente() {
         when(usuarios.existsByEmail("aluno@example.com")).thenReturn(true);
-        assertThrows(IllegalStateException.class, () -> servico("aluno@example.com", "senha-admin-segura").criar());
+        assertThrows(IllegalStateException.class, () -> servico("aluno@example.com", "Senha-admin-segura").criar());
         assertFalse(registro.isConcluida());
         verify(usuarios, never()).saveAndFlush(any());
     }
@@ -111,7 +111,7 @@ class AdministradorInicialServiceTest {
     @ParameterizedTest
     @ValueSource(strings = { "", " ", "invalido", "admin@", "@example.com" })
     void exigeEmailValidoQuandoSenhaFoiConfigurada(String email) {
-        assertThrows(IllegalStateException.class, () -> servico(email, "senha-admin-segura").criar());
+        assertThrows(IllegalStateException.class, () -> servico(email, "Senha-admin-segura").criar());
         verify(usuarios, never()).saveAndFlush(any());
     }
 

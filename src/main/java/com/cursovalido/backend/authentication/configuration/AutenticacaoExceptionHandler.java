@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 
-@RestControllerAdvice(basePackages = "com.cursovalido.backend.authentication")
+@RestControllerAdvice(basePackages = "com.cursovalido.backend")
 public class AutenticacaoExceptionHandler {
     @ExceptionHandler(com.cursovalido.backend.authentication.exception.ValidacaoCpfException.class)
     public ResponseEntity<Codigo2faErroResponse> validacaoCpf(
@@ -71,7 +71,22 @@ public class AutenticacaoExceptionHandler {
         Map<String, String> campos = new LinkedHashMap<>();
         for (var erro : excecao.getBindingResult().getFieldErrors())
             campos.put(erro.getField(), erro.getDefaultMessage());
-        return Map.of("erro", "Verifique os campos informados", "campos", campos);
+        return Map.of("erro", "Verifique os campos informados", "codigo", "CAMPOS_INVALIDOS", "campos", campos);
+    }
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> parametroInvalido(
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException excecao) {
+        return Map.of("erro", "Verifique os parametros informados", "codigo", "PARAMETRO_INVALIDO",
+                "campos", Map.of(excecao.getName(), "Tipo ou formato invalido"));
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> parametroAusente(
+            org.springframework.web.bind.MissingServletRequestParameterException excecao) {
+        return Map.of("erro", "Verifique os parametros informados", "codigo", "PARAMETRO_INVALIDO",
+                "campos", Map.of(excecao.getParameterName(), "Parametro obrigatorio"));
     }
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

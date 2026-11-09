@@ -96,7 +96,7 @@ class ForumHttpIntegracaoTest {
     @Test
     void visitantePodeLerMasNaoPodeAlterarConteudo() {
         var criado = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
-                new TopicoRequest("Leitura publica", "Descricao publica"), TopicoResponse.class).getBody();
+                new TopicoRequest("Leitura aberta", "Descricao publica"), TopicoResponse.class).getBody();
         String caminho = "/api/forum/topicos/" + criado.id();
         assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(enviar(HttpMethod.GET, caminho + "/comentarios", null, null, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -237,7 +237,7 @@ class ForumHttpIntegracaoTest {
 
     @Test
     void editarComentario_comAutor_deveRetornarEPersistirConteudo() {
-        var comentario = criarComentario(criarTopico("Editar comentario").id(), "Original");
+        var comentario = criarComentario(criarTopico("Editar coment.").id(), "Original");
         var resposta = enviar(HttpMethod.PUT, "/api/forum/comentarios/" + comentario.id(), autor.token(), new ComentarioRequest("Atualizado"), ComentarioResponse.class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resposta.getBody().conteudo()).isEqualTo("Atualizado");
@@ -246,14 +246,14 @@ class ForumHttpIntegracaoTest {
 
     @Test
     void apagarComentario_comAutor_deveExcluirLogicamente() {
-        var comentario = criarComentario(criarTopico("Excluir comentario").id(), "Resposta");
+        var comentario = criarComentario(criarTopico("Excluir coment").id(), "Resposta");
         excluirComentario(comentario.id(), autor.token());
         assertThat(comentarios.findById(comentario.id()).orElseThrow().isAtivo()).isFalse();
     }
 
     @Test
     void apagarComentarioDoTopico_comAutor_deveDesativarComentarioRelacionado() {
-        var topico = criarTopico("Excluir relacionado");
+        var topico = criarTopico("Excluir rel.");
         var comentario = criarComentario(topico.id(), "Resposta");
         var resposta = enviar(HttpMethod.DELETE, comentariosUrl(topico.id()) + "/" + comentario.id(), autor.token(), null, String.class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -675,13 +675,17 @@ class ForumHttpIntegracaoTest {
     private void verificarErro(ResponseEntity<ErroHttp> resposta, int status) {
         assertThat(resposta.getStatusCode().value()).isEqualTo(status);
         assertThat(resposta.getBody()).isNotNull();
+        if (resposta.getBody().codigo() != null) {
+            assertThat(resposta.getBody().erro()).isNotBlank();
+            return;
+        }
         assertThat(resposta.getBody().status()).isEqualTo(status);
         assertThat(resposta.getBody().error()).isEqualTo(HttpStatus.valueOf(status).getReasonPhrase());
         assertThat(resposta.getBody().path()).startsWith("/api/");
     }
 
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    private record ErroHttp(int status, String error, String path) { }
+    private record ErroHttp(Integer status, String error, String path, String erro, String codigo) { }
 
     private record Sessao(Long id, String nome, String token) { }
 }

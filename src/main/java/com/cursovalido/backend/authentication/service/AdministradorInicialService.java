@@ -7,7 +7,7 @@ import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.InicializacaoAdministradorRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import jakarta.validation.Validator;
-import java.nio.charset.StandardCharsets;
+import com.cursovalido.backend.authentication.validation.SenhaValidaValidator;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -56,9 +56,7 @@ public class AdministradorInicialService {
         if (!validador.validate(configuracao).isEmpty()) {
             throw new IllegalStateException("Defina ADMIN_EMAIL com um endereco de e-mail valido.");
         }
-        if (senha.isBlank()) throw senhaInvalida();
-        if (senha.length() < 8) throw senhaInvalida();
-        if (senha.getBytes(StandardCharsets.UTF_8).length > 72) throw senhaInvalida();
+        if (!new SenhaValidaValidator().isValid(senha, null)) throw senhaInvalida();
         if (usuarios.existsByEmail(endereco)) {
             throw new IllegalStateException("ADMIN_EMAIL ja pertence a uma conta. Nenhuma conta sera promovida.");
         }
@@ -79,6 +77,6 @@ public class AdministradorInicialService {
     }
 
     private IllegalStateException senhaInvalida() {
-        return new IllegalStateException("ADMIN_PASSWORD deve ter pelo menos 8 caracteres e no maximo 72 bytes.");
+        return new IllegalStateException("ADMIN_PASSWORD deve ter pelo menos 8 caracteres, uma maiuscula, um especial e no maximo 72 bytes.");
     }
 }
