@@ -13,61 +13,68 @@ Este repositório contém a API da plataforma, responsável pelas regras de neg�
 
 A plataforma é voltada a interessados em aprender sobre tecnologia e programação. Seu escopo está organizado em três partes: aulas, notícias e comunidade.
 
-Os alunos poderão estudar por meio de cursos e videoaulas, acompanhar publicações sobre tecnologia e participar do fórum. Os professores serão responsáveis pela organização dos conteúdos e pela publicação de notícias, além de participar das discussões. Os administradores cuidarão dos acessos e das operações administrativas da plataforma.
+Os alunos podem estudar por meio de cursos e videoaulas, acompanhar publicações sobre tecnologia e participar do fórum. Os professores organizam os cursos, módulos e aulas sob sua responsabilidade e participam das discussões. Os administradores gerenciam notícias, acessos e operações administrativas da plataforma.
 
-O projeto está em desenvolvimento. A versão atual do back-end já possui autenticação, gestão de convites, termos de uso, consulta de CEP e fórum. Os módulos de aulas e notícias serão implementados nas próximas etapas.
+O projeto está em desenvolvimento. A versão atual do back-end possui autenticação, gestão de convites, termos e políticas, cursos, módulos, aulas, matrículas, progresso, notícias, fórum, moderação, dashboard administrativo e formulário de suporte.
 
 ## Funcionalidades
 
 ### Cadastro e acesso
 
-O cadastro de aluno exige confirmação de maioridade, aceite dos termos vigentes e confirmação do e-mail. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. Depois dessa confirmação, a API emite o JWT usado nas requisições autenticadas.
+O cadastro não depende de consulta externa a CPF/CNPJ: o CPF e a idade são validados localmente. O cadastro de aluno exige confirmação de maioridade, aceite dos termos vigentes e confirmação do e-mail. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. Depois dessa confirmação, a API emite o JWT usado nas requisições autenticadas.
 
 As senhas são armazenadas com BCrypt. Também há recuperação de senha e proteção contra tentativas repetidas de acesso. Professores e administradores entram por convite, com conclusão do cadastro e aprovação administrativa.
 
 ### Comunidade
 
-O fórum permite criar tópicos sobre dúvidas de programação e responder às discussões de outros usuários. A listagem possui busca e paginação, e a edição de tópicos e comentários respeita a autoria de cada publicação.
+O fórum permite criar tópicos sobre dúvidas de programação e responder às discussões de outros usuários. A consulta de tópicos e comentários é pública; a participação exige autenticação. A listagem de tópicos possui busca e paginação, e a edição de tópicos e comentários respeita a autoria de cada publicação.
 
 A descrição dos tópicos e o conteúdo dos comentários têm limite de 5.000 caracteres. Também é possível fechar tópicos para novas respostas e retirar conteúdos de circulação conforme as permissões do usuário.
 
-### Aulas e cursos - implementação prevista
+### Aulas e cursos
 
-O módulo de aprendizagem permitirá organizar cursos em módulos e aulas. Os professores poderão cadastrar e gerenciar os conteúdos, vinculando vídeos do YouTube às aulas.
+O módulo de aprendizagem organiza cursos em módulos e aulas. Os professores podem cadastrar e gerenciar os conteúdos sob sua responsabilidade, vinculando vídeos do YouTube às aulas. O backend valida o vídeo pela API do YouTube antes de associá-lo à aula.
 
-Os alunos poderão se matricular gratuitamente nos cursos, acessar as videoaulas e acompanhar seu progresso. A reprodução será feita pelo player do YouTube na interface da plataforma, utilizando as resoluções disponíveis no serviço.
+Os alunos podem se matricular gratuitamente nos cursos disponíveis, acessar as videoaulas, salvar a posição de reprodução e marcar aulas como concluídas. A reprodução pelo player do YouTube é responsabilidade do front-end; o registro de conclusão não comprova, por si só, aprendizagem ou tempo assistido.
 
-### Notícias - implementação prevista
+### Notícias
 
-Os professores poderão criar, editar e excluir notícias sobre programação e tecnologia. Os alunos terão acesso à listagem e à leitura das publicações, reunindo novidades da área no mesmo ambiente em que estudam.
+As notícias possuem listagem pública com busca e paginação e leitura das publicações ativas. Administradores ativos podem criar notícias; a edição e a exclusão são restritas ao administrador autor. A exclusão é lógica, retirando a publicação das consultas ativas.
 
-Esse módulo complementará as aulas com conteúdos sobre ferramentas, linguagens e outros assuntos relacionados à formação em tecnologia.
+Esse módulo complementa as aulas com conteúdos sobre ferramentas, linguagens e outros assuntos relacionados à formação em tecnologia.
+
+### Administração e suporte
+
+A área administrativa reúne gestão de convites, aprovações, documentos, restrições de usuários e consulta e moderação de aulas. Algumas operações são exclusivas do administrador principal. O dashboard apresenta indicadores operacionais, como quantidades de usuários, cursos, aulas, matrículas, tópicos e notícias, além de matrículas por mês, cursos mais procurados e distribuição de usuários por perfil.
+
+O formulário público de suporte gera um protocolo e encaminha a solicitação por e-mail, sujeito à configuração e aos limites de envio. O recurso não mantém um sistema completo de acompanhamento de chamados.
 
 ### Dados pessoais e termos de uso
 
-O sistema registra a versão e a data do aceite dos termos e permite publicar novas políticas, solicitar novo aceite, revogar o consentimento e excluir a conta. A consulta de CEP pelo ViaCEP auxilia no preenchimento do endereço.
+O sistema registra a versão e a data do aceite dos documentos e permite publicar novas políticas, solicitar novo aceite, revogar o consentimento e consultar e exportar os dados pessoais disponibilizados pela API. A exclusão da conta exige confirmação por código enviado por e-mail e segue regras próprias de remoção, anonimização e retenção de registros.
 
-Há criptografia de campos pessoais e registro de operações em auditoria, com assinaturas para verificar a integridade dos registros.
+O CPF é armazenado com criptografia e possui hash para identificação. As operações relevantes são registradas em auditoria com assinaturas HMAC-SHA256 encadeadas e verificação de integridade. Os JWTs são associados a sessões persistidas, permitindo verificar validade e revogar acessos.
 
 ## Tecnologias
 
 O back-end utiliza Java 21 com Spring Boot, Spring MVC, Spring Security e Spring Data JPA. Os dados são armazenados no PostgreSQL, com migrações gerenciadas pelo Flyway.
 
-A autenticação utiliza JWT com a biblioteca JJWT, e as entradas são validadas com Jakarta Bean Validation. O Resend é utilizado para envio de e-mails e o ViaCEP para consulta de endereços. Os testes utilizam JUnit, Mockito, Spring Boot Test e H2.
+A autenticação utiliza JWT com a biblioteca JJWT, e as entradas são validadas com Jakarta Bean Validation. O Resend é utilizado para envio de e-mails e a API do YouTube para validação dos vídeos. Os testes utilizam JUnit, Mockito, Spring Boot Test, Spring Security Test, H2 e PostgreSQL, com suporte a Testcontainers. O JaCoCo gera relatórios de cobertura dos módulos de fórum e aulas.
 
 ## Como executar
 
 ### 1. Preparar o ambiente
 
-Instale o JDK 21, Git e PostgreSQL. Se utilizar o VS Code, instale também o Extension Pack for Java.
+Instale o JDK 21, Maven, Git e PostgreSQL. Configure `JAVA_HOME` para o JDK 21 e disponibilize o Maven no `PATH`. Se utilizar o VS Code, instale também o Extension Pack for Java.
 
 Confira a versão do Java:
 
 ```powershell
 java -version
+mvn -version
 ```
 
-O projeto inclui Maven Wrapper. Na primeira execução, é necessário acesso à internet para baixar o Maven e as dependências.
+Na primeira execução, é necessário acesso à internet para baixar as dependências. Os scripts `mvnw` e `mvnw.cmd` atuais apenas procuram uma distribuição previamente instalada em `~/.m2/wrapper/dists/apache-maven-3.9.16`; eles não fazem o download do Maven. Os comandos abaixo utilizam o Maven instalado no ambiente.
 
 ### 2. Clonar o repositório
 
@@ -121,9 +128,27 @@ FRONTEND_ORIGINS=http://localhost:3000
 
 Utilize um remetente autorizado na sua conta Resend. Ajuste a URL e a origem para a porta utilizada pelo front-end. Se precisar permitir mais de uma origem, separe os endereços por vírgula, sem espaços.
 
-Também é possível definir `SERVER_PORT`, cujo padrão é `8080`, e `JWT_EXPIRATION`, cujo padrão é `3600000` milissegundos, ou uma hora.
+Para validar os vídeos vinculados às aulas e receber solicitações de suporte:
 
-As configurações estão em `src/main/resources/application.properties`. Este procedimento utiliza as variáveis do Windows e dispensa um arquivo `.env`. As referências a Gmail e YouTube presentes nesse arquivo ainda não são utilizadas pelos fluxos implementados.
+```text
+YOUTUBE_API_KEY=sua_chave_da_api_youtube
+SUPPORT_EMAIL=email_de_atendimento
+```
+
+Utilize uma chave com acesso à YouTube Data API v3. Sem ela, os fluxos que validam vídeos retornam indisponibilidade. Sem `SUPPORT_EMAIL`, o envio do formulário de suporte fica indisponível.
+
+Para criar o primeiro administrador em um banco novo:
+
+```text
+ADMIN_EMAIL=email_do_administrador
+ADMIN_PASSWORD=senha_do_administrador
+```
+
+A senha deve ter pelo menos oito caracteres, uma letra maiúscula, um caractere especial e no máximo 72 bytes em UTF-8. A inicialização é executada uma única vez por banco e não promove uma conta existente. Após criar a conta, remova essas duas variáveis do ambiente. O primeiro acesso exige regularizar o aceite dos documentos; o login utiliza confirmação por e-mail.
+
+Também é possível definir `SERVER_PORT`, cujo padrão é `8080`, `JWT_EXPIRATION`, cujo padrão é `3600000` milissegundos, ou uma hora, e `BCRYPT_STRENGTH`, cujo padrão é `12` e cujo intervalo permitido é de `10` a `16`. A variável `REQUIRE_HTTPS` controla a exigência de HTTPS e possui padrão `false`.
+
+As configurações estão em `src/main/resources/application.properties`. Este procedimento utiliza as variáveis do Windows e dispensa um arquivo `.env`. As propriedades de Gmail SMTP presentes nesse arquivo não são utilizadas pelo serviço de envio de e-mails atual, que usa o Resend. O backend não possui integração ativa com CPF.CNPJ nem consulta de CEP pelo ViaCEP.
 
 Depois de salvar as variáveis, feche completamente e reabra o VS Code e os terminais. Se as alterações não forem reconhecidas, saia da sessão do Windows e entre novamente.
 
@@ -156,13 +181,13 @@ Guarde as chaves e não as publique no repositório. Se já houver dados no banc
 No PowerShell, na raiz do projeto:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+mvn spring-boot:run
 ```
 
 No Linux ou macOS, com as variáveis configuradas no ambiente:
 
 ```bash
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 
 No VS Code, também é possível executar a classe `com.cursovalido.CursovalidoBackendApplication` pelo depurador Java, herdando as variáveis do Windows.
@@ -180,14 +205,33 @@ Para utilizar as telas da plataforma, execute também o front-end seguindo as in
 Execute na raiz do projeto:
 
 ```powershell
-.\mvnw.cmd test
+mvn test
 ```
 
-O perfil de testes utiliza H2, configurado em `src/test/resources/application-test.properties`. O projeto possui testes unitários e teste de integração do fórum.
+O projeto possui testes unitários e de integração para autenticação, cadastro, administração inicial, suporte, aulas e fórum. Há verificações dos módulos de notícias e dashboard nos testes compartilhados.
+
+O perfil `test` utiliza H2 como configuração base em `src/test/resources/application-test.properties`. Parte dos testes substitui essa configuração por um PostgreSQL temporário e isolado, incluindo verificações de migrações Flyway.
+
+Para os testes com PostgreSQL, disponibilize os binários locais ou um ambiente Docker compatível com Testcontainers. No Windows, o suporte de testes procura instalações em `C:\Program Files\PostgreSQL`; também é possível definir `TEST_POSTGRES_BIN` com o caminho da pasta `bin`. Sem binários locais, o modo automático tenta iniciar um contêiner `postgres:18-alpine`.
+
+Para escolher explicitamente o modo de execução:
+
+```powershell
+mvn '-Dtest.postgres.mode=local' test
+mvn '-Dtest.postgres.mode=container' test
+```
+
+Os bancos temporários dos testes não utilizam as credenciais de desenvolvimento. Os serviços externos são simulados nos testes correspondentes; a aprovação da suíte não confirma a configuração real de envio de e-mails ou da API do YouTube.
+
+Após executar os testes, os relatórios ficam em:
+
+- `target/surefire-reports`: resultados dos testes.
+- `target/site/jacoco/index.html`: cobertura do fórum.
+- `target/site/jacoco-aulas/index.html`: cobertura de aulas.
 
 ## Organização e contexto acadêmico
 
-O back-end segue uma organização em camadas, com controladores, serviços, repositórios, entidades e DTOs. Os pacotes atuais concentram autenticação, endereços e fórum. O desenvolvimento é organizado por Kanban com apoio do Asana e versionamento em Git/GitHub.
+O back-end segue uma organização em camadas, com controladores, serviços, repositórios, entidades e DTOs. Os principais pacotes são `authentication`, `aulas`, `noticias`, `forum` e `dashboard`. O desenvolvimento é organizado por Kanban com apoio do Asana e versionamento em Git/GitHub.
 
 **Autor:** Gustavo Di Risio.
 
