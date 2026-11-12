@@ -6,6 +6,6 @@ import jakarta.validation.constraints.Size;
 
 public record AlteracaoSenhaRequest(
         @NotBlank @Size(max = 43) String token,
-        @NotBlank @Size(min = 8, max = 72) @SenhaValida String novaSenha,
-        @NotBlank @Size(min = 8, max = 72) @SenhaValida String confirmacaoSenha) {
+        @NotBlank @Size(min = 8, max = 72, message = "Informe uma senha valida.") @SenhaValida String novaSenha,
+        @NotBlank @Size(min = 8, max = 72, message = "Informe uma senha valida.") @SenhaValida String confirmacaoSenha) {
 }

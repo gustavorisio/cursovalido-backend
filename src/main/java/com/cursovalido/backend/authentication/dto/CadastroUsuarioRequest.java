@@ -9,7 +9,7 @@ import java.util.Locale;
 public record CadastroUsuarioRequest(
         @NotBlank @Size(max = 120) String nomeCompleto,
         @NotBlank @Email @Size(max = 254) String email,
-        @NotBlank @Size(min = 8, max = 72) @SenhaValida String senha,
+        @NotBlank @Size(min = 8, max = 72, message = "Informe uma senha valida.") @SenhaValida String senha,
         @NotBlank @Pattern(regexp = "\\d{11}") @CPF(message = "CPF invalido") String cpf,
         @NotNull @Past LocalDate dataNascimento,
         @NotNull @AssertTrue Boolean declarouMaiorIdade,
