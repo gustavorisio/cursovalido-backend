@@ -138,6 +138,12 @@ public class SecurityConfig {
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
                                                 .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/roadmap").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/roadmap/questionarios/*").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/catalogo/roadmap/questionarios/*/resultado").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/aluno/roadmap/questionarios/*/resultado").hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.POST, "/api/aluno/roadmap/questionarios/*/resultado").hasRole("ALUNO")
+                                                .requestMatchers("/api/administracao/caminhos", "/api/administracao/caminhos/**").hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/diagnostico", "/api/aluno/cursos/*/modulos/*/questionario", "/api/aluno/cursos/*/plano").hasRole("ALUNO")
                                                 .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/diagnostico/respostas", "/api/aluno/cursos/*/modulos/*/questionario/respostas").hasRole("ALUNO")
                                                 .requestMatchers(HttpMethod.GET, "/api/professor/cursos/*/diagnostico", "/api/professor/cursos/*/modulos/*/questionario").hasRole("PROFESSOR")
