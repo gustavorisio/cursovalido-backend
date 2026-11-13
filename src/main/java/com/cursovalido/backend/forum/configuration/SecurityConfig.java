@@ -176,7 +176,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/forum/topicos",
                                                                 "/api/forum/topicos/*/comentarios")
                                                 .permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/forum/users")
+                                                .requestMatchers(HttpMethod.GET, "/api/forum/users", "/api/forum/topicos/meus")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/forum/topicos",
                                                                 "/api/forum/topicos/*/comentarios")
