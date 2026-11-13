@@ -25,4 +25,12 @@ public class Curso {
     private LocalDateTime criadoEm;
     @Column(name = "professor_id")
     private Long idProfessor;
+
+    @ManyToOne
+    @JoinColumn(name = "tema_id")
+    private Tema tema;
+
+    @ManyToOne
+    @JoinColumn(name = "area_id")
+    private AreaTecnologia area;
 }
