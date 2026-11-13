@@ -8,8 +8,12 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 
 public interface CursoRepository extends JpaRepository<Curso, Long> {
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update Curso c set c.tema = null where c.tema.id = :idTema")
+    void removerTema(@Param("idTema") Long idTema);
     List<Curso> findByIdProfessorAndAtivoTrueOrderByIdDesc(Long idProfessor);
 
     List<Curso> findByAtivoTrueOrderByIdDesc();
