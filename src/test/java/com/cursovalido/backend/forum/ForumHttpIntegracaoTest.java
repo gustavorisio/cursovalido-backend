@@ -118,6 +118,8 @@ class ForumHttpIntegracaoTest {
         String caminho = "/api/forum/topicos/" + criado.id();
         assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos/meus", null, null, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(enviar(HttpMethod.GET, caminho + "/comentarios", null, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
         assertThat(enviar(HttpMethod.GET, "/api/noticias", null, null, String.class).getStatusCode())
