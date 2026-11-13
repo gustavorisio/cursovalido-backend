@@ -24,6 +24,50 @@ CREATE TABLE tb_areas_tecnologia (
 ALTER TABLE tb_cursos ADD COLUMN area_id BIGINT REFERENCES tb_areas_tecnologia(id);
 CREATE INDEX idx_cursos_area ON tb_cursos(area_id);
 
+CREATE TABLE tb_questionarios (
+    id BIGSERIAL PRIMARY KEY,
+    curso_id BIGINT NOT NULL REFERENCES tb_cursos(id),
+    modulo_id BIGINT REFERENCES tb_modulos(id),
+    titulo VARCHAR(255) NOT NULL,
+    publicado BOOLEAN NOT NULL DEFAULT FALSE,
+    versao INTEGER NOT NULL DEFAULT 1
+);
+CREATE UNIQUE INDEX uk_diagnostico_curso ON tb_questionarios(curso_id) WHERE modulo_id IS NULL;
+CREATE UNIQUE INDEX uk_questionario_modulo ON tb_questionarios(modulo_id) WHERE modulo_id IS NOT NULL;
+
+CREATE TABLE tb_questoes (
+    id BIGSERIAL PRIMARY KEY,
+    questionario_id BIGINT NOT NULL REFERENCES tb_questionarios(id) ON DELETE CASCADE,
+    enunciado VARCHAR(1000) NOT NULL,
+    explicacao VARCHAR(2000) NOT NULL,
+    alternativa_correta INTEGER NOT NULL,
+    aula_revisao_id BIGINT NOT NULL REFERENCES tb_aulas(id),
+    ordem INTEGER NOT NULL
+);
+CREATE TABLE tb_alternativas_questao (
+    questao_id BIGINT NOT NULL REFERENCES tb_questoes(id) ON DELETE CASCADE,
+    ordem INTEGER NOT NULL,
+    texto VARCHAR(500) NOT NULL,
+    PRIMARY KEY (questao_id, ordem)
+);
+
+CREATE TABLE tb_tentativas_questionario (
+    id BIGSERIAL PRIMARY KEY,
+    aluno_id BIGINT NOT NULL REFERENCES tb_usuarios(id) ON DELETE CASCADE,
+    questionario_id BIGINT NOT NULL REFERENCES tb_questionarios(id),
+    versao INTEGER NOT NULL,
+    acertos INTEGER NOT NULL,
+    total INTEGER NOT NULL,
+    criado_em TIMESTAMP NOT NULL
+);
+CREATE INDEX idx_tentativas_aluno_questionario ON tb_tentativas_questionario(aluno_id, questionario_id, versao, id);
+CREATE TABLE tb_respostas_questionario (
+    tentativa_id BIGINT NOT NULL REFERENCES tb_tentativas_questionario(id) ON DELETE CASCADE,
+    ordem INTEGER NOT NULL,
+    alternativa INTEGER NOT NULL,
+    PRIMARY KEY (tentativa_id, ordem)
+);
+
 -- Atualiza o cadastro legado sem alterar a V1 nem os aceites registrados.
 ALTER TABLE tb_usuarios DROP CONSTRAINT ck_tb_usuarios_dados_cadastro;
 ALTER TABLE tb_usuarios DROP COLUMN cpf;
