@@ -70,7 +70,7 @@
             <a class="botao" href="/politica-privacidade.html">Politica de Privacidade</a>
         </nav>
         <h1>Termo de Aceite do Curso Valido</h1>
-        <p class="atualizacao"><strong>Versao 1.0</strong> | Documento disponivel permanentemente em <a
+        <p class="atualizacao"><strong>Versao 2.0</strong> | Documento disponivel permanentemente em <a
                 href="/termos-aceite.html">Termo de Aceite</a>.</p>
 
         <h2>1. Objeto</h2>
@@ -84,7 +84,7 @@
             regras de seguranca, os requisitos de cadastro ou as responsabilidades do usuario.</p>
         <p>A plataforma e destinada exclusivamente a pessoas com 18 anos ou mais. Menores de 18 anos nao podem criar
             conta, utilizar as funcionalidades autenticadas ou participar do forum. No cadastro, o usuario informa sua
-            data de nascimento e declara expressamente ser maior de idade. O sistema valida a idade informada e rejeita
+            data de nascimento e declara expressamente ser maior de idade. O sistema calcula localmente a idade a partir da data informada, sem consulta cadastral externa, e rejeita
             cadastros que nao atendam a esse requisito. Se a administracao identificar uma conta de menor de idade, ela
             podera suspender o acesso e excluir os dados conforme a legislacao aplicavel.</p>
 
@@ -94,7 +94,7 @@
 
         <h2>4. Dados e privacidade</h2>
         <p>Este Termo apresenta diretamente os dados e usos essenciais para o aceite. No cadastro, o sistema coleta:
-            nome completo, e-mail, senha, CPF, data de nascimento, declaracao de maioridade e aceite dos documentos. Durante o uso, tambem trata matricula, perfil, status da
+            nome completo, e-mail, senha, data de nascimento, declaracao de maioridade e aceite dos documentos. Durante o uso, tambem trata matricula, perfil, status da
             conta, confirmacao de e-mail, versao/data/hora do aceite, tokens de confirmacao e 2FA, IP, registros de
             auditoria e topicos e comentarios publicados no forum.</p>
         <p>Esses dados sao utilizados diretamente para criar a conta, verificar que o usuario tem 18 anos ou mais,
@@ -137,7 +137,15 @@
         <h2>10. Direitos e contato</h2>
         <p>O usuario pode exercer os direitos descritos na Politica de Privacidade e solicitar esclarecimentos a
             administracao do Curso Valido pelo canal oficial da instituicao.</p>
-        <h2>Consulta cadastral no cadastro</h2><p>Ao enviar o cadastro publico ou por convite, o CPF e compartilhado com a CPF.CNPJ para consulta cadastral. O servico retorna nome, data de nascimento e situacao cadastral; o Curso Valido confere o CPF, o nome completo e a data de nascimento e aplica a idade minima de 18 anos. A resposta integral da consulta nao e armazenada nem disponibilizada ao navegador. O resultado nao comprova, isoladamente, que a pessoa que preenche o formulario e titular do documento. A consulta nao e utilizada para analise de credito. Falha de verificacao ou indisponibilidade impede a conclusao do cadastro. A CPF.CNPJ e um fornecedor externo e seu uso nao estabelece vinculo institucional do Curso Valido com o governo.</p>
+
+        <h2>Cadastro e exclusao de conta</h2>
+        <p>A conta e identificada pelo e-mail. A data de nascimento e a declaracao de maioridade sao informadas
+            pelo usuario; o calculo da idade nao comprova a identidade civil. O usuario e responsavel pela
+            veracidade dos dados fornecidos.</p>
+        <p>A exclusao exige confirmacao por codigo enviado ao e-mail da conta. Apos a exclusao, um hash do e-mail,
+            o identificador da conta e a data de fim do bloqueio sao mantidos para impedir novo cadastro com o mesmo
+            e-mail por 15 dias. Registros de moderacao podem ser associados a uma nova conta com o mesmo e-mail
+            para preservar restricoes aplicadas, pelo prazo necessario a essa finalidade e ao exercicio de direitos.</p>
     </main>
     <script>
         function voltar() {
