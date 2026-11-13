@@ -138,6 +138,12 @@ public class SecurityConfig {
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
                                                 .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/diagnostico", "/api/aluno/cursos/*/modulos/*/questionario", "/api/aluno/cursos/*/plano").hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/diagnostico/respostas", "/api/aluno/cursos/*/modulos/*/questionario/respostas").hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.GET, "/api/professor/cursos/*/diagnostico", "/api/professor/cursos/*/modulos/*/questionario").hasRole("PROFESSOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/professor/cursos/*/diagnostico", "/api/professor/cursos/*/modulos/*/questionario").hasRole("PROFESSOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/administracao/cursos/*/diagnostico", "/api/administracao/cursos/*/modulos/*/questionario").hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/cursos/*/diagnostico", "/api/administracao/cursos/*/modulos/*/questionario").hasRole("ADMINISTRADOR")
                                                 // Catalogo, matriculas e progresso pessoais do aluno.
                                                 .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas")
                                                 .hasRole("ALUNO")
