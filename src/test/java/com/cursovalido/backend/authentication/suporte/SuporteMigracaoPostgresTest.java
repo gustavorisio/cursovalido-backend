@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.*;
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 class SuporteMigracaoPostgresTest {
     @Test
-    void v1EmBancoNovoCriaLimiteEBloqueiaSegundoEnvio() {
+    void v2EmBancoNovoCriaLimiteEBloqueiaSegundoEnvio() {
         var propriedades = new HashMap<String, Supplier<?>>();
         PostgresTeste.configurar(propriedades::put, "suporte_migracao");
         var fonte = new DriverManagerDataSource(
@@ -24,7 +24,7 @@ class SuporteMigracaoPostgresTest {
                 propriedades.get("spring.datasource.password").get().toString());
         var flyway = Flyway.configure().dataSource(fonte).locations("classpath:db/migration").load();
         flyway.migrate();
-        assertThat(flyway.info().applied()).hasSize(1);
+        assertThat(flyway.info().applied()).hasSize(2);
         var jdbc = new JdbcTemplate(fonte);
         var servico = new LimiteSuporteService(jdbc, new DataSourceTransactionManager(fonte));
         var envios = new AtomicInteger();

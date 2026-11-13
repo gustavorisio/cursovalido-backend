@@ -345,7 +345,6 @@ class AulasIntegracaoTest {
                 Usuario aluno = criarAluno();
                 alunoAulas.matricular(idCurso, aluno.getId());
                 Usuario outro = criarProfessor("segundo-aluno");
-                outro.setCpf("12345678903");
                 outro.setPerfil(Perfil.ALUNO);
                 usuarios.saveAndFlush(outro);
                 mvc.perform(get("/api/aluno/aulas/" + idAula).with(comoAluno(outro))).andExpect(status().isForbidden());
@@ -587,7 +586,6 @@ class AulasIntegracaoTest {
                 usuario.setNomeCompleto(nome);
                 usuario.setEmail(nome + "@aulas.example.com");
                 usuario.setSenha("hash-teste");
-                usuario.setCpf(String.format("%011d", usuarios.count() + 1));
                 usuario.setMatricula("aulas-" + nome);
                 usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
                 usuario.setDeclarouMaiorIdade(true);

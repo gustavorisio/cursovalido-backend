@@ -39,7 +39,6 @@ public class ConviteAcessoService {
     private final EmailService emails;
     private final ValidacaoEmailService validacaoEmail;
     private final IdentidadeExcluidaService identidades;
-    private final ValidacaoCpfService validacaoCpf;
     private final LogAuditoriaService auditoria;
     private final UsuarioForumService usuariosForum;
     private final PrivilegiosAdministrativosService privilegios;
@@ -85,7 +84,7 @@ public class ConviteAcessoService {
     // Completa o cadastro e deixa o usuario aguardando aprovacao.
     public void completar(String token, CadastroUsuarioRequest cadastro) {
         validacaoEmail.validar(cadastro.email());
-        identidades.verificarCadastro(cadastro.email(), cadastro.cpf());
+        identidades.verificarCadastro(cadastro.email());
         if (Period.between(cadastro.dataNascimento(), LocalDate.now()).getYears() < 18)
             throw new MenorDeIdadeException();
         if (!Boolean.TRUE.equals(cadastro.declarouMaiorIdade()))
@@ -105,16 +104,11 @@ public class ConviteAcessoService {
         if (usuarios.existsByEmail(convite.getEmail())) {
             throw new IllegalArgumentException("Dados ja utilizados");
         }
-        if (usuarios.existsByCpf(cadastro.cpf())) {
-            throw new IllegalArgumentException("Dados ja utilizados");
-        }
 
-        validacaoCpf.validar(cadastro.cpf(), cadastro.nomeCompleto(), cadastro.dataNascimento());
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(cadastro.nomeCompleto());
         usuario.setEmail(convite.getEmail());
         usuario.setSenha(codificadorSenha.encode(cadastro.senha()));
-        usuario.setCpf(cadastro.cpf());
         usuario.setDataNascimento(cadastro.dataNascimento());
         usuario.setMatricula(gerarMatricula());
         usuario.setDeclarouMaiorIdade(cadastro.declarouMaiorIdade());

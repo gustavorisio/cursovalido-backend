@@ -1,7 +1,5 @@
 package com.cursovalido.backend.authentication.entity;
 
-import com.cursovalido.backend.authentication.security.CriptografiaDadosConverter;
-import com.cursovalido.backend.authentication.security.ProtecaoDadosPessoais;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,13 +24,6 @@ public class Usuario {
     private String email;
     @Column(nullable = false, length = 60)
     private String senha;
-    @Convert(converter = CriptografiaDadosConverter.class)
-    @Column(length = 52)
-    private String cpf;
-    @Column(name = "cpf_hash", unique = true, length = 64)
-    @Setter(AccessLevel.NONE)
-    @Getter(AccessLevel.NONE)
-    private String cpfHash;
     @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
     @Column(nullable = false, unique = true, length = 50)
@@ -55,9 +46,4 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     @Column(name = "status_aprovacao", nullable = false)
     private StatusAprovacao statusAprovacao = StatusAprovacao.APROVADO;
-
-    public void setCpf(String valor) {
-        cpf = valor;
-        cpfHash = valor == null ? null : ProtecaoDadosPessoais.hashCpf(valor);
-    }
 }

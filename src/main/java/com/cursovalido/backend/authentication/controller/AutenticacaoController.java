@@ -2,6 +2,7 @@ package com.cursovalido.backend.authentication.controller;
 
 import com.cursovalido.backend.authentication.dto.AceiteTermosRequest;
 import com.cursovalido.backend.authentication.dto.AlteracaoSenhaRequest;
+import com.cursovalido.backend.authentication.dto.AlteracaoSenhaAutenticadoRequest;
 import com.cursovalido.backend.authentication.dto.AutenticacaoResponse;
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.dto.Codigo2faRequest;
@@ -105,6 +106,14 @@ public class AutenticacaoController {
     @PostMapping("/alterar-senha")
     public void alterarSenha(@Valid @RequestBody AlteracaoSenhaRequest requisicao) {
         senhasUsuarios.alterarSenha(requisicao.token(), requisicao.novaSenha(), requisicao.confirmacaoSenha());
+    }
+
+    @PostMapping("/alterar-senha-autenticado")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void alterarSenhaAutenticado(@AuthenticationPrincipal UsuarioAutenticado usuario,
+            @Valid @RequestBody AlteracaoSenhaAutenticadoRequest requisicao) {
+        senhasUsuarios.alterarSenhaAutenticado(usuario.getId(), requisicao.senhaAtual(),
+                requisicao.novaSenha(), requisicao.confirmacaoSenha());
     }
 
     @PostMapping("/revogar-termos")

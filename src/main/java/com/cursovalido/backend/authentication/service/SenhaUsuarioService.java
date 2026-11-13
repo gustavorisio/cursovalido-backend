@@ -18,6 +18,27 @@ public class SenhaUsuarioService {
     private final EmailService emails;
     private final SessaoRepository sessoes;
 
+    @Transactional
+    public void alterarSenhaAutenticado(Long idUsuario, String senhaAtual, String novaSenha, String confirmacaoSenha) {
+        var usuario = repositorio.findById(idUsuario)
+                .filter(conta -> conta.isAtivo())
+                .orElseThrow(() -> new IllegalArgumentException("Conta indisponivel."));
+        if (!codificadorSenha.matches(senhaAtual, usuario.getSenha())) {
+            throw new IllegalArgumentException("Senha atual incorreta.");
+        }
+        if (!novaSenha.equals(confirmacaoSenha)) {
+            throw new IllegalArgumentException("As senhas nao conferem.");
+        }
+        if (!new com.cursovalido.backend.authentication.validation.SenhaValidaValidator().isValid(novaSenha, null)) {
+            throw new IllegalArgumentException("Informe uma senha valida.");
+        }
+        usuario.setSenha(codificadorSenha.encode(novaSenha));
+        repositorio.save(usuario);
+        sessoes.revogarPorUsuario(usuario.getId());
+        tokensEmail.invalidarAcessos(usuario);
+        auditoria.registrar(usuario.getId(), "ALTERACAO_SENHA_AUTENTICADO", "Senha alterada", null);
+    }
+
     // Envia o link para alterar a senha.
     public void solicitarAlteracaoSenha(String email) {
         auditoria.registrar(null, "RECUPERACAO_SOLICITADA", "Solicitacao recebida", null);
