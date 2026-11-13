@@ -6,6 +6,7 @@ import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import java.util.List;
 import com.cursovalido.backend.aulas.dto.AulaRequest;
+import com.cursovalido.backend.aulas.dto.CursoRequest;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,24 @@ public class AdministradorAulasService {
     private final YoutubeService youtube;
     private final ProgressoAulaRepository progressos;
     private final LogAuditoriaService auditoria;
+    private final CursoService gestaoCursos;
+
+    @Transactional
+    public Curso editarCurso(Long id, CursoRequest dados, Long idAdministrador) {
+        Curso curso = buscarCurso(id, idAdministrador);
+        gestaoCursos.atualizarDados(curso, dados);
+        cursos.save(curso);
+        auditoria.registrar(idAdministrador, "EDICAO_CURSO_ADMINISTRADOR", "Curso " + id, null);
+        return curso;
+    }
+
+    @Transactional
+    public void excluirCurso(Long id, Long idAdministrador) {
+        Curso curso = buscarCurso(id, idAdministrador);
+        curso.setAtivo(false);
+        cursos.save(curso);
+        auditoria.registrar(idAdministrador, "EXCLUSAO_CURSO_ADMINISTRADOR", "Curso " + id, null);
+    }
 
     public List<Curso> listarCursos(Long idAdministrador) {
         verificarAdministrador(idAdministrador);

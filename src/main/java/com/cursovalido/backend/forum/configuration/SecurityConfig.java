@@ -132,6 +132,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/api/temas").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/temas/*").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/temas/*").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/cursos/*").hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/administracao/cursos/*").hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/administracao/aulas/*",
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
