@@ -68,6 +68,67 @@ CREATE TABLE tb_respostas_questionario (
     PRIMARY KEY (tentativa_id, ordem)
 );
 
+CREATE TABLE tb_caminhos_questionarios (
+    id BIGSERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    descricao VARCHAR(2000) NOT NULL,
+    pergunta_inicial VARCHAR(50),
+    versao INTEGER NOT NULL DEFAULT 1,
+    publicado BOOLEAN NOT NULL DEFAULT FALSE,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE
+);
+CREATE TABLE tb_caminhos_perguntas (
+    id BIGSERIAL PRIMARY KEY,
+    questionario_id BIGINT NOT NULL REFERENCES tb_caminhos_questionarios(id) ON DELETE CASCADE,
+    chave VARCHAR(50) NOT NULL,
+    enunciado VARCHAR(1000) NOT NULL,
+    ordem INTEGER NOT NULL
+);
+CREATE TABLE tb_caminhos_opcoes (
+    pergunta_id BIGINT NOT NULL REFERENCES tb_caminhos_perguntas(id) ON DELETE CASCADE,
+    ordem INTEGER NOT NULL,
+    texto VARCHAR(500) NOT NULL,
+    proxima_pergunta VARCHAR(50),
+    resultado VARCHAR(50),
+    PRIMARY KEY (pergunta_id, ordem)
+);
+CREATE TABLE tb_caminhos_resultados (
+    id BIGSERIAL PRIMARY KEY,
+    questionario_id BIGINT NOT NULL REFERENCES tb_caminhos_questionarios(id) ON DELETE CASCADE,
+    chave VARCHAR(50) NOT NULL,
+    titulo VARCHAR(255) NOT NULL,
+    orientacao VARCHAR(5000) NOT NULL,
+    ordem INTEGER NOT NULL
+);
+CREATE TABLE tb_caminhos_temas_resultado (
+    resultado_id BIGINT NOT NULL REFERENCES tb_caminhos_resultados(id) ON DELETE CASCADE,
+    ordem INTEGER NOT NULL,
+    tema VARCHAR(150) NOT NULL,
+    PRIMARY KEY (resultado_id, ordem)
+);
+CREATE TABLE tb_caminhos_respostas_aluno (
+    id BIGSERIAL PRIMARY KEY,
+    aluno_id BIGINT NOT NULL REFERENCES tb_usuarios(id) ON DELETE CASCADE,
+    questionario_id BIGINT NOT NULL REFERENCES tb_caminhos_questionarios(id),
+    versao INTEGER NOT NULL,
+    resultado VARCHAR(50) NOT NULL,
+    atualizado_em TIMESTAMP NOT NULL,
+    CONSTRAINT uk_caminhos_resposta UNIQUE (aluno_id, questionario_id)
+);
+CREATE TABLE tb_caminhos_escolhas_aluno (
+    resposta_id BIGINT NOT NULL REFERENCES tb_caminhos_respostas_aluno(id) ON DELETE CASCADE,
+    ordem INTEGER NOT NULL,
+    pergunta VARCHAR(50) NOT NULL,
+    opcao INTEGER NOT NULL,
+    PRIMARY KEY (resposta_id, ordem)
+);
+CREATE TABLE tb_caminhos_secoes (
+    id BIGSERIAL PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    conteudo VARCHAR(20000) NOT NULL,
+    ordem INTEGER NOT NULL DEFAULT 1,
+    publicado BOOLEAN NOT NULL DEFAULT FALSE
+);
 -- Atualiza o cadastro legado sem alterar a V1 nem os aceites registrados.
 ALTER TABLE tb_usuarios DROP CONSTRAINT ck_tb_usuarios_dados_cadastro;
 ALTER TABLE tb_usuarios DROP COLUMN cpf;
