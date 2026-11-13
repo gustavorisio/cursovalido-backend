@@ -293,4 +293,16 @@ class AutenticacaoHttpTest {
         }
     }
 
+    @Test
+    void corsAutorizaPreflightApenasDeOrigemPermitida() {
+        for (String origem : new String[]{"http://localhost:3000", "https://desconhecido.example"}) {
+            var resposta = cliente.method(HttpMethod.OPTIONS).uri("/api/autenticacao/alterar-senha-autenticado")
+                    .header("Origin", origem).header("Access-Control-Request-Method", "POST")
+                    .header("Access-Control-Request-Headers", "authorization,content-type")
+                    .retrieve().toBodilessEntity();
+            assertEquals(origem.contains("localhost") ? 200 : 403, resposta.getStatusCode().value());
+            assertEquals(origem.contains("localhost") ? origem : null,
+                    resposta.getHeaders().getFirst("Access-Control-Allow-Origin"));
+        }
+    }
 }

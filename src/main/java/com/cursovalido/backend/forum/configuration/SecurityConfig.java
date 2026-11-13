@@ -216,10 +216,12 @@ public class SecurityConfig {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuracao = new CorsConfiguration();
-                configuracao.setAllowedOrigins(List.of(origensFrontend.split(",")));
-                configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-                configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-User-Id"));
-                configuracao.setExposedHeaders(List.of("Authorization"));
+                configuracao.setAllowedOrigins(java.util.Arrays.stream(origensFrontend.split(","))
+                                .map(String::trim).filter(origem -> !origem.isEmpty()).distinct().toList());
+                configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"));
+                configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "Cache-Control", "X-User-Id"));
+                configuracao.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+                configuracao.setMaxAge(3600L);
                 configuracao.setAllowCredentials(true);
 
                 UrlBasedCorsConfigurationSource origem = new UrlBasedCorsConfigurationSource();
