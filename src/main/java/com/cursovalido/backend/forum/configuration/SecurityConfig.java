@@ -128,7 +128,10 @@ public class SecurityConfig {
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos", "/api/catalogo/temas").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/temas").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/temas/*").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/temas/*").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/administracao/aulas/*",
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
