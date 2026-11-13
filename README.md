@@ -93,6 +93,12 @@ CREATE DATABASE cursovalido;
 
 Utilize um usuário com permissão para conectar ao banco e criar os objetos das migrações. O Flyway cria as tabelas na inicialização, a partir dos scripts em `src/main/resources/db/migration`. Depois, o Hibernate valida a estrutura do banco.
 
+O histórico possui apenas a **V1 original, imutável**, e a **V2**, que reúne a atualização do backend. Em banco novo, ambas são executadas. Em banco com a V1 registrada no Flyway, a inicialização valida seu checksum e aplica apenas a V2; mantenha as variáveis de conexão do banco existente. Não execute repair para contornar uma V1 alterada.
+
+Somente se o banco já tiver **exatamente a estrutura original da V1, mas não possuir histórico Flyway**, defina temporariamente `FLYWAY_BASELINE_ON_MIGRATE=true`. O baseline registra a versão 1 sem executar sua criação e aplica a V2. Após a atualização, remova essa variável (padrão `false`). A validação das migrações permanece ativa e o comando clean permanece desabilitado. Bancos com migrações intermediárias de desenvolvimento V3–V10 devem ser recriados para usar este histórico consolidado.
+
+A V2 remove CPF e seu hash do cadastro e das contas excluídas, preserva contas, aceites e documentos existentes. A V2 altera somente a estrutura: não insere áreas, seções, questionários ou conteúdo de exemplo, nem publica, desativa ou atualiza termos e políticas. A partir da V2, esses conteúdos são gerenciados manualmente pela administração. As colunas removidas não são recuperáveis pela migração; faça backup se precisar preservar esses dados. A recriação do banco é uma operação manual.
+
 ### 4. Configurar as variáveis de ambiente
 
 No Windows, pesquise **Editar as variáveis de ambiente do sistema**, clique em **Variáveis de Ambiente** e adicione os valores em **Variáveis de usuário**. Cadastre cada nome e valor separadamente, sem aspas.
