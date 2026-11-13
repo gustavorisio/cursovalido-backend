@@ -20,6 +20,8 @@ public class CursoService {
     private final CursoRepository repositorio;
     private final UsuarioRepository usuarios;
     private final LogAuditoriaService auditoria;
+    private final TemaService temas;
+    private final com.cursovalido.backend.aulas.repository.AreaTecnologiaRepository areas;
 
     public List<Curso> listarPublicos() {
         return repositorio.findByAtivoTrueOrderByIdDesc();
@@ -48,8 +50,7 @@ public class CursoService {
     public Curso criar(CursoRequest dados, Long idProfessor) {
         verificarProfessor(idProfessor);
         Curso curso = new Curso();
-        curso.setTitulo(dados.titulo().trim());
-        curso.setDescricao(dados.descricao().trim());
+        atualizarDados(curso, dados);
         curso.setIdProfessor(idProfessor);
         curso.setCriadoEm(LocalDateTime.now());
         repositorio.save(curso);
@@ -60,8 +61,7 @@ public class CursoService {
     @Transactional
     public Curso editar(Long id, CursoRequest dados, Long idProfessor) {
         Curso curso = buscarAtivo(id, idProfessor);
-        curso.setTitulo(dados.titulo().trim());
-        curso.setDescricao(dados.descricao().trim());
+        atualizarDados(curso, dados);
         repositorio.save(curso);
         auditoria.registrar(idProfessor, "EDICAO_CURSO", "Curso " + id, null);
         return curso;
@@ -73,6 +73,13 @@ public class CursoService {
         curso.setAtivo(false);
         repositorio.save(curso);
         auditoria.registrar(idProfessor, "EXCLUSAO_CURSO", "Curso " + id, null);
+    }
+
+    void atualizarDados(Curso curso, CursoRequest dados) {
+        curso.setTitulo(dados.titulo().trim());
+        curso.setDescricao(dados.descricao().trim());
+        curso.setTema(dados.idTema() == null ? null : temas.buscar(dados.idTema()));
+        curso.setArea(dados.idArea() == null ? null : areas.findById(dados.idArea()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Area do roadmap nao encontrada")));
     }
 
     private void verificarProfessor(Long idProfessor) {

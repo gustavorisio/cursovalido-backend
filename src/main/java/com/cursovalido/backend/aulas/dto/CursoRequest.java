@@ -4,5 +4,10 @@ import jakarta.validation.constraints.*;
 
 public record CursoRequest(
                 @NotBlank @Size(max = 255) String titulo,
-                @NotBlank @Size(max = 5000) String descricao) {
+                @NotBlank @Size(max = 5000) String descricao,
+                @Positive Long idTema,
+                @Positive Long idArea) {
+    public CursoRequest(String titulo, String descricao) {
+        this(titulo, descricao, null, null);
+    }
 }

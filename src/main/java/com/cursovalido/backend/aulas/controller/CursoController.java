@@ -18,13 +18,13 @@ import org.springframework.web.bind.annotation.*;
 public class CursoController {
     private final CursoService servico;
 
-    public record CursoPublico(Long id, String titulo, String descricao) {
+    public record CursoPublico(Long id, String titulo, String descricao, Long idTema, String nomeTema, Long idArea) {
     }
 
     @GetMapping("/catalogo/cursos")
     public List<CursoPublico> catalogoPublico() {
         return servico.listarPublicos().stream()
-                .map(curso -> new CursoPublico(curso.getId(), curso.getTitulo(), curso.getDescricao())).toList();
+                .map(curso -> new CursoPublico(curso.getId(), curso.getTitulo(), curso.getDescricao(), curso.getTema() == null ? null : curso.getTema().getId(), curso.getTema() == null ? null : curso.getTema().getNome(), curso.getArea() == null ? null : curso.getArea().getId())).toList();
     }
 
     @GetMapping("/cursos")
@@ -57,6 +57,6 @@ public class CursoController {
     }
 
     private CursoResponse converter(Curso item) {
-        return new CursoResponse(item.getId(), item.getTitulo(), item.getDescricao(), item.getIdProfessor());
+        return CursoResponse.de(item);
     }
 }

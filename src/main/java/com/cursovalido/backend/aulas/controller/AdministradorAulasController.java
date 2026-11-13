@@ -45,7 +45,7 @@ public class AdministradorAulasController {
     }
 
     private CursoResponse converter(Curso curso) {
-        return new CursoResponse(curso.getId(), curso.getTitulo(), curso.getDescricao(), curso.getIdProfessor());
+        return CursoResponse.de(curso);
     }
 
     private ModuloResponse converter(Modulo modulo) {
