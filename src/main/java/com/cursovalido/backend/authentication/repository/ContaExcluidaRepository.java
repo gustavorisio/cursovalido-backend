@@ -5,6 +5,5 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ContaExcluidaRepository extends JpaRepository<ContaExcluida, Long> {
-    List<ContaExcluida> findByEmailHashInOrCpfHashIn(java.util.Collection<String> emails,
-            java.util.Collection<String> cpfs);
+    List<ContaExcluida> findByEmailHash(String emailHash);
 }

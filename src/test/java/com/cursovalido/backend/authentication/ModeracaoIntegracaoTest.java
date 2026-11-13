@@ -69,7 +69,6 @@ class ModeracaoIntegracaoTest {
         @EnumSource(Perfil.class)
         void exclusaoPreservaPunicoesEBloqueiaIdentificadores(Perfil perfil) {
                 var antigo = criar("exclusao@example.com", perfil);
-                antigo.setCpf("12345678901");
                 usuarios.saveAndFlush(antigo);
                 for (var escopo : EscopoSuspensao.values()) {
                         moderacao.aplicar(antigo.getId(), new SuspensaoRequest(escopo, "Teste de persistencia", null),
@@ -79,21 +78,17 @@ class ModeracaoIntegracaoTest {
                 contas.excluirConta(antigo.getId(), codigo);
                 usuarios.flush();
                 assertThat(usuarios.findById(antigo.getId())).isEmpty();
-                assertThatThrownBy(() -> identidades.verificarCadastro("EXCLUSAO@example.com", "99999999999"))
+                assertThatThrownBy(() -> identidades.verificarCadastro("EXCLUSAO@example.com"))
                                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
-                assertThatThrownBy(() -> identidades.verificarCadastro("outro@example.com", "123.456.789-01"))
-                                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+                identidades.verificarCadastro("outro@example.com");
                 var registro = contasExcluidas.findById(antigo.getId()).orElseThrow();
                 registro.setBloqueadaAte(Instant.now().minusSeconds(1));
                 contasExcluidas.saveAndFlush(registro);
-                identidades.verificarCadastro("exclusao@example.com", "12345678901");
-                var novo = criar("outro@example.com", Perfil.ALUNO);
-                novo.setCpf("12345678901");
+                identidades.verificarCadastro("exclusao@example.com");
+                var novo = criar("exclusao@example.com", Perfil.ALUNO);
                 usuarios.saveAndFlush(novo);
                 assertThat(moderacao.restrito(novo.getId(), EscopoSuspensao.CONTA)).isTrue();
                 assertThat(moderacao.restrito(novo.getId(), EscopoSuspensao.FORUM)).isTrue();
-                var peloEmail = criar("exclusao@example.com", Perfil.ALUNO);
-                assertThat(moderacao.restrito(peloEmail.getId(), EscopoSuspensao.CONTA)).isTrue();
         }
 
         @Test
@@ -152,8 +147,6 @@ class ModeracaoIntegracaoTest {
         private EmailService emails;
         @MockitoBean
         private ValidacaoEmailService validacaoEmail;
-        @MockitoBean
-        private com.cursovalido.backend.authentication.service.ValidacaoCpfService validacaoCpf;
         private Usuario principal;
         private Usuario administrador;
         private Usuario aluno;
@@ -251,22 +244,10 @@ class ModeracaoIntegracaoTest {
                 politicas.save(new Politica("Termos", "convite-v1", "Termos do convite"));
                 String cadastro = """
                                 {"token":"%s","cadastro":{"nomeCompleto":"Professor Convidado","email":"convite@example.com",
-                                "senha":"SenhaTeste123!","cpf":"52998224725","dataNascimento":"1990-01-01",
+                                "senha":"SenhaTeste123!","dataNascimento":"1990-01-01",
                                 "declarouMaiorIdade":true,"aceitouTermosLgpd":true,"versaoTermos":"convite-v1"}}
                                 """
                                 .formatted(token.get());
-                doThrow(new com.cursovalido.backend.authentication.exception.ValidacaoCpfException(
-                                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "CPF_CONSULTA_INDISPONIVEL",
-                                "Indisponivel"))
-                                .when(validacaoCpf)
-                                .validar("52998224725", "Professor Convidado", java.time.LocalDate.of(1990, 1, 1));
-                mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON)
-                                .content(cadastro))
-                                .andExpect(status().isServiceUnavailable())
-                                .andExpect(jsonPath("$.codigo").value("CPF_CONSULTA_INDISPONIVEL"));
-                assertThat(usuarios.findByEmail("convite@example.com")).isEmpty();
-                doNothing().when(validacaoCpf).validar("52998224725", "Professor Convidado",
-                                java.time.LocalDate.of(1990, 1, 1));
                 mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON)
                                 .content(cadastro))
                                 .andExpect(status().isNoContent());

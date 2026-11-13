@@ -137,7 +137,7 @@ class AulasHttpIntegracaoTest {
         assertThat(atualizado.getNomeCompleto()).isEqualTo(aluno.getNomeCompleto());
         var exportacao = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", tokenAluno, null, String.class);
         assertThat(exportacao.getHeaders().getCacheControl()).contains("no-store");
-        assertThat(exportacao.getBody()).contains(aluno.getCpf()).doesNotContain("telefone", "11999999999", "senha",
+        assertThat(exportacao.getBody()).contains(aluno.getEmail()).doesNotContain("telefone", "11999999999", "senha",
                 "password", "token", "registrosAuditoria");
         assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = ?",
                 Long.class, aluno.getId(), "EXPORTACAO_DADOS")).isGreaterThan(0);
@@ -392,7 +392,6 @@ class AulasHttpIntegracaoTest {
         usuario.setNomeCompleto("Teste HTTP " + numero);
         usuario.setEmail(numero + "@aulas.example.com");
         usuario.setSenha("hash-de-teste");
-        usuario.setCpf(String.valueOf(numero));
         usuario.setMatricula("http-" + numero);
         usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
         usuario.setDeclarouMaiorIdade(true);

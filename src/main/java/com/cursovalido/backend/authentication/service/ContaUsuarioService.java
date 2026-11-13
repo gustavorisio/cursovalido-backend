@@ -58,7 +58,7 @@ public class ContaUsuarioService {
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
         return new DadosPessoaisResponse(usuario.getId(),
-                usuario.getNomeCompleto(), usuario.getEmail(), usuario.getCpf(), usuario.getDataNascimento(),
+                usuario.getNomeCompleto(), usuario.getEmail(), usuario.getDataNascimento(),
                 usuario.getMatricula(), usuario.getPerfil(),
                 usuario.isAtivo(), usuario.isEmailConfirmado(), usuario.getStatusAprovacao(),
                 usuario.getDeclarouMaiorIdade(), usuario.getAceitouTermosLgpd(), usuario.getVersaoTermos(),

@@ -64,8 +64,6 @@ class AutenticacaoHttpTest {
         usuario.setNomeCompleto("Aluno Teste");
         usuario.setEmail(UUID.randomUUID() + "@example.com");
         usuario.setSenha(senhas.encode("SenhaTeste123!"));
-        // Cada teste recebe um CPF diferente para manter a restricao de unicidade.
-        usuario.setCpf(String.format("%011d", Math.abs(UUID.randomUUID().getMostSignificantBits() % 100_000_000_000L)));
         usuario.setMatricula(UUID.randomUUID().toString());
         usuario.setDataNascimento(LocalDate.of(1990, 1, 1));
         usuario.setPerfil(Perfil.ALUNO);
@@ -131,7 +129,6 @@ class AutenticacaoHttpTest {
         assertEquals(200, dados.getStatusCode().value());
         assertEquals(usuario.getEmail(), dados.getBody().get("email"));
         assertFalse(dados.getBody().containsKey("senha"));
-        assertFalse(dados.getBody().containsKey("cpfHash"));
         assertTrue(dados.getHeaders().getFirst("Content-Disposition").contains("meus-dados.json"));
         assertEquals(204, cliente.post().uri("/api/autenticacao/logout").headers(h -> h.setBearerAuth(token))
                 .retrieve().toBodilessEntity().getStatusCode().value());
@@ -243,10 +240,7 @@ class AutenticacaoHttpTest {
     }
 
     @Test
-    void cpfFicaCifradoELogsSaoVerificaveis() {
-        var dados = jdbc.queryForMap("select cpf from tb_usuarios where id = ?", usuario.getId());
-        assertTrue(usuarios.existsByCpf(usuario.getCpf()));
-        assertNotEquals(usuario.getCpf(), dados.get("CPF"));
+    void logsSaoVerificaveis() {
         entrar();
         assertTrue(auditoria.verificarIntegridade());
         Long id = jdbc.queryForObject("select max(id) from tb_logs_auditoria", Long.class);
@@ -258,6 +252,7 @@ class AutenticacaoHttpTest {
             jdbc.update("update tb_logs_auditoria set detalhes = ? where id = ?", original, id);
         }
     }
+
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.EnumSource(Perfil.class)
     void todosOsPerfisAlteramSenhaERevogamSessoes(Perfil perfil) {

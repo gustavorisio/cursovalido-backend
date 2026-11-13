@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record DadosPessoaisResponse(Long id, String nomeCompleto, String email, String cpf,
+public record DadosPessoaisResponse(Long id, String nomeCompleto, String email,
                 LocalDate dataNascimento, String matricula,
                 Perfil perfil, boolean ativo, boolean emailConfirmado,
                 StatusAprovacao statusAprovacao,
