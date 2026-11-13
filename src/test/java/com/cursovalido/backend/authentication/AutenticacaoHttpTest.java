@@ -258,4 +258,39 @@ class AutenticacaoHttpTest {
             jdbc.update("update tb_logs_auditoria set detalhes = ? where id = ?", original, id);
         }
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(Perfil.class)
+    void todosOsPerfisAlteramSenhaERevogamSessoes(Perfil perfil) {
+        usuario.setPerfil(perfil);
+        usuarios.save(usuario);
+        String token = tokens.gerar(usuario);
+        String outraSessao = tokens.gerar(usuario);
+        var resposta = cliente.post().uri("/api/autenticacao/alterar-senha-autenticado")
+                .headers(h -> h.setBearerAuth(token))
+                .body(Map.of("senhaAtual", "SenhaTeste123!", "novaSenha", "NovaSenha123!", "confirmacaoSenha", "NovaSenha123!"))
+                .retrieve().toBodilessEntity();
+        assertEquals(204, resposta.getStatusCode().value());
+        assertTrue(senhas.matches("NovaSenha123!", usuarios.findById(usuario.getId()).orElseThrow().getSenha()));
+        assertThrows(IllegalArgumentException.class, () -> tokens.extrairEmail(token));
+        assertThrows(IllegalArgumentException.class, () -> tokens.extrairEmail(outraSessao));
+    }
+
+    @Test
+    void alteracaoAutenticadaExigeSenhaAtualConfirmacaoEPolitica() {
+        var valido = Map.of("senhaAtual", "SenhaTeste123!", "novaSenha", "NovaSenha123!", "confirmacaoSenha", "NovaSenha123!");
+        assertEquals(401, post("alterar-senha-autenticado", valido).getStatusCode().value());
+        String token = tokens.gerar(usuario);
+        for (var corpo : java.util.List.of(
+                Map.of("senhaAtual", "errada", "novaSenha", "NovaSenha123!", "confirmacaoSenha", "NovaSenha123!"),
+                Map.of("senhaAtual", "SenhaTeste123!", "novaSenha", "NovaSenha123!", "confirmacaoSenha", "Diferente123!"),
+                Map.of("senhaAtual", "SenhaTeste123!", "novaSenha", "A!", "confirmacaoSenha", "A!"))) {
+            var resposta = cliente.post().uri("/api/autenticacao/alterar-senha-autenticado")
+                    .headers(h -> h.setBearerAuth(token)).body(corpo).retrieve().toEntity(String.class);
+            assertEquals(400, resposta.getStatusCode().value());
+            assertFalse(resposta.getBody().contains("8 caracteres"));
+            assertTrue(senhas.matches("SenhaTeste123!", usuarios.findById(usuario.getId()).orElseThrow().getSenha()));
+            assertDoesNotThrow(() -> tokens.extrairEmail(token));
+        }
+    }
+
 }

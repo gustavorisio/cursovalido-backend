@@ -123,7 +123,8 @@ public class SecurityConfig {
                                                                 "/api/autenticacao/restricoes")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/autenticacao/revogar-termos",
-                                                                "/api/autenticacao/conta/solicitar-exclusao")
+                                                                "/api/autenticacao/conta/solicitar-exclusao",
+                                                                "/api/autenticacao/alterar-senha-autenticado")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
