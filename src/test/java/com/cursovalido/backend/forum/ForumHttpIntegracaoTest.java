@@ -258,7 +258,7 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
-    void listarComentarios_comDoisTopicos_deveListarSomenteAtivosDoTopicoEmOrdem() {
+    void listarComentarios_comDoisTopicos_deveManterExcluidosSemExporConteudo() {
         var topico = criarTopico("Principal");
         var outro = criarTopico("Outro");
         var primeiro = criarComentario(topico.id(), "Primeiro");
@@ -269,8 +269,9 @@ class ForumHttpIntegracaoTest {
         var resposta = enviar(HttpMethod.GET, comentariosUrl(topico.id()), autor.token(), null,
                 ComentarioResponse[].class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(resposta.getBody()).extracting(ComentarioResponse::id).containsExactly(primeiro.id(), segundo.id());
-        assertThat(resposta.getBody()).extracting(ComentarioResponse::conteudo).containsExactly("Primeiro", "Segundo");
+        assertThat(resposta.getBody()).extracting(ComentarioResponse::id).containsExactly(primeiro.id(), segundo.id(), apagado.id());
+        assertThat(resposta.getBody()).extracting(ComentarioResponse::conteudo).containsExactly("Primeiro", "Segundo", "Esta mensagem foi excluída.");
+        assertThat(resposta.getBody()[2].ativo()).isFalse();
     }
 
     @Test
@@ -322,6 +323,20 @@ class ForumHttpIntegracaoTest {
                 enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), new TopicoRequest("", ""), ErroHttp.class),
                 400);
         assertThat(topicos.count()).isZero();
+    }
+
+    @Test
+    void tituloTopico_deveAceitar40ERecusar41NaCriacaoEEdicao() {
+        var topico = criarTopico("t".repeat(40));
+        verificarErro(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
+                new TopicoRequest("t".repeat(41), "Descricao"), ErroHttp.class), 400);
+        var atualizado = enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
+                new TopicoRequest("e".repeat(40), "Descricao"), TopicoResponse.class);
+        assertThat(atualizado.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(atualizado.getBody().titulo()).isEqualTo("e".repeat(40));
+        verificarErro(enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
+                new TopicoRequest("e".repeat(41), "Descricao"), ErroHttp.class), 400);
+        assertThat(topicos.findById(topico.id()).orElseThrow().getTitulo()).isEqualTo("e".repeat(40));
     }
 
     @Test
