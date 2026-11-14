@@ -21,7 +21,7 @@ O projeto está em desenvolvimento. A versão atual do back-end possui autentica
 
 ### Cadastro e acesso
 
-O cadastro não depende de consulta externa a CPF/CNPJ: o CPF e a idade são validados localmente. O cadastro de aluno exige confirmação de maioridade, aceite dos termos vigentes e confirmação do e-mail. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. Depois dessa confirmação, a API emite o JWT usado nas requisições autenticadas.
+A idade é validada localmente pela data de nascimento informada. O cadastro de aluno exige confirmação de maioridade, aceite dos termos vigentes e confirmação do e-mail. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. Depois dessa confirmação, a API emite o JWT usado nas requisições autenticadas.
 
 As senhas são armazenadas com BCrypt. Também há recuperação de senha e proteção contra tentativas repetidas de acesso. Professores e administradores entram por convite, com conclusão do cadastro e aprovação administrativa.
 
@@ -53,7 +53,7 @@ O formulário público de suporte gera um protocolo e encaminha a solicitação 
 
 O sistema registra a versão e a data do aceite dos documentos e permite publicar novas políticas, solicitar novo aceite, revogar o consentimento e consultar e exportar os dados pessoais disponibilizados pela API. A exclusão da conta exige confirmação por código enviado por e-mail e segue regras próprias de remoção, anonimização e retenção de registros.
 
-O CPF é armazenado com criptografia e possui hash para identificação. As operações relevantes são registradas em auditoria com assinaturas HMAC-SHA256 encadeadas e verificação de integridade. Os JWTs são associados a sessões persistidas, permitindo verificar validade e revogar acessos.
+As operações relevantes são registradas em auditoria com assinaturas HMAC-SHA256 encadeadas e verificação de integridade. Os JWTs são associados a sessões persistidas, permitindo verificar validade e revogar acessos.
 
 ## Tecnologias
 
@@ -93,6 +93,12 @@ CREATE DATABASE cursovalido;
 
 Utilize um usuário com permissão para conectar ao banco e criar os objetos das migrações. O Flyway cria as tabelas na inicialização, a partir dos scripts em `src/main/resources/db/migration`. Depois, o Hibernate valida a estrutura do banco.
 
+O histórico possui apenas a **V1 original, imutável**, e a **V2**, que reúne a atualização do backend. Em banco novo, ambas são executadas. Em banco com a V1 registrada no Flyway, a inicialização valida seu checksum e aplica apenas a V2; mantenha as variáveis de conexão do banco existente. Não execute repair para contornar uma V1 alterada.
+
+Somente se o banco já tiver **exatamente a estrutura original da V1, mas não possuir histórico Flyway**, defina temporariamente `FLYWAY_BASELINE_ON_MIGRATE=true`. O baseline registra a versão 1 sem executar sua criação e aplica a V2. Após a atualização, remova essa variável (padrão `false`). A validação das migrações permanece ativa e o comando clean permanece desabilitado. Bancos com migrações intermediárias de desenvolvimento V3–V10 devem ser recriados para usar este histórico consolidado.
+
+A V2 remove CPF e seu hash do cadastro e das contas excluídas, preserva contas, aceites e documentos existentes. A V2 altera somente a estrutura: não insere áreas, seções, questionários ou conteúdo de exemplo, nem publica, desativa ou atualiza termos e políticas. A partir da V2, esses conteúdos são gerenciados manualmente pela administração. As colunas removidas não são recuperáveis pela migração; faça backup se precisar preservar esses dados. A recriação do banco é uma operação manual.
+
 ### 4. Configurar as variáveis de ambiente
 
 No Windows, pesquise **Editar as variáveis de ambiente do sistema**, clique em **Variáveis de Ambiente** e adicione os valores em **Variáveis de usuário**. Cadastre cada nome e valor separadamente, sem aspas.
@@ -107,15 +113,14 @@ DB_USERNAME=seu_usuario
 DB_PASSWORD=sua_senha
 ```
 
-Para autenticação, auditoria e criptografia:
+Para autenticação e auditoria:
 
 ```text
 JWT_SECRET=seu_segredo_jwt
 AUDITORIA_CHAVE=seu_segredo_de_auditoria
-DADOS_CRIPTOGRAFIA_CHAVE=sua_chave_de_32_caracteres
 ```
 
-Esses valores são exemplos: gere as chaves com os comandos da próxima seção. O JWT exige pelo menos 32 bytes, e a chave de criptografia deve ter exatamente 32 caracteres ASCII.
+Esses valores são exemplos: gere as chaves com os comandos da próxima seção. O JWT exige pelo menos 32 bytes.
 
 Para envio de e-mails e integração com o front-end:
 
@@ -148,7 +153,7 @@ A senha deve ter pelo menos oito caracteres, uma letra maiúscula, um caractere 
 
 Também é possível definir `SERVER_PORT`, cujo padrão é `8080`, `JWT_EXPIRATION`, cujo padrão é `3600000` milissegundos, ou uma hora, e `BCRYPT_STRENGTH`, cujo padrão é `12` e cujo intervalo permitido é de `10` a `16`. A variável `REQUIRE_HTTPS` controla a exigência de HTTPS e possui padrão `false`.
 
-As configurações estão em `src/main/resources/application.properties`. Este procedimento utiliza as variáveis do Windows e dispensa um arquivo `.env`. As propriedades de Gmail SMTP presentes nesse arquivo não são utilizadas pelo serviço de envio de e-mails atual, que usa o Resend. O backend não possui integração ativa com CPF.CNPJ nem consulta de CEP pelo ViaCEP.
+As configurações estão em `src/main/resources/application.properties`. Este procedimento utiliza as variáveis do Windows e dispensa um arquivo `.env`. O envio de e-mails utiliza o Resend. O backend não possui consulta de CEP pelo ViaCEP.
 
 Depois de salvar as variáveis, feche completamente e reabra o VS Code e os terminais. Se as alterações não forem reconhecidas, saia da sessão do Windows e entre novamente.
 
@@ -164,17 +169,7 @@ $rng.GetBytes($bytes)
 $rng.Dispose()
 ```
 
-Para gerar `DADOS_CRIPTOGRAFIA_CHAVE` com 32 caracteres ASCII:
-
-```powershell
-$bytes = New-Object byte[] 16
-$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-$rng.GetBytes($bytes)
-[BitConverter]::ToString($bytes).Replace("-", "").ToLowerInvariant()
-$rng.Dispose()
-```
-
-Guarde as chaves e não as publique no repositório. Se já houver dados no banco, preserve as chaves de criptografia e auditoria utilizadas anteriormente. A troca da chave JWT invalida os tokens emitidos.
+Guarde as chaves e não as publique no repositório. Se já houver dados no banco, preserve a chave de auditoria utilizada anteriormente. A troca da chave JWT invalida os tokens emitidos.
 
 ### 6. Iniciar a aplicação
 

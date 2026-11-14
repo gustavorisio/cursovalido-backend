@@ -3,7 +3,6 @@ package com.cursovalido.backend.authentication.service;
 import com.cursovalido.backend.authentication.entity.ContaExcluida;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.ContaExcluidaRepository;
-import com.cursovalido.backend.authentication.security.ProtecaoDadosPessoais;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -19,14 +18,14 @@ import org.springframework.web.server.ResponseStatusException;
 public class IdentidadeExcluidaService {
     private final ContaExcluidaRepository registros;
 
-    public List<Long> anteriores(String email, String cpf) {
-        return localizar(email, cpf).stream().map(ContaExcluida::getId).toList();
+    public List<Long> anteriores(String email) {
+        return localizar(email).stream().map(ContaExcluida::getId).toList();
     }
 
-    public void verificarCadastro(String email, String cpf) {
-        if (localizar(email, cpf).stream().anyMatch(r -> r.getBloqueadaAte().isAfter(Instant.now()))) {
+    public void verificarCadastro(String email) {
+        if (localizar(email).stream().anyMatch(r -> r.getBloqueadaAte().isAfter(Instant.now()))) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "E-mail ou CPF bloqueado por 15 dias apos a exclusao da conta.");
+                    "E-mail bloqueado por 15 dias apos a exclusao da conta.");
         }
     }
 
@@ -34,32 +33,12 @@ public class IdentidadeExcluidaService {
         var registro = new ContaExcluida();
         registro.setId(usuario.getId());
         registro.setEmailHash(hashEmail(usuario.getEmail()));
-        registro.setCpfHash(usuario.getCpf() == null ? null : ProtecaoDadosPessoais.hashCpf(usuario.getCpf()));
         registro.setBloqueadaAte(Instant.now().plus(15, ChronoUnit.DAYS));
         registros.saveAndFlush(registro);
     }
 
-    private List<ContaExcluida> localizar(String email, String cpf) {
-        var emails = new HashSet<String>();
-        var cpfs = new HashSet<String>();
-        var encontrados = new HashMap<Long, ContaExcluida>();
-        emails.add(hashEmail(email));
-        cpfs.add(cpf == null ? "" : ProtecaoDadosPessoais.hashCpf(cpf));
-        boolean mudou;
-        // Percorre tambem os vinculos de exclusoes sucessivas com outros
-        // identificadores.
-        do {
-            mudou = false;
-            for (var item : registros.findByEmailHashInOrCpfHashIn(emails, cpfs)) {
-                if (encontrados.putIfAbsent(item.getId(), item) == null) {
-                    emails.add(item.getEmailHash());
-                    if (item.getCpfHash() != null)
-                        cpfs.add(item.getCpfHash());
-                    mudou = true;
-                }
-            }
-        } while (mudou);
-        return new ArrayList<>(encontrados.values());
+    private List<ContaExcluida> localizar(String email) {
+        return registros.findByEmailHash(hashEmail(email));
     }
 
     private String hashEmail(String email) {

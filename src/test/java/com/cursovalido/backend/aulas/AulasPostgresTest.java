@@ -191,9 +191,9 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     void migracoesCriamSchemaSemEnderecoEDocumentosSeparados() {
         String schema = "v1_" + java.util.UUID.randomUUID().toString().replace("-", "");
         var flyway = Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
-        assertThat(flyway.info().applied()).filteredOn(item -> item.getVersion() != null).hasSize(1);
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("1");
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
+        assertThat(flyway.info().applied()).filteredOn(item -> item.getVersion() != null).hasSize(2);
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("2");
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class))
                 .isEqualTo(1);
@@ -205,7 +205,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         assertThat(jdbc.queryForList(
                 "select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_usuarios'",
                 String.class, schema))
-                .doesNotContain("telefone", "cep", "logradouro", "bairro", "cidade", "estado");
+                .doesNotContain("cpf", "cpf_hash", "telefone", "cep", "logradouro", "bairro", "cidade", "estado");
         assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas where ativa = true",
                 String.class))
                 .contains("CPF.CNPJ").doesNotContain("telefone", "ViaCEP", "logradouro");
@@ -213,6 +213,62 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 "select conteudo from " + schema + ".tb_politicas_privacidade where ativa = true", String.class))
                 .contains("CPF.CNPJ").doesNotContain("telefone", "ViaCEP", "logradouro");
         assertThat(flyway.migrate().migrationsExecuted).isZero();
+    }
+
+    @Test
+    void migracaoV2AtualizaV1EPreservaContasEAceites() throws Exception {
+        validarAtualizacaoV1(false);
+    }
+
+    @Test
+    void migracaoV2AceitaBaselineV1SemHistorico() throws Exception {
+        validarAtualizacaoV1(true);
+    }
+
+    private void validarAtualizacaoV1(boolean semHistorico) throws Exception {
+        String schema = "cadastro_" + java.util.UUID.randomUUID().toString().replace("-", "");
+        Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema).target("1").load().migrate();
+        try (var conexao = fonte.getConnection(); var comando = conexao.createStatement()) {
+            conexao.setAutoCommit(true);
+            if (semHistorico) comando.executeUpdate("drop table " + schema + ".flyway_schema_history");
+            comando.executeUpdate("insert into " + schema + ".tb_cursos (id, titulo, descricao, criado_em) values (999, 'Curso legado', 'Conteudo preservado', CURRENT_TIMESTAMP)");
+            // Dados reais no formato original da V1, incluindo os campos removidos na V2.
+            comando.executeUpdate("insert into " + schema + ".tb_usuarios values (999, 'Aluno', 'legado@example.com', 'hash', 'cpf-legado', 'cpf-hash-legado', DATE '1990-01-01', '999', TRUE, TRUE, CURRENT_TIMESTAMP, '1.0', 'ALUNO', TRUE, TRUE, 'APROVADO')");
+            comando.executeUpdate("insert into " + schema + ".tb_contas_excluidas values (998, 'email-hash', 'cpf-hash-excluido', CURRENT_TIMESTAMP)");
+        }
+        var termosAntes = jdbc.queryForList("select * from " + schema + ".tb_politicas order by id");
+        var privacidadeAntes = jdbc.queryForList("select * from " + schema + ".tb_politicas_privacidade order by id");
+        var flyway = Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema)
+                .baselineOnMigrate(semHistorico).baselineVersion("1").load();
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(jdbc.queryForList(
+                "select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_usuarios'",
+                String.class, schema)).containsExactlyInAnyOrder("id", "nome_completo", "email", "senha",
+                        "data_nascimento", "matricula", "declarou_maior_idade", "aceitou_termos_lgpd",
+                        "data_hora_aceite", "versao_termos", "perfil", "ativo", "email_confirmado", "status_aprovacao");
+        assertThat(jdbc.queryForList(
+                "select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_contas_excluidas'",
+                String.class, schema)).containsExactlyInAnyOrder("id", "email_hash", "bloqueada_ate");
+        assertThat(jdbc.queryForObject("select email from " + schema + ".tb_usuarios where id = 999", String.class))
+                .isEqualTo("legado@example.com");
+        assertThat(jdbc.queryForObject("select versao_termos from " + schema + ".tb_usuarios where id = 999", String.class))
+                .isEqualTo("1.0");
+        assertThat(jdbc.queryForObject("select descricao from " + schema + ".tb_cursos where id = 999", String.class))
+                .isEqualTo("Conteudo preservado");
+        assertThat(jdbc.queryForObject("select email_hash from " + schema + ".tb_contas_excluidas where id = 998", String.class))
+                .isEqualTo("email-hash");
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("2");
+        assertThat(flyway.migrate().migrationsExecuted).isZero();
+        assertThat(jdbc.queryForList("select * from " + schema + ".tb_politicas order by id"))
+                .isEqualTo(termosAntes);
+        assertThat(jdbc.queryForList("select * from " + schema + ".tb_politicas_privacidade order by id"))
+                .isEqualTo(privacidadeAntes);
+        for (String tabela : new String[]{"tb_politicas", "tb_politicas_privacidade"}) {
+            assertThat(jdbc.queryForObject("select versao from " + schema + "." + tabela + " where ativa = true", String.class))
+                    .isEqualTo("1.0");
+            assertThat(jdbc.queryForObject("select count(*) from " + schema + "." + tabela + " where versao = '1.0' and ativa = true", Long.class))
+                    .isEqualTo(1);
+        }
     }
 
     @TestConfiguration

@@ -33,14 +33,13 @@ public class CadastroUsuarioService {
     private final EmailService emails;
     private final ValidacaoEmailService validacaoEmail;
     private final IdentidadeExcluidaService identidades;
-    private final ValidacaoCpfService validacaoCpf;
     private final SecureRandom geradorRa = new SecureRandom();
 
     @Transactional
     // Cria uma conta de aluno e envia a confirmacao de e-mail.
     public Usuario cadastrar(CadastroUsuarioRequest requisicao, String enderecoIp) {
         validacaoEmail.validar(requisicao.email());
-        identidades.verificarCadastro(requisicao.email(), requisicao.cpf());
+        identidades.verificarCadastro(requisicao.email());
         if (!politicas.versaoAtiva(requisicao.versaoTermos()))
             throw new TermosNaoDisponiveisException();
         if (Period.between(requisicao.dataNascimento(), LocalDate.now()).getYears() < 18) {
@@ -49,16 +48,11 @@ public class CadastroUsuarioService {
         }
         if (repositorio.existsByEmail(requisicao.email()))
             throw new CadastroDuplicadoException("E-mail");
-        if (repositorio.existsByCpf(requisicao.cpf()))
-            throw new CadastroDuplicadoException("CPF");
-
-        validacaoCpf.validar(requisicao.cpf(), requisicao.nomeCompleto(), requisicao.dataNascimento());
 
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(requisicao.nomeCompleto());
         usuario.setEmail(requisicao.email());
         usuario.setSenha(codificadorSenha.encode(requisicao.senha()));
-        usuario.setCpf(requisicao.cpf());
         usuario.setDataNascimento(requisicao.dataNascimento());
         usuario.setMatricula(gerarRa());
         usuario.setDeclarouMaiorIdade(requisicao.declarouMaiorIdade());

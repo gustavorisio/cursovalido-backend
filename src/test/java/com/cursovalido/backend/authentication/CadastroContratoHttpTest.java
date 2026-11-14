@@ -23,32 +23,33 @@ class CadastroContratoHttpTest {
                         new ConviteController(convites))
                         .setControllerAdvice(new AutenticacaoExceptionHandler()).build();
 
-        private String dados(String cpf) {
+        private String dados() {
                 return """
                                 {"nomeCompleto":"Aluno Teste","email":"aluno@example.com","senha":"SenhaTeste123!",
-                                "cpf":"%s","dataNascimento":"1990-01-01","declarouMaiorIdade":true,
+                                "dataNascimento":"1990-01-01","declarouMaiorIdade":true,
                                 "aceitouTermosLgpd":true,"versaoTermos":"1.0"}
-                                """.formatted(cpf);
+                                """;
         }
 
         @Test
-        void cadastroPublicoEConviteAceitamCpfValidoSemTelefone() throws Exception {
+        void cadastroPublicoEConviteAceitamDadosDoCadastro() throws Exception {
                 mvc.perform(post("/api/autenticacao/cadastro").contentType(MediaType.APPLICATION_JSON)
-                                .content(dados("52998224725"))).andExpect(status().isCreated());
+                                .content(dados())).andExpect(status().isCreated());
                 mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"token\":\"convite\",\"cadastro\":" + dados("11144477735") + "}"))
+                                .content("{\"token\":\"convite\",\"cadastro\":" + dados() + "}"))
                                 .andExpect(status().isNoContent());
-                verify(cadastro).cadastrar(argThat(r -> r.cpf().equals("52998224725")), anyString());
-                verify(convites).completar(eq("convite"), argThat(r -> r.cpf().equals("11144477735")));
+                verify(cadastro).cadastrar(argThat(r -> r.email().equals("aluno@example.com")), anyString());
+                verify(convites).completar(eq("convite"), argThat(r -> r.email().equals("aluno@example.com")));
         }
 
         @ParameterizedTest
-        @ValueSource(strings = { "12345678901", "11111111111", "00000000000", "52998224724", "5299822472" })
-        void ambosCadastrosRecusamCpfInvalidoAntesDoServico(String cpf) throws Exception {
+        @ValueSource(strings = { "nomeCompleto", "email", "senha", "dataNascimento", "declarouMaiorIdade", "aceitouTermosLgpd", "versaoTermos" })
+        void ambosCadastrosRecusamCampoObrigatorioNulo(String campo) throws Exception {
+                String incompleto = dados().replaceAll("\"" + campo + "\"\\s*:\\s*(\"[^\"]*\"|true)", "\"" + campo + "\":null");
                 mvc.perform(post("/api/autenticacao/cadastro").contentType(MediaType.APPLICATION_JSON)
-                                .content(dados(cpf))).andExpect(status().isBadRequest());
+                                .content(incompleto)).andExpect(status().isBadRequest());
                 mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"token\":\"convite\",\"cadastro\":" + dados(cpf) + "}"))
+                                .content("{\"token\":\"convite\",\"cadastro\":" + incompleto + "}"))
                                 .andExpect(status().isBadRequest());
                 verifyNoInteractions(cadastro, convites);
         }

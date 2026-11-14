@@ -67,8 +67,6 @@ class ForumHttpIntegracaoTest {
     private EmailService emails;
     @MockitoBean
     private ValidacaoEmailService validacaoEmail;
-    @MockitoBean
-    private com.cursovalido.backend.authentication.service.ValidacaoCpfService validacaoCpf;
     private final Map<String, String> confirmacoes = new ConcurrentHashMap<>();
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
     private final Map<String, String> convitesEnviados = new ConcurrentHashMap<>();
@@ -120,6 +118,8 @@ class ForumHttpIntegracaoTest {
         String caminho = "/api/forum/topicos/" + criado.id();
         assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos/meus", null, null, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(enviar(HttpMethod.GET, caminho + "/comentarios", null, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
         assertThat(enviar(HttpMethod.GET, "/api/noticias", null, null, String.class).getStatusCode())
@@ -565,8 +565,7 @@ class ForumHttpIntegracaoTest {
     void excluirProfessorAutenticadoPermiteNovoConviteSemReutilizarSessaoAntiga() {
         var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-convite@example.com");
         String email = "professor-reconvite@example.com";
-        String cpf = cpfValido(SEQUENCIA.incrementAndGet());
-        long idAnterior = cadastrarConvidado(email, cpf, principal.token());
+        long idAnterior = cadastrarConvidado(email, principal.token());
         String linkAnterior = convitesEnviados.get(email);
         String sessaoAnterior = autenticarConvidado(email);
         String codigoExclusao = tokensEmail.criarExclusao(usuarios.findById(idAnterior).orElseThrow());
@@ -580,7 +579,7 @@ class ForumHttpIntegracaoTest {
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
         jdbc.update("update tb_contas_excluidas set bloqueada_ate = ? where id = ?",
                 java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(1)), idAnterior);
-        long idNovo = cadastrarConvidado(email, cpf, principal.token());
+        long idNovo = cadastrarConvidado(email, principal.token());
         assertThat(idNovo).isNotEqualTo(idAnterior);
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", linkAnterior),
                 String.class).getStatusCode())
@@ -640,19 +639,8 @@ class ForumHttpIntegracaoTest {
         assertThat(convitesEnviados).doesNotContainKey(existente.getEmail());
     }
 
-    private static String cpfValido(long numero) {
-        String base = String.format("%09d", numero);
-        for (int tamanho = 9; tamanho <= 10; tamanho++) {
-            int soma = 0;
-            for (int i = 0; i < tamanho; i++)
-                soma += (base.charAt(i) - '0') * (tamanho + 1 - i);
-            int resto = soma % 11;
-            base += resto < 2 ? 0 : 11 - resto;
-        }
-        return base;
-    }
 
-    private long cadastrarConvidado(String email, String cpf, String tokenPrincipal) {
+    private long cadastrarConvidado(String email, String tokenPrincipal) {
         assertThat(enviar(HttpMethod.POST, "/api/administracao/convites", tokenPrincipal,
                 new ConviteAcessoRequest(email, Perfil.PROFESSOR), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
@@ -660,7 +648,7 @@ class ForumHttpIntegracaoTest {
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", token), String.class)
                 .getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
-        var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA, cpf,
+        var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA,
                 LocalDate.of(1990, 1, 1),
                 true, true, "teste-v1");
         assertThat(enviar(HttpMethod.POST, "/api/convites/completar-cadastro", null,
@@ -691,7 +679,7 @@ class ForumHttpIntegracaoTest {
         long numero = SEQUENCIA.incrementAndGet();
         String email = emailPrincipal == null ? "forum-" + numero + "@example.com" : emailPrincipal;
         String nome = "Participante " + numero;
-        var requisicao = new CadastroUsuarioRequest(nome, email, SENHA, cpfValido(numero),
+        var requisicao = new CadastroUsuarioRequest(nome, email, SENHA,
                 LocalDate.of(2000, 1, 1), true, true, "teste-v1");
         assertThat(
                 enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, requisicao, String.class).getStatusCode())

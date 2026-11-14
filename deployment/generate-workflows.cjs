@@ -1,0 +1,91 @@
+// Mantem os dois workflows com a mesma politica de isolamento e SSH.
+const fs = require('node:fs');
+for (const type of ['backend', 'frontend']) {
+  const backend = type === 'backend';
+  const setup = backend ? `      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: mvn --batch-mode --no-transfer-progress -Dtest.postgres.mode=container clean verify
+      - shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t jars < <(find target -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar')
+          test "\${#jars[@]}" -eq 1
+          mkdir package
+          cp "\${jars[0]}" package/app.jar` : `      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_API_URL: https://api.cursovalido.dev/api
+      - run: |
+          test -s dist/index.html
+          mkdir package
+          tar -czf package/frontend.tar.gz -C dist .`;
+  const file = backend ? '.github/workflows/deploy.yml' : 'deployment/frontend/deploy.yml';
+  fs.writeFileSync(file, `name: Deploy ${type} Hostinger
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deploy-${type}-production
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+${setup}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${type}-production
+          path: package/${backend ? 'app.jar' : 'frontend.tar.gz'}
+          if-no-files-found: error
+          retention-days: 1
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    steps:
+      # Nao faz checkout nem executa scripts do repositorio neste job.
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${type}-production
+          path: package
+      - name: Publicar por chave de comando restrito
+        env:
+          VPS_HOST: \${{ secrets.VPS_HOST }}
+          VPS_PORT: \${{ secrets.VPS_PORT }}
+          SSH_KEY: \${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: \${{ secrets.VPS_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VPS_HOST" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$ ]]
+          port="\${VPS_PORT:-22}"
+          [[ "$port" =~ ^[0-9]+$ ]]
+          keydir=$(mktemp -d)
+          trap 'rm -rf -- "$keydir"' EXIT
+          printf '%s\\n' "$SSH_KEY" > "$keydir/key"
+          printf '%s\\n' "$KNOWN_HOSTS" > "$keydir/known_hosts"
+          chmod 600 "$keydir/key" "$keydir/known_hosts"
+          unset SSH_KEY KNOWN_HOSTS
+          ssh -T -p "$port" -i "$keydir/key" \\
+            -o BatchMode=yes -o IdentitiesOnly=yes \\
+            -o StrictHostKeyChecking=yes \\
+            -o UserKnownHostsFile="$keydir/known_hosts" \\
+            -o ConnectTimeout=15 \\
+            "deploy-${type}@$VPS_HOST" < package/${backend ? 'app.jar' : 'frontend.tar.gz'}
+`);
+}

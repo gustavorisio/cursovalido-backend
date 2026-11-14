@@ -76,7 +76,7 @@ public class AdministracaoController {
 
     private ConviteAcessoResponse converter(Usuario usuario) {
         return new ConviteAcessoResponse(usuario.getId(), usuario.getEmail(), usuario.getPerfil(),
-                usuario.getStatusAprovacao(), usuario.getNomeCompleto(), usuario.getCpf(),
+                usuario.getStatusAprovacao(), usuario.getNomeCompleto(),
                 usuario.getDataNascimento());
     }
 }

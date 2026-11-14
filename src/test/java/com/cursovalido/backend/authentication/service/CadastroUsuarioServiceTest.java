@@ -42,8 +42,6 @@ class CadastroUsuarioServiceTest {
     private ValidacaoEmailService validacaoEmail;
     @Mock
     private IdentidadeExcluidaService identidades;
-    @Mock
-    private ValidacaoCpfService validacaoCpf;
     @InjectMocks
     private CadastroUsuarioService servico;
 
@@ -66,7 +64,6 @@ class CadastroUsuarioServiceTest {
         Usuario salvo = new Usuario();
         when(politicas.versaoAtiva("1.0")).thenReturn(true);
         when(repositorio.existsByEmail(requisicao.email())).thenReturn(false);
-        when(repositorio.existsByCpf(requisicao.cpf())).thenReturn(false);
         when(repositorio.existsByMatricula(any(String.class))).thenReturn(false);
         when(codificadorSenha.encode("senha-segura")).thenReturn("hash");
         when(repositorio.save(any(Usuario.class))).thenReturn(salvo);
@@ -77,7 +74,6 @@ class CadastroUsuarioServiceTest {
         assertEquals(salvo, resultado);
         verify(emails).enviarConfirmacao(salvo, "token");
         verify(repositorio).save(any(Usuario.class));
-        verify(validacaoCpf).validar(requisicao.cpf(), requisicao.nomeCompleto(), requisicao.dataNascimento());
     }
 
     @Test
@@ -110,7 +106,6 @@ class CadastroUsuarioServiceTest {
         Usuario salvo = new Usuario();
         when(politicas.versaoAtiva("1.0")).thenReturn(true);
         when(repositorio.existsByEmail(requisicao.email())).thenReturn(false);
-        when(repositorio.existsByCpf(requisicao.cpf())).thenReturn(false);
         when(repositorio.existsByMatricula(any(String.class))).thenReturn(false);
         when(codificadorSenha.encode("senha-segura")).thenReturn("hash");
         when(repositorio.save(any(Usuario.class))).thenReturn(salvo);
@@ -128,19 +123,6 @@ class CadastroUsuarioServiceTest {
     }
 
     @Test
-    void consultaExternaRecusadaNaoPersisteUsuarioNemEnviaEmail() {
-        var requisicao = requisicaoPadrao();
-        when(politicas.versaoAtiva("1.0")).thenReturn(true);
-        org.mockito.Mockito.doThrow(new com.cursovalido.backend.authentication.exception.ValidacaoCpfException(
-                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "CPF_CONSULTA_INDISPONIVEL", "Indisponivel"))
-                .when(validacaoCpf).validar(requisicao.cpf(), requisicao.nomeCompleto(), requisicao.dataNascimento());
-        assertThrows(com.cursovalido.backend.authentication.exception.ValidacaoCpfException.class,
-                () -> servico.cadastrar(requisicao, "127.0.0.1"));
-        verify(repositorio, never()).save(any(Usuario.class));
-        org.mockito.Mockito.verifyNoInteractions(tokensEmail, emails);
-    }
-
-    @Test
     void rejeitaCadastroNoDiaAnteriorACompletarDezoitoAnos() {
         var requisicao = requisicaoComNascimento(LocalDate.now().minusYears(18).plusDays(1));
         when(politicas.versaoAtiva("1.0")).thenReturn(true);
@@ -154,7 +136,6 @@ class CadastroUsuarioServiceTest {
                 "Aluno Teste",
                 "aluno@teste.com",
                 "senha-segura",
-                "52998224725",
                 dataNascimento,
                 true,
                 true,

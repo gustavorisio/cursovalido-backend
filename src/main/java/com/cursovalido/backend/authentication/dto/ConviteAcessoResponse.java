@@ -5,5 +5,5 @@ import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import java.time.LocalDate;
 
 public record ConviteAcessoResponse(Long id, String email, Perfil perfil, StatusAprovacao status,
-        String nomeCompleto, String cpf, LocalDate dataNascimento) {
+        String nomeCompleto, LocalDate dataNascimento) {
 }

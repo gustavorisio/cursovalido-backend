@@ -44,6 +44,18 @@ public class TopicoService {
         return repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho), termo);
     }
 
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<TopicoResumoDTO> listarMeus(int pagina, int tamanho, String busca, Long idUsuario) {
+        servicoUsuarios.buscarAtivo(idUsuario);
+        if (pagina < 0 || tamanho < 1 || tamanho > 100) {
+            throw new com.cursovalido.backend.forum.exception.RequisicaoInvalidaException(
+                    "Pagina deve ser maior ou igual a zero e tamanho deve estar entre 1 e 100");
+        }
+        String termo = busca == null ? "" : busca.trim();
+        registrar(idUsuario, "CONSULTA_MEUS_TOPICOS", termo);
+        return repositorioTopicos.listarMeus(PageRequest.of(pagina, tamanho), termo, idUsuario);
+    }
+
     // Cria um novo topico para o usuario informado.
     public Topico criar(Topico topico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);

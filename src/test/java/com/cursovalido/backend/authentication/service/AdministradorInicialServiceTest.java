@@ -53,7 +53,6 @@ class AdministradorInicialServiceTest {
         assertTrue(senhas.matches("Senha-admin-segura", admin.getSenha()));
         assertNotEquals("Senha-admin-segura", admin.getSenha());
         assertFalse(admin.getAceitouTermosLgpd());
-        assertNull(admin.getCpf());
         assertNull(admin.getDataHoraAceite());
         assertTrue(registro.isConcluida());
         assertEquals(10L, registro.getIdUsuario());

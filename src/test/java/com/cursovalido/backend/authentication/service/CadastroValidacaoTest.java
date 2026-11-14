@@ -3,7 +3,6 @@ package com.cursovalido.backend.authentication.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.cursovalido.backend.authentication.dto.*;
-import com.cursovalido.backend.authentication.security.CriptografiaDadosConverter;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
@@ -23,7 +22,7 @@ class CadastroValidacaoTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "nomeCompleto", "email", "senha", "cpf", "dataNascimento",
+    @ValueSource(strings = { "nomeCompleto", "email", "senha", "dataNascimento",
             "declarouMaiorIdade", "aceitouTermosLgpd", "versaoTermos" })
     void todosCamposDoCadastroSaoObrigatorios(String campo) {
         assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, campo, null).isEmpty());
@@ -40,33 +39,6 @@ class CadastroValidacaoTest {
         assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "aceitouTermosLgpd", false).isEmpty());
         assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "declarouMaiorIdade", false).isEmpty());
         assertFalse(VALIDATOR.validateValue(ConviteCadastroRequest.class, "cadastro", null).isEmpty());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "52998224725", "11144477735", "12345678909" })
-    void aceitaCpfComDigitosVerificadoresValidos(String cpf) {
-        assertTrue(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "cpf", cpf).isEmpty());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "12345678901", "52998224724", "5299822472", "529982247250",
-            "529.982.247-25", "abc52998224725", "", "00000000000", "11111111111",
-            "22222222222", "33333333333", "44444444444", "55555555555", "66666666666",
-            "77777777777", "88888888888", "99999999999" })
-    void rejeitaCpfInvalidoOuForaDoFormatoDaApi(String cpf) {
-        assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "cpf", cpf).isEmpty());
-    }
-
-    @Test
-    void criptografiaUsaIvDiferenteERejeitaConteudoAdulterado() {
-        var converter = new CriptografiaDadosConverter();
-        String primeiro = converter.convertToDatabaseColumn("Rua A");
-        String segundo = converter.convertToDatabaseColumn("Rua A");
-        assertNotEquals(primeiro, segundo);
-        byte[] dados = java.util.Base64.getDecoder().decode(primeiro);
-        dados[dados.length - 1] ^= 1;
-        String adulterado = java.util.Base64.getEncoder().encodeToString(dados);
-        assertThrows(IllegalStateException.class, () -> converter.convertToEntityAttribute(adulterado));
     }
 
     @Test

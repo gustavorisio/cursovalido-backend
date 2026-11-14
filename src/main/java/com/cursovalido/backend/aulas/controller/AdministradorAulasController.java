@@ -16,6 +16,18 @@ import org.springframework.web.bind.annotation.*;
 public class AdministradorAulasController {
     private final AdministradorAulasService servico;
 
+    @PutMapping("/cursos/{id}")
+    public CursoResponse editarCurso(@PathVariable Long id, @Valid @RequestBody CursoRequest dados,
+            @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return converter(servico.editarCurso(id, dados, usuario.getId()));
+    }
+
+    @DeleteMapping("/cursos/{id}")
+    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    public void excluirCurso(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        servico.excluirCurso(id, usuario.getId());
+    }
+
     @GetMapping("/cursos")
     public List<CursoResponse> listarCursos(@AuthenticationPrincipal UsuarioAutenticado usuario) {
         return servico.listarCursos(usuario.getId()).stream().map(this::converter).toList();
@@ -45,7 +57,7 @@ public class AdministradorAulasController {
     }
 
     private CursoResponse converter(Curso curso) {
-        return new CursoResponse(curso.getId(), curso.getTitulo(), curso.getDescricao(), curso.getIdProfessor());
+        return CursoResponse.de(curso);
     }
 
     private ModuloResponse converter(Modulo modulo) {

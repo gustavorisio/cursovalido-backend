@@ -26,7 +26,7 @@ public class ModeracaoUsuarioService {
         Instant agora = Instant.now();
         var ids = new java.util.ArrayList<Long>();
         ids.add(idUsuario);
-        usuarios.findById(idUsuario).ifPresent(u -> ids.addAll(identidades.anteriores(u.getEmail(), u.getCpf())));
+        usuarios.findById(idUsuario).ifPresent(u -> ids.addAll(identidades.anteriores(u.getEmail())));
         return suspensoes.findByIdUsuarioInAndRevogadaEmIsNullOrderByIdDesc(ids).stream()
                 .filter(item -> item.vigente(agora)).toList();
     }

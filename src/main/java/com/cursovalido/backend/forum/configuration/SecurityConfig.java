@@ -123,15 +123,33 @@ public class SecurityConfig {
                                                                 "/api/autenticacao/restricoes")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/autenticacao/revogar-termos",
-                                                                "/api/autenticacao/conta/solicitar-exclusao")
+                                                                "/api/autenticacao/conta/solicitar-exclusao",
+                                                                "/api/autenticacao/alterar-senha-autenticado")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos", "/api/catalogo/temas").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/temas").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/temas/*").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/temas/*").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/cursos/*").hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/administracao/cursos/*").hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/administracao/aulas/*",
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
                                                 .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/roadmap").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/roadmap/questionarios/*").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/catalogo/roadmap/questionarios/*/resultado").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/aluno/roadmap/questionarios/*/resultado").hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.POST, "/api/aluno/roadmap/questionarios/*/resultado").hasRole("ALUNO")
+                                                .requestMatchers("/api/administracao/caminhos", "/api/administracao/caminhos/**").hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/diagnostico", "/api/aluno/cursos/*/modulos/*/questionario", "/api/aluno/cursos/*/plano").hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/diagnostico/respostas", "/api/aluno/cursos/*/modulos/*/questionario/respostas").hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.GET, "/api/professor/cursos/*/diagnostico", "/api/professor/cursos/*/modulos/*/questionario").hasRole("PROFESSOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/professor/cursos/*/diagnostico", "/api/professor/cursos/*/modulos/*/questionario").hasRole("PROFESSOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/administracao/cursos/*/diagnostico", "/api/administracao/cursos/*/modulos/*/questionario").hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/cursos/*/diagnostico", "/api/administracao/cursos/*/modulos/*/questionario").hasRole("ADMINISTRADOR")
                                                 // Catalogo, matriculas e progresso pessoais do aluno.
                                                 .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas")
                                                 .hasRole("ALUNO")
@@ -175,7 +193,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/forum/topicos",
                                                                 "/api/forum/topicos/*/comentarios")
                                                 .permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/forum/users")
+                                                .requestMatchers(HttpMethod.GET, "/api/forum/users", "/api/forum/topicos/meus")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/forum/topicos",
                                                                 "/api/forum/topicos/*/comentarios")
@@ -215,10 +233,12 @@ public class SecurityConfig {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuracao = new CorsConfiguration();
-                configuracao.setAllowedOrigins(List.of(origensFrontend.split(",")));
-                configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-                configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-User-Id"));
-                configuracao.setExposedHeaders(List.of("Authorization"));
+                configuracao.setAllowedOrigins(java.util.Arrays.stream(origensFrontend.split(","))
+                                .map(String::trim).filter(origem -> !origem.isEmpty()).distinct().toList());
+                configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"));
+                configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "Cache-Control", "X-User-Id"));
+                configuracao.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+                configuracao.setMaxAge(3600L);
                 configuracao.setAllowCredentials(true);
 
                 UrlBasedCorsConfigurationSource origem = new UrlBasedCorsConfigurationSource();

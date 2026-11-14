@@ -39,6 +39,15 @@ public class ForumController {
         return servicoTopicos.listarRecentes(page, size, busca, usuario == null ? null : usuario.getId());
     }
 
+    @GetMapping("/topicos/meus")
+    public org.springframework.data.domain.Page<TopicoResumoDTO> listarMeusTopicos(
+            @AuthenticationPrincipal UsuarioAutenticado usuario,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "") String busca) {
+        return servicoTopicos.listarMeus(page, size, busca, usuario.getId());
+    }
+
     @PostMapping("/topicos")
     public TopicoResponse criarTopico(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @Valid @RequestBody TopicoRequest requisicao) {

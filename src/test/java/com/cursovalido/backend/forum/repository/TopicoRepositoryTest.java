@@ -48,4 +48,29 @@ class TopicoRepositoryTest {
         assertEquals(autor.getId(), recuperado.getIdAutor());
         assertTrue(recuperado.isAtivo());
     }
+
+    @Test
+    void meusTopicosFiltraAutorAntesDePaginarEBuscar() {
+        UsuarioForum autor = usuarios.save(new UsuarioForum(17L, "Autor", "autor@teste.com", "ALUNO"));
+        UsuarioForum outro = usuarios.save(new UsuarioForum(18L, "Outro", "outro@teste.com", "PROFESSOR"));
+        for (int i = 0; i < 9; i++) {
+            Topico topico = new Topico();
+            topico.setTitulo(i == 0 ? "Python" : "Java " + i);
+            topico.setDescricao("Duvida");
+            topico.setUsuarioAutor(i == 8 ? outro : autor);
+            topico.setIdAutor(i == 8 ? outro.getId() : autor.getId());
+            topico.setCriadoEm(LocalDateTime.now().plusSeconds(i));
+            topico.setAtivo(i != 7);
+            topicos.save(topico);
+        }
+        topicos.flush();
+        var pagina = topicos.listarMeus(org.springframework.data.domain.PageRequest.of(0, 5), "", autor.getId());
+        assertEquals(7, pagina.getTotalElements());
+        assertEquals(2, pagina.getTotalPages());
+        assertEquals(5, pagina.getContent().size());
+        assertTrue(pagina.getContent().stream().allMatch(t -> t.idAutor().equals(autor.getId())));
+        var busca = topicos.listarMeus(org.springframework.data.domain.PageRequest.of(1, 5), "Java", autor.getId());
+        assertEquals(6, busca.getTotalElements());
+        assertEquals(1, busca.getContent().size());
+    }
 }

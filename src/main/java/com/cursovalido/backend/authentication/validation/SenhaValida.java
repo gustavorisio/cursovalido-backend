@@ -8,7 +8,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = SenhaValidaValidator.class)
 public @interface SenhaValida {
-    String message() default "A senha deve ter pelo menos 8 caracteres, uma letra maiuscula, um caractere especial e no maximo 72 bytes em UTF-8";
+    String message() default "Informe uma senha valida.";
 
     Class<?>[] groups() default {};
 
