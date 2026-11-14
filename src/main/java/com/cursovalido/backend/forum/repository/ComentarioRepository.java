@@ -17,7 +17,7 @@ public interface ComentarioRepository extends JpaRepository<Comentario, Long> {
     void deleteByTopicoId(Long idTopico);
 
     @Query("SELECT c FROM Comentario c JOIN FETCH c.usuarioAutor "
-            + "WHERE c.topico.id = :idTopico AND c.topico.ativo = true AND c.ativo = true ORDER BY c.criadoEm ASC")
+            + "WHERE c.topico.id = :idTopico AND c.topico.ativo = true ORDER BY c.criadoEm ASC, c.id ASC")
     List<Comentario> listarPorTopicoAtivo(Long idTopico);
 
     @Query("SELECT COUNT(c) FROM Comentario c WHERE c.topico.id = :idTopico AND c.ativo = true")

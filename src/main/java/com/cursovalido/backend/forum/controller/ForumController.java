@@ -138,7 +138,8 @@ public class ForumController {
     }
 
     private ComentarioResponse converter(Comentario comentario) {
-        return new ComentarioResponse(comentario.getId(), comentario.getConteudo(), comentario.getNomeAutor(),
+        return new ComentarioResponse(comentario.getId(),
+                comentario.isAtivo() ? comentario.getConteudo() : "Esta mensagem foi excluída.", comentario.getNomeAutor(),
                 comentario.getPapelAutor(), comentario.getIdAutor(), comentario.getCriadoEm(), comentario.isAtivo());
     }
 
