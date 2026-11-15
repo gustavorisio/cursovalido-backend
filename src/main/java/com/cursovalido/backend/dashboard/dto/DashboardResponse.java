@@ -5,7 +5,8 @@ public final class DashboardResponse {
     }
 
     public record Resumo(long alunosAtivos, long professoresAtivos, long cursosAtivos,
-            long aulasAtivas, long matriculas, long topicosAtivos, long noticiasAtivas) {
+            long aulasAtivas, long matriculas, long topicosAtivos, long noticiasAtivas,
+            Double mediaIdadeAlunos, long alunosComNascimentoInformado) {
     }
 
     public record MatriculasMes(String mes, long matriculas) {

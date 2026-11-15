@@ -151,10 +151,56 @@
             para preservar restricoes aplicadas, pelo prazo necessario a essa finalidade e ao exercicio de direitos.</p>
     </main>
     <script>
+        const caminhos = new Set(["/termos-aceite.html", "/politica-privacidade.html"]);
+        const documentos = new Map([[location.pathname, document.querySelector("main").innerHTML]]);
+        let atual = location.pathname;
+        let carregando = false;
+        const origem = document.referrer ? new URL(document.referrer) : null;
+        const retorno = origem && !caminhos.has(origem.pathname) ? origem.href : "/";
         function voltar() {
-            if (window.history.length > 1) window.history.back();
-            else window.location.href = "/";
+            if (window.parent !== window) return;
+            if (window.opener) window.close();
+            else window.location.replace(retorno);
         }
+        document.addEventListener("click", async event => {
+            const link = event.target.closest("a[href]");
+            if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            const destino = new URL(link.href);
+            if (destino.origin !== location.origin || !caminhos.has(destino.pathname)) return;
+            event.preventDefault();
+            if (carregando || atual === destino.pathname) return;
+            carregando = true;
+            const main = document.querySelector("main");
+            main.setAttribute("aria-busy", "true");
+            try {
+                if (!documentos.has(destino.pathname)) {
+                    const resposta = await fetch(destino.pathname, {credentials: "omit"});
+                    if (!resposta.ok) throw new Error("Documento indisponivel");
+                    const pagina = new DOMParser().parseFromString(await resposta.text(), "text/html");
+                    const conteudo = pagina.querySelector("main");
+                    if (!conteudo) throw new Error("Documento indisponivel");
+                    documentos.set(destino.pathname, conteudo.innerHTML);
+                }
+                main.innerHTML = documentos.get(destino.pathname);
+                atual = destino.pathname;
+                document.title = main.querySelector("h1").textContent;
+                window.scrollTo(0, 0);
+                main.setAttribute("tabindex", "-1");
+                main.focus({preventScroll: true});
+            } catch (erro) {
+                let aviso = document.getElementById("erro-documento");
+                if (!aviso) {
+                    aviso = document.createElement("p");
+                    aviso.id = "erro-documento";
+                    aviso.setAttribute("role", "alert");
+                    main.prepend(aviso);
+                }
+                aviso.textContent = "Nao foi possivel abrir o documento. Tente novamente mais tarde.";
+            } finally {
+                carregando = false;
+                main.removeAttribute("aria-busy");
+            }
+        });
     </script>
 </body>
 

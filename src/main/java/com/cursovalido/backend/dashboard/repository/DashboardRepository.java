@@ -3,6 +3,8 @@ package com.cursovalido.backend.dashboard.repository;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.*;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -14,6 +16,14 @@ public class DashboardRepository {
     private final JdbcTemplate jdbc;
 
     public Resumo resumo() {
+        LocalDate hoje = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
+        var idades = jdbc.query("""
+                SELECT data_nascimento FROM tb_usuarios
+                WHERE ativo AND perfil='ALUNO' AND data_nascimento IS NOT NULL
+                  AND data_nascimento <= ?
+                """, (rs, row) -> Period.between(rs.getDate("data_nascimento").toLocalDate(), hoje).getYears(),
+                java.sql.Date.valueOf(hoje));
+        Double mediaIdade = idades.isEmpty() ? null : idades.stream().mapToInt(Integer::intValue).average().orElseThrow();
         return jdbc.queryForObject(
                 """
                         SELECT
@@ -28,7 +38,7 @@ public class DashboardRepository {
                         """,
                 (rs, row) -> new Resumo(rs.getLong("alunos"), rs.getLong("professores"),
                         rs.getLong("cursos"), rs.getLong("aulas"), rs.getLong("matriculas"),
-                        rs.getLong("topicos"), rs.getLong("noticias")));
+                        rs.getLong("topicos"), rs.getLong("noticias"), mediaIdade, idades.size()));
     }
 
     public List<MatriculasMes> matriculasPorMes(LocalDate inicio, LocalDate fimExclusivo) {
