@@ -21,19 +21,22 @@ class TokenJwtServiceTest {
     private TokenJwtService servico;
     private Usuario usuario;
     private SessaoRepository sessoes;
+    private com.cursovalido.backend.authentication.repository.UsuarioRepository usuarios;
     private Map<String, Sessao> registros;
 
     @BeforeEach
     void configurarCenario() {
         // A chave é definida porque o teste não carrega o Spring.
         sessoes = org.mockito.Mockito.mock(SessaoRepository.class);
-        servico = new TokenJwtService(sessoes);
+        usuarios = org.mockito.Mockito.mock(com.cursovalido.backend.authentication.repository.UsuarioRepository.class);
+        org.mockito.Mockito.when(usuarios.buscarParaAtualizar(org.mockito.ArgumentMatchers.anyLong())).thenAnswer(chamada -> Optional.of(usuario));
+        servico = new TokenJwtService(sessoes, usuarios);
         registros = new HashMap<>();
         org.mockito.Mockito.doAnswer(chamada -> {
             registros.values().forEach(Sessao::revogar);
             return null;
         })
-                .when(sessoes).revogarTodas();
+                .when(sessoes).revogarPorUsuario(org.mockito.ArgumentMatchers.anyLong());
         org.mockito.Mockito.when(sessoes.save(org.mockito.ArgumentMatchers.any())).thenAnswer(chamada -> {
             Sessao sessao = chamada.getArgument(0);
             String id = (String) ReflectionTestUtils.getField(sessao, "id");

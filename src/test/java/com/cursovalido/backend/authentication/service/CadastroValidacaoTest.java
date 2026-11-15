@@ -57,4 +57,14 @@ class CadastroValidacaoTest {
         assertFalse(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "á".repeat(37)).isEmpty());
         assertFalse(VALIDATOR.validateValue(AlteracaoSenhaRequest.class, "novaSenha", "á".repeat(37)).isEmpty());
     }
+
+    @Test
+    void senhaExigeMaiusculaMinusculaEEspecialSemTamanhoMinimo() {
+        assertTrue(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "Aa!").isEmpty());
+        for (String senha : new String[] { "ABC!", "abc!", "Abc", "A! ", "123!" }) {
+            var erros = VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", senha);
+            assertFalse(erros.isEmpty(), senha);
+            assertTrue(erros.stream().anyMatch(erro -> erro.getMessage().contains("72 bytes")));
+        }
+    }
 }
