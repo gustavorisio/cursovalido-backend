@@ -72,6 +72,36 @@ class TokenJwtServiceTest {
     }
 
     @Test
+    void rejeitaTokenComPerfilAlteradoSemNovaAssinatura() {
+        String[] partes = servico.gerar(usuario).split("\\.");
+        var base64 = java.util.Base64.getUrlDecoder();
+        String conteudo = new String(base64.decode(partes[1]), java.nio.charset.StandardCharsets.UTF_8)
+                .replace("ALUNO", "ADMINISTRADOR");
+        partes[1] = java.util.Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(conteudo.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String adulterado = String.join(".", partes);
+
+        assertThrows(io.jsonwebtoken.security.SignatureException.class,
+                () -> servico.extrairEmail(adulterado));
+    }
+
+    @Test
+    void rejeitaTokenAssinadoComOutraChave() {
+        String token = servico.gerar(usuario);
+        ReflectionTestUtils.setField(servico, "chaveTexto", "outra-chave-de-teste-com-mais-de-32-caracteres");
+        servico.prepararChave();
+
+        assertThrows(io.jsonwebtoken.security.SignatureException.class,
+                () -> servico.extrairEmail(token));
+    }
+
+    @Test
+    void impedeInicializarComChaveMenorQue256Bits() {
+        ReflectionTestUtils.setField(servico, "chaveTexto", "chave-curta");
+        assertThrows(io.jsonwebtoken.security.WeakKeyException.class, servico::prepararChave);
+    }
+
+    @Test
     void deveLancarExcecaoQuandoTokenEstiverExpirado() {
         ReflectionTestUtils.setField(servico, "expiracaoMs", -1L);
         String token = servico.gerar(usuario);

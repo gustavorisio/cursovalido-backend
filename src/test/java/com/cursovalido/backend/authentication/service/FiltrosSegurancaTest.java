@@ -41,6 +41,30 @@ class FiltrosSegurancaTest {
     }
 
     @Test
+    void errosDosFiltrosUsamJsonSemDadosDaRequisicao() throws Exception {
+        var cadeia = mock(FilterChain.class);
+        var requisicao = new MockHttpServletRequest("POST", "/api/autenticacao/login");
+        requisicao.setQueryString("segredo=valor-privado");
+        var https = new MockHttpServletResponse();
+        new HttpsFilter(true).doFilter(requisicao, https, cadeia);
+        assertTrue(https.getContentType().startsWith("application/json"));
+        assertEquals("no-store", https.getHeader("Cache-Control"));
+        assertTrue(https.getContentAsString().contains("HTTPS_OBRIGATORIO"));
+        assertFalse(https.getContentAsString().contains("valor-privado"));
+        assertNull(https.getErrorMessage());
+
+        var limite = new LimiteRequisicoesFilter(1);
+        limite.doFilter(requisicao, new MockHttpServletResponse(), cadeia);
+        var bloqueada = new MockHttpServletResponse();
+        limite.doFilter(requisicao, bloqueada, cadeia);
+        assertEquals(429, bloqueada.getStatus());
+        assertEquals("60", bloqueada.getHeader("Retry-After"));
+        assertTrue(bloqueada.getContentAsString().contains("LIMITE_REQUISICOES_ATINGIDO"));
+        assertFalse(bloqueada.getContentAsString().contains("/api/"));
+        assertNull(bloqueada.getErrorMessage());
+    }
+
+    @Test
     void httpsOpcionalPermiteHttp() throws Exception {
         var cadeia = mock(FilterChain.class);
         var requisicao = new MockHttpServletRequest();
