@@ -1,7 +1,6 @@
 package com.cursovalido.backend.authentication.entity;
 
 import jakarta.persistence.*;
-import java.time.Instant;
 import lombok.*;
 
 @Entity
@@ -14,6 +13,4 @@ public class ContaExcluida {
     private Long id;
     @Column(name = "email_hash", nullable = false, length = 64)
     private String emailHash;
-    @Column(name = "bloqueada_ate", nullable = false)
-    private Instant bloqueadaAte;
 }

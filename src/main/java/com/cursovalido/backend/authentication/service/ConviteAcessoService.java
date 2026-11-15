@@ -1,28 +1,27 @@
 package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
+import com.cursovalido.backend.authentication.dto.ConviteDadosResponse;
 import com.cursovalido.backend.authentication.dto.ConviteResumoResponse;
 import com.cursovalido.backend.authentication.entity.ConviteAcesso;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.StatusConvite;
 import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.exception.MenorDeIdadeException;
-import com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException;
-import org.springframework.http.HttpStatus;
-import java.util.Locale;
 import com.cursovalido.backend.authentication.repository.ConviteAcessoRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+import com.cursovalido.backend.authentication.validation.convite.ConviteValidation;
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,9 +35,10 @@ public class ConviteAcessoService {
     private final UsuarioRepository usuarios;
     private final PasswordEncoder codificadorSenha;
     private final PoliticaService politicas;
+    private final ResponsabilidadeService responsabilidade;
     private final EmailService emails;
     private final ValidacaoEmailService validacaoEmail;
-    private final IdentidadeExcluidaService identidades;
+    private final ContaUsuarioService contas;
     private final LogAuditoriaService auditoria;
     private final UsuarioForumService usuariosForum;
     private final PrivilegiosAdministrativosService privilegios;
@@ -50,32 +50,29 @@ public class ConviteAcessoService {
         privilegios.verificarPrincipal(administradorId);
         validacaoEmail.validar(email);
         String endereco = email.trim().toLowerCase(Locale.ROOT);
-        if (perfil == Perfil.ALUNO) {
-            throw new ConviteAcessoInvalidoException(HttpStatus.BAD_REQUEST, "PERFIL_CONVITE_INVALIDO",
-                    "Convites sao permitidos apenas para professores e administradores.");
-        }
-        if (usuarios.existsByEmail(endereco)) {
-            throw new ConviteAcessoInvalidoException(HttpStatus.CONFLICT, "EMAIL_JA_CADASTRADO",
-                    "Este e-mail ainda possui uma conta cadastrada. A exclusao deve ser concluida antes de enviar outro convite.");
-        }
+        ConviteValidation.validarCriacao(endereco, perfil, usuarios);
         String token = gerarToken();
-        ConviteAcesso convite = convites.findByEmail(endereco).orElse(null);
-        if (convite == null) {
-            convite = new ConviteAcesso(endereco, perfil, hash(token), LocalDateTime.now().plusHours(48));
-        } else {
-            convite.prepararNovoConvite(perfil, hash(token), LocalDateTime.now().plusHours(48));
-        }
+        convites.findByEmail(endereco).filter(anterior -> anterior.getStatus() == PENDENTE)
+                .ifPresent(anterior -> anterior.setStatus(StatusConvite.CANCELADO));
+        ConviteAcesso convite = new ConviteAcesso(endereco, perfil, hash(token), LocalDateTime.now().plusHours(48));
+        convite.setCriadoPor(administradorId);
         convites.saveAndFlush(convite);
         emails.enviarConvite(convite, token);
         auditoria.registrar(administradorId, "CONVITE_ACESSO_CRIADO", endereco, null);
     }
 
     @Transactional
+    public ConviteDadosResponse consultar(String token) {
+        ConviteAcesso convite = localizar(token);
+        ConviteValidation.validarPrazo(convite);
+        return new ConviteDadosResponse(convite.getEmail(), convite.getPerfil());
+    }
+
+    @Transactional
     // Confirma o e-mail usado no convite.
     public void confirmarEmail(String token) {
         ConviteAcesso convite = localizar(token);
-        if (expirado(convite))
-            throw new IllegalArgumentException("Convite expirado");
+        ConviteValidation.validarPrazo(convite);
         convite.setEmailConfirmado(true);
         convites.save(convite);
     }
@@ -83,28 +80,18 @@ public class ConviteAcessoService {
     @Transactional
     // Completa o cadastro e deixa o usuario aguardando aprovacao.
     public void completar(String token, CadastroUsuarioRequest cadastro) {
-        validacaoEmail.validar(cadastro.email());
-        identidades.verificarCadastro(cadastro.email());
-        if (Period.between(cadastro.dataNascimento(), LocalDate.now()).getYears() < 18)
-            throw new MenorDeIdadeException();
-        if (!Boolean.TRUE.equals(cadastro.declarouMaiorIdade()))
-            throw new MenorDeIdadeException();
-        ConviteAcesso convite = localizar(token);
-        if (expirado(convite))
-            throw new IllegalArgumentException("Convite expirado");
-        if (!convite.isEmailConfirmado())
-            throw new IllegalArgumentException("E-mail ainda nao confirmado");
-        if (!convite.getEmail().equalsIgnoreCase(cadastro.email())) {
-            throw new IllegalArgumentException("E-mail diferente do convite");
-        }
-        if (!politicas.versaoAtiva(cadastro.versaoTermos()))
-            throw new IllegalArgumentException("Versao dos termos invalida");
-        if (!Boolean.TRUE.equals(cadastro.aceitouTermosLgpd()))
-            throw new IllegalArgumentException("Termos nao aceitos");
-        if (usuarios.existsByEmail(convite.getEmail())) {
-            throw new IllegalArgumentException("Dados ja utilizados");
-        }
+        completar(token, cadastro, null);
+    }
 
+    @Transactional
+    public void completar(String token, CadastroUsuarioRequest cadastro, String enderecoIp) {
+        validacaoEmail.validar(cadastro.email());
+        ConviteValidation.validarIdade(cadastro);
+        ConviteAcesso convite = localizar(token);
+        ConviteValidation.validarCadastro(convite, cadastro, politicas, usuarios);
+
+        responsabilidade.validar(convite.getPerfil(), cadastro.aceitouResponsabilidade(),
+                cadastro.versaoResponsabilidade(), enderecoIp);
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(cadastro.nomeCompleto());
         usuario.setEmail(convite.getEmail());
@@ -120,6 +107,8 @@ public class ConviteAcessoService {
         usuario.setAtivo(false);
         usuario.setStatusAprovacao(StatusAprovacao.PENDENTE_APROVACAO);
         usuarios.save(usuario);
+        responsabilidade.registrar(usuario, cadastro.aceitouResponsabilidade(),
+                cadastro.versaoResponsabilidade(), enderecoIp);
         convite.setStatus(StatusConvite.CONCLUIDO);
         convites.save(convite);
         auditoria.registrar(usuario.getId(), "CADASTRO_PENDENTE_APROVACAO", convite.getPerfil().name(), null);
@@ -158,7 +147,7 @@ public class ConviteAcessoService {
         privilegios.verificarPrincipal(administradorId);
         Usuario usuario = usuarioPendente(idUsuario);
         auditoria.registrar(administradorId, "ACESSO_REJEITADO", "Usuario " + idUsuario, null);
-        usuarios.delete(usuario);
+        contas.excluirPendencia(usuario.getId());
     }
 
     @Transactional
@@ -166,7 +155,7 @@ public class ConviteAcessoService {
     public void remover(Long idUsuario, Long administradorId) {
         privilegios.verificarPrincipal(administradorId);
         Usuario usuario = usuarioPendente(idUsuario);
-        usuarios.deleteById(usuario.getId());
+        contas.excluirPendencia(usuario.getId());
         auditoria.registrar(administradorId, "PENDENCIA_REMOVIDA", "Usuario " + idUsuario, null);
     }
 
@@ -176,8 +165,7 @@ public class ConviteAcessoService {
         privilegios.verificarPrincipal(administradorId);
         ConviteAcesso convite = convites.findById(idConvite)
                 .orElseThrow(() -> new IllegalArgumentException("Convite nao encontrado"));
-        if (!PENDENTE.equals(convite.getStatus()))
-            throw new IllegalArgumentException("Convite indisponivel");
+        ConviteValidation.validarPendente(convite);
         String token = gerarToken();
         convite.renovar(hash(token), LocalDateTime.now().plusHours(48));
         convites.save(convite);
@@ -191,29 +179,23 @@ public class ConviteAcessoService {
         privilegios.verificarPrincipal(administradorId);
         ConviteAcesso convite = convites.findById(idConvite)
                 .orElseThrow(() -> new IllegalArgumentException("Convite nao encontrado"));
-        convites.delete(convite);
+        convite.setStatus(StatusConvite.CANCELADO);
+        convites.save(convite);
         auditoria.registrar(administradorId, "CONVITE_REMOVIDO", convite.getEmail(), null);
     }
 
     private Usuario usuarioPendente(Long id) {
         Usuario usuario = usuarios.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Pendencia nao encontrada"));
-        if (usuario.getStatusAprovacao() != StatusAprovacao.PENDENTE_APROVACAO) {
-            throw new IllegalArgumentException("Pendencia indisponivel");
-        }
+        ConviteValidation.validarUsuarioPendente(usuario);
         return usuario;
     }
 
     private ConviteAcesso localizar(String token) {
         ConviteAcesso convite = convites.findByTokenHash(hash(token))
                 .orElseThrow(() -> new IllegalArgumentException("Convite invalido"));
-        if (!PENDENTE.equals(convite.getStatus()))
-            throw new IllegalArgumentException("Convite indisponivel");
+        ConviteValidation.validarPendente(convite);
         return convite;
-    }
-
-    private boolean expirado(ConviteAcesso convite) {
-        return convite.getExpiraEm().isBefore(LocalDateTime.now());
     }
 
     private String gerarToken() {

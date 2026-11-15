@@ -2,9 +2,8 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.entity.TokenEmail;
 import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoException;
-import com.cursovalido.backend.authentication.exception.LimiteReenvioException;
 import com.cursovalido.backend.authentication.repository.TokenEmailRepository;
+import com.cursovalido.backend.authentication.validation.token.TokenEmailValidation;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -68,11 +67,7 @@ public class TokenEmailService {
                 hash(email.toLowerCase(Locale.ROOT) + ":" + codigo), CODIGO_2FA)
                 .filter(token -> token.getUsuario().getEmail().equalsIgnoreCase(email))
                 .orElseThrow(() -> new IllegalArgumentException("Codigo invalido ou expirado"));
-        if (registro.isUtilizado())
-            throw new IllegalArgumentException("Codigo ja utilizado");
-        if (registro.getExpiraEm().isBefore(LocalDateTime.now())) {
-            throw new Codigo2faExpiradoException();
-        }
+        TokenEmailValidation.validarCodigo2fa(registro);
         registro.setUtilizado(true);
         repositorio.save(registro);
         return registro.getUsuario();
@@ -118,9 +113,7 @@ public class TokenEmailService {
     }
 
     private void verificarLimite(Usuario usuario, String finalidade) {
-        if (repositorio.countByUsuarioIdAndFinalidadeAndCriadoEmAfter(
-                usuario.getId(), finalidade, LocalDateTime.now().minusMinutes(15)) >= 3)
-            throw new LimiteReenvioException();
+        TokenEmailValidation.verificarLimite(usuario, finalidade, repositorio);
     }
 
     @Transactional
@@ -134,10 +127,7 @@ public class TokenEmailService {
     public TokenEmail validar(String token, String finalidade) {
         TokenEmail registro = repositorio.findByTokenHashAndFinalidade(hash(token), finalidade)
                 .orElseThrow(() -> new IllegalArgumentException("Token invalido"));
-        if (registro.isUtilizado())
-            throw new IllegalArgumentException("Token ja utilizado");
-        if (registro.getExpiraEm().isBefore(LocalDateTime.now()))
-            throw new IllegalArgumentException("Token expirado");
+        TokenEmailValidation.validarToken(registro);
         registro.setUtilizado(true);
         return repositorio.save(registro);
     }

@@ -1,4 +1,8 @@
-package com.cursovalido.backend.authentication.service;
+package com.cursovalido.backend.authentication.validation.email;
+
+import com.cursovalido.backend.authentication.validation.email.DominioEmailService;
+
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;

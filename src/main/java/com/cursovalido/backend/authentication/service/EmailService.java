@@ -76,7 +76,7 @@ public class EmailService {
                 "Seu codigo para excluir a conta e: " + codigo
                         + "\nO codigo expira em 10 minutos e so pode ser usado uma vez."
                         + "\nAo confirmar, sua conta sera excluida. Um novo cadastro com o mesmo e-mail"
-                        + " ficara bloqueado por 15 dias. As punicoes permanecem ate expirar ou serem revogadas.");
+                        + " estara disponivel imediatamente. As punicoes permanecem ate expirar ou serem revogadas.");
     }
 
     private void enviar(String destinatario, String assunto, String conteudo) {

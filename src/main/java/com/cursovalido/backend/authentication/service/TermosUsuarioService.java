@@ -2,10 +2,10 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.entity.AceiteTermoArquivado;
 import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
 import com.cursovalido.backend.authentication.repository.AceiteTermoArquivadoRepository;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.validation.termos.TermosValidation;
 import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +20,7 @@ public class TermosUsuarioService {
     private final AceiteTermoArquivadoRepository aceitesArquivados;
     private final UsuarioForumService usuariosForum;
     private final PoliticaService politicas;
+    private final ResponsabilidadeService responsabilidade;
     private final LogAuditoriaService auditoria;
     private final SessaoRepository sessoes;
     private final TokenEmailService tokensEmail;
@@ -42,9 +43,15 @@ public class TermosUsuarioService {
     @Transactional
     // Registra o aceite de uma nova versao dos termos.
     public void aceitarTermosNovamente(Long idUsuario, String versaoTermos) {
-        if (!politicas.versaoAtiva(versaoTermos))
-            throw new TermosNaoDisponiveisException();
+        aceitarTermosNovamente(idUsuario, versaoTermos, null, null, null);
+    }
+
+    @Transactional
+    public void aceitarTermosNovamente(Long idUsuario, String versaoTermos, Boolean aceitouResponsabilidade,
+            String versaoResponsabilidade, String enderecoIp) {
+        TermosValidation.validarVersao(versaoTermos, politicas);
         Usuario usuario = buscarUsuario(idUsuario);
+        responsabilidade.registrar(usuario, aceitouResponsabilidade, versaoResponsabilidade, enderecoIp);
         if (possuiAceiteRegistrado(usuario)) {
             aceitesArquivados.save(new AceiteTermoArquivado(idUsuario, usuario.getVersaoTermos(),
                     usuario.getDataHoraAceite(), "NOVA_VERSAO_DOCUMENTOS"));

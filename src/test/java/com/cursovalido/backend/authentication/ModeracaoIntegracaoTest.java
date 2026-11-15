@@ -1,5 +1,7 @@
 package com.cursovalido.backend.authentication;
 
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -77,14 +79,8 @@ class ModeracaoIntegracaoTest {
                 String codigo = tokensEmail.criarExclusao(antigo);
                 contas.excluirConta(antigo.getId(), codigo);
                 usuarios.flush();
-                assertThat(usuarios.findById(antigo.getId())).isEmpty();
-                assertThatThrownBy(() -> identidades.verificarCadastro("EXCLUSAO@example.com"))
-                                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
-                identidades.verificarCadastro("outro@example.com");
-                var registro = contasExcluidas.findById(antigo.getId()).orElseThrow();
-                registro.setBloqueadaAte(Instant.now().minusSeconds(1));
-                contasExcluidas.saveAndFlush(registro);
-                identidades.verificarCadastro("exclusao@example.com");
+                assertThat(usuarios.findById(antigo.getId()).orElseThrow().getExcluidoEm()).isNotNull();
+                assertThat(usuarios.existsByEmail("exclusao@example.com")).isFalse();
                 var novo = criar("exclusao@example.com", Perfil.ALUNO);
                 usuarios.saveAndFlush(novo);
                 assertThat(moderacao.restrito(novo.getId(), EscopoSuspensao.CONTA)).isTrue();
@@ -103,7 +99,7 @@ class ModeracaoIntegracaoTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"codigo\":\"" + captor.getValue() + "\"}"))
                                 .andExpect(status().isNoContent());
-                assertThat(usuarios.findById(aluno.getId())).isEmpty();
+                assertThat(usuarios.findById(aluno.getId()).orElseThrow().getExcluidoEm()).isNotNull();
         }
 
         @Test
@@ -154,7 +150,7 @@ class ModeracaoIntegracaoTest {
 
         @BeforeEach
         void preparar() {
-                principal = criar("cursovalido@gmail.com", Perfil.ADMINISTRADOR);
+                principal = criar("principal@example.com", Perfil.ADMINISTRADOR);
                 var registro = inicializacao.findById(1L).orElseThrow();
                 registro.concluir(principal.getId());
                 inicializacao.saveAndFlush(registro);
@@ -245,7 +241,7 @@ class ModeracaoIntegracaoTest {
                 String cadastro = """
                                 {"token":"%s","cadastro":{"nomeCompleto":"Professor Convidado","email":"convite@example.com",
                                 "senha":"SenhaTeste123!","dataNascimento":"1990-01-01",
-                                "declarouMaiorIdade":true,"aceitouTermosLgpd":true,"versaoTermos":"convite-v1"}}
+                                "declarouMaiorIdade":true,"aceitouTermosLgpd":true,"versaoTermos":"convite-v1","aceitouResponsabilidade":true,"versaoResponsabilidade":"1.0"}}
                                 """
                                 .formatted(token.get());
                 mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON)
@@ -384,7 +380,7 @@ class ModeracaoIntegracaoTest {
                                 .isEqualTo("Texto definido pelo administrador");
                 mvc.perform(get("/termos-aceite.html"))
                                 .andExpect(status().isOk())
-                                .andExpect(header().string("Cache-Control", "no-store"))
+                                .andExpect(header().string("Cache-Control", "public, max-age=60"))
                                 .andExpect(content().string(org.hamcrest.Matchers
                                                 .containsString("Texto definido pelo administrador")));
                 mvc.perform(get("/api/administracao/permissoes").header("Authorization", "Bearer " + token))
@@ -475,8 +471,8 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isOk());
                 String login = "{\"email\":\"aluno@example.com\",\"senha\":\"SenhaTeste123!\"}";
                 mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON).content(login))
-                                .andExpect(status().isForbidden())
-                                .andExpect(jsonPath("$.codigo").value("TERMOS_NAO_ACEITOS"));
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.requerCodigo2fa").value(true));
                 mvc.perform(post("/api/autenticacao/aceitar-termos-novamente")
                                 .header("Authorization", "Bearer " + tokens.gerarTermos(aluno))
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -519,9 +515,12 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isOk());
                 mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"email\":\"aluno@example.com\",\"senha\":\"SenhaTeste123!\"}"))
-                                .andExpect(status().isForbidden())
-                                .andExpect(jsonPath("$.codigo").value("TERMOS_NAO_ACEITOS"));
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.requerCodigo2fa").value(true));
         }
+
+        @Autowired
+        private ResponsabilidadeService responsabilidade;
 
         private Usuario criar(String email, Perfil perfil) {
                 Usuario usuario = new Usuario();
@@ -534,6 +533,7 @@ class ModeracaoIntegracaoTest {
                 usuario.setDeclarouMaiorIdade(true);
                 usuario.setAceitouTermosLgpd(true);
                 usuarios.saveAndFlush(usuario);
+                if (perfil != Perfil.ALUNO) responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
                 return usuario;
         }
 

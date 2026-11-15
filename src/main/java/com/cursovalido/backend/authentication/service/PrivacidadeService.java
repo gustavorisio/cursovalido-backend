@@ -4,6 +4,8 @@ import com.cursovalido.backend.authentication.dto.PoliticaRequest;
 import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.entity.PoliticaPrivacidade;
 import com.cursovalido.backend.authentication.repository.PrivacidadeRepository;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+import com.cursovalido.backend.authentication.validation.privacidade.PrivacidadeValidation;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,8 +37,8 @@ public class PrivacidadeService {
     @Transactional
     public PoliticaResponse publicar(PoliticaRequest dados, Long administradorId) {
         privilegios.verificarPrincipal(administradorId);
-        if (repositorio.findByVersao(dados.versao().trim()).isPresent())
-            throw new IllegalArgumentException("A versao informada ja existe");
+        PrivacidadeValidation.validarPublicacao(dados, repositorio);
+
         repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().forEach(politica -> {
             politica.setAtiva(false);
             repositorio.save(politica);

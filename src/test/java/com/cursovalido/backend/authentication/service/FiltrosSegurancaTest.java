@@ -1,5 +1,7 @@
 package com.cursovalido.backend.authentication.service;
 
+import com.cursovalido.backend.authentication.validation.login.ProtecaoForcaBrutaService;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -17,6 +19,8 @@ class FiltrosSegurancaTest {
     @ParameterizedTest
     @CsvSource({
             "POST, /api/autenticacao/login, 429",
+            "GET, /termos-aceite.html, 429",
+            "GET, /politica-privacidade.html, 429",
             "DELETE, /api/autenticacao/conta, 429",
             "POST, /api/convites/confirmar-email, 429",
             "DELETE, /api/convites/1, 429",

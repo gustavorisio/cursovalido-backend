@@ -1,6 +1,7 @@
 package com.cursovalido.backend.authentication.controller;
 
 import com.cursovalido.backend.authentication.dto.ConviteCadastroRequest;
+import com.cursovalido.backend.authentication.dto.ConviteDadosResponse;
 import com.cursovalido.backend.authentication.dto.TokenEmailRequest;
 import com.cursovalido.backend.authentication.service.ConviteAcessoService;
 import jakarta.validation.Valid;
@@ -14,6 +15,12 @@ import org.springframework.web.bind.annotation.*;
 public class ConviteController {
     private final ConviteAcessoService convites;
 
+    @PostMapping("/consultar")
+    public ConviteDadosResponse consultar(
+            @Valid @RequestBody TokenEmailRequest requisicao) {
+        return convites.consultar(requisicao.token());
+    }
+
     @PostMapping("/confirmar-email")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void confirmarEmail(@Valid @RequestBody TokenEmailRequest requisicao) {
@@ -22,7 +29,8 @@ public class ConviteController {
 
     @PostMapping("/completar-cadastro")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void completar(@Valid @RequestBody ConviteCadastroRequest requisicao) {
-        convites.completar(requisicao.token(), requisicao.cadastro());
+    public void completar(@Valid @RequestBody ConviteCadastroRequest requisicao,
+            jakarta.servlet.http.HttpServletRequest request) {
+        convites.completar(requisicao.token(), requisicao.cadastro(), request.getRemoteAddr());
     }
 }

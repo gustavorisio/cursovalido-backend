@@ -46,6 +46,13 @@ class AdministradorInicialHttpTest {
                                 .body(Map.of("email", "primeiro-admin@example.com", "senha", "SenhaAdminTeste123!"))
                                 .retrieve().toEntity(Map.class);
 
+                assertEquals(200, resposta.getStatusCode().value());
+                assertNull(resposta.getBody().get("token"));
+                var codigo = org.mockito.ArgumentCaptor.forClass(String.class);
+                org.mockito.Mockito.verify(emails).enviarCodigo2fa(org.mockito.ArgumentMatchers.any(), codigo.capture());
+                resposta = cliente.post().uri("/api/autenticacao/confirmar-2fa")
+                                .body(Map.of("email", "primeiro-admin@example.com", "codigo", codigo.getValue()))
+                                .retrieve().toEntity(Map.class);
                 assertEquals(403, resposta.getStatusCode().value());
                 assertEquals("TERMOS_NAO_ACEITOS", resposta.getBody().get("codigo"));
                 assertNotNull(resposta.getBody().get("token"));

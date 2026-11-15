@@ -1,5 +1,7 @@
 package com.cursovalido.backend.authentication.service;
 
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -98,11 +100,12 @@ class CadastroUsuarioServiceTest {
         verify(repositorio, never()).existsByEmail(any(String.class));
     }
 
-    @Test
-    void deveCadastrarUsuarioNaDataExataEmQueCompletaDezoitoAnos() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {18, 90})
+    void aceitaIdadesNosLimites(int idade) {
         // A idade mínima também precisa ser aceita no limite da regra.
         CadastroUsuarioRequest requisicao = requisicaoComNascimento(
-                LocalDate.now().minusYears(18));
+                LocalDate.now().minusYears(idade));
         Usuario salvo = new Usuario();
         when(politicas.versaoAtiva("1.0")).thenReturn(true);
         when(repositorio.existsByEmail(requisicao.email())).thenReturn(false);
@@ -140,5 +143,13 @@ class CadastroUsuarioServiceTest {
                 true,
                 true,
                 "1.0");
+    }
+
+    @Test
+    void rejeitaIdadeAcimaDeNoventaAnos() {
+        when(politicas.versaoAtiva("1.0")).thenReturn(true);
+        assertThrows(IllegalArgumentException.class,
+                () -> servico.cadastrar(requisicaoComNascimento(LocalDate.now().minusYears(91)), "127.0.0.1"));
+        verify(repositorio, never()).save(any(Usuario.class));
     }
 }

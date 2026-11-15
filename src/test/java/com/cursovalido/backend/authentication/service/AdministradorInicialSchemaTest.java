@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.flywaydb.core.Flyway;
+import com.cursovalido.backend.forum.configuration.FlywayConfig;
 import org.junit.jupiter.api.Test;
 
 @org.junit.jupiter.api.extension.ExtendWith(com.cursovalido.backend.forum.support.PostgresTeste.CicloDeVida.class)
@@ -17,7 +18,7 @@ class AdministradorInicialSchemaTest {
         String url = (String) propriedades.get("spring.datasource.url");
         String usuario = (String) propriedades.get("spring.datasource.username");
         String senha = (String) propriedades.get("spring.datasource.password");
-        Flyway.configure().dataSource(url, usuario, senha).load().migrate();
+        FlywayConfig.configuracao().dataSource(url, usuario, senha).load().migrate();
         try (var conexao = DriverManager.getConnection(url, usuario, senha)) {
             try (var inserir = conexao.prepareStatement("""
                     INSERT INTO tb_usuarios (nome_completo, email, senha, matricula, perfil,

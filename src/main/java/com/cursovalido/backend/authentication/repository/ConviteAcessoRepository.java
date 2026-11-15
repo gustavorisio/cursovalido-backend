@@ -12,7 +12,11 @@ public interface ConviteAcessoRepository extends JpaRepository<ConviteAcesso, Lo
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<ConviteAcesso> findByTokenHash(String tokenHash);
 
-    Optional<ConviteAcesso> findByEmail(String email);
+    Optional<ConviteAcesso> findFirstByEmailOrderByIdDesc(String email);
+
+    default Optional<ConviteAcesso> findByEmail(String email) {
+        return findFirstByEmailOrderByIdDesc(email);
+    }
 
     void deleteByEmail(String email);
 

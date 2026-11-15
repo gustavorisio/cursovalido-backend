@@ -1,7 +1,7 @@
 package com.cursovalido.backend.authentication;
 
 import com.cursovalido.backend.authentication.configuration.AutenticacaoExceptionHandler;
-import com.cursovalido.backend.authentication.validation.SenhaValidaValidator;
+import com.cursovalido.backend.authentication.validation.senha.SenhaValidaValidator;
 import com.cursovalido.backend.aulas.controller.CursoController;
 import com.cursovalido.backend.aulas.service.CursoService;
 import com.cursovalido.backend.forum.controller.ForumController;
@@ -21,19 +21,19 @@ class ValidacaoModulosHttpTest {
     @Test
     void senhaExigeMaiusculaEspecialEComprimentoSemContarEspacoComoEspecial() {
         var regra = new SenhaValidaValidator();
-        for (String senha : new String[] { "Abcdef!", "abcdefgh!", "Abcdefgh", "Abcdefg ", "A!" + "á".repeat(36) })
+        for (String senha : new String[] { "abcdefgh!", "ABCDEFG!", "Abcdefgh", "Abcdefg ", "A!" + "á".repeat(36) })
             assertFalse(regra.isValid(senha, null), senha);
-        assertTrue(regra.isValid("Abcdefg!", null));
+        assertTrue(regra.isValid("Aa!", null));
         assertTrue(regra.isValid("A!" + "a".repeat(70), null));
     }
 
     @Test
-    void tituloAceita14ERejeita15Caracteres() {
+    void tituloAceita40ERejeita41Caracteres() {
         try (var factory = Validation.buildDefaultValidatorFactory()) {
             var validator = factory.getValidator();
-            assertTrue(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(14), "Texto"))
+            assertTrue(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(40), "Texto"))
                     .isEmpty());
-            assertFalse(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(15), "Texto"))
+            assertFalse(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(41), "Texto"))
                     .isEmpty());
         }
     }
@@ -62,9 +62,9 @@ class ValidacaoModulosHttpTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.campos.page").exists());
         mvc.perform(post("/api/forum/topicos").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"titulo\":\"123456789012345\",\"descricao\":\"Texto\"}"))
+                .content("{\"titulo\":\"11111111111111111111111111111111111111111\",\"descricao\":\"Texto\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.campos.titulo").value("O titulo deve ter no maximo 14 caracteres"));
+                .andExpect(jsonPath("$.campos.titulo").value("O titulo deve ter no maximo 40 caracteres"));
         verifyNoInteractions(forum, cursos, noticias);
     }
 
