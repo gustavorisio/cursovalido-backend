@@ -202,7 +202,8 @@ CREATE INDEX idx_progresso_aula ON tb_progresso_aulas(aula_id);
 
 CREATE TABLE tb_contas_excluidas (
     id BIGINT PRIMARY KEY,
-    email_hash VARCHAR(64) NOT NULL
+    email_hash VARCHAR(64) NOT NULL,
+    bloqueada_ate TIMESTAMP WITH TIME ZONE
 );
 CREATE INDEX idx_contas_excluidas_email ON tb_contas_excluidas(email_hash);
 
