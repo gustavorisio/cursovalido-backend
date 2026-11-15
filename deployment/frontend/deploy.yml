@@ -55,15 +55,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$VPS_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          fail() { echo "::error::$1"; exit 1; }
+          [[ "$VPS_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail 'VPS_HOST deve conter somente o IPv4 da VPS, sem usuario, espacos ou protocolo.'
           port="${VPS_PORT:-22}"
-          [[ "$port" =~ ^[0-9]+$ ]]
+          [[ "$port" =~ ^[0-9]{1,5}$ ]] || fail 'VPS_PORT deve ser uma porta numerica.'
+          (( 10#$port >= 1 && 10#$port <= 65535 )) || fail 'VPS_PORT deve estar entre 1 e 65535.'
+          [[ -n "$SSH_KEY" ]] || fail 'Secret VPS_SSH_KEY ausente ou vazio no ambiente production.'
+          [[ -n "$KNOWN_HOSTS" ]] || fail 'Secret VPS_KNOWN_HOSTS ausente ou vazio no ambiente production.'
           keydir=$(mktemp -d)
           trap 'rm -rf -- "$keydir"' EXIT
-          printf '%s\n' "$SSH_KEY" > "$keydir/key"
-          printf '%s\n' "$KNOWN_HOSTS" > "$keydir/known_hosts"
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > "$keydir/key"
+          printf '%s\n' "$KNOWN_HOSTS" | tr -d '\r' > "$keydir/known_hosts"
           chmod 600 "$keydir/key" "$keydir/known_hosts"
           unset SSH_KEY KNOWN_HOSTS
+          ssh-keygen -y -P '' -f "$keydir/key" > /dev/null || fail 'VPS_SSH_KEY deve conter a chave privada completa e sem senha, com quebras de linha reais.'
+          echo 'Configuracao local validada. Conectando por SSH para publicar frontend.'
           ssh -T -p "$port" -i "$keydir/key" \
             -o BatchMode=yes -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
