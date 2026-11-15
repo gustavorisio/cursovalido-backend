@@ -109,6 +109,7 @@ public class SecurityConfig {
                                                                 "/api/administracao/usuarios/*/suspensoes")
                                                 .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/administracao/convites/*",
+                                                                "/api/administracao/usuarios/*",
                                                                 "/api/administracao/convites/*/cancelar",
                                                                 "/api/administracao/usuarios/*/suspensoes/*")
                                                 .hasRole("ADMINISTRADOR")
