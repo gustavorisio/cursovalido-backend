@@ -28,6 +28,8 @@ if systemctl restart cursovalido && healthy; then
     sha256sum /opt/cursovalido/app.jar > /opt/cursovalido/deployed-sha256
     echo 'Backend publicado e verificado.'
 else
+    echo 'Falha ao reiniciar o backend ou obter HTTP 200 em 127.0.0.1:8080/api/politicas/ativas. Restaurando JAR anterior.' >&2
+    echo 'Consulte na VPS: journalctl -u cursovalido -b -n 100 --no-pager' >&2
     install -m 644 "$backup" /opt/cursovalido/app.jar.rollback
     mv -f /opt/cursovalido/app.jar.rollback /opt/cursovalido/app.jar
     systemctl restart cursovalido
