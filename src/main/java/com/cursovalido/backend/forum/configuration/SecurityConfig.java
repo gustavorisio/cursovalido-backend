@@ -156,6 +156,20 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT, "/api/professor/cursos/*/diagnostico", "/api/professor/cursos/*/modulos/*/questionario").hasRole("PROFESSOR")
                                                 .requestMatchers(HttpMethod.GET, "/api/administracao/cursos/*/diagnostico", "/api/administracao/cursos/*/modulos/*/questionario").hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/administracao/cursos/*/diagnostico", "/api/administracao/cursos/*/modulos/*/questionario").hasRole("ADMINISTRADOR")
+                                                // Comunicados: gestao administrativa e leitura individual do aluno.
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/comunicados/*")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/administracao/comunicados/*")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/administracao/comunicados")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.POST, "/api/administracao/comunicados")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/aluno/notificacoes",
+                                                                "/api/aluno/notificacoes/nao-lidas")
+                                                .hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.PUT, "/api/aluno/notificacoes/*/lida")
+                                                .hasRole("ALUNO")
                                                 // Catalogo, matriculas e progresso pessoais do aluno.
                                                 .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas")
                                                 .hasRole("ALUNO")
