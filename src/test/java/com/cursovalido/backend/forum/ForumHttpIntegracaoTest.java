@@ -502,17 +502,17 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
-    void tituloTopico_deveAceitar40ERecusar41NaCriacaoEEdicao() {
-        var topico = criarTopico("t".repeat(40));
+    void tituloTopico_deveAceitar80ERecusar81NaCriacaoEEdicao() {
+        var topico = criarTopico("t".repeat(80));
         verificarErro(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
-                new TopicoRequest("t".repeat(41), "Descricao"), ErroHttp.class), 400);
+                new TopicoRequest("t".repeat(81), "Descricao"), ErroHttp.class), 400);
         var atualizado = enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
-                new TopicoRequest("e".repeat(40), "Descricao"), TopicoResponse.class);
+                new TopicoRequest("e".repeat(80), "Descricao"), TopicoResponse.class);
         assertThat(atualizado.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(atualizado.getBody().titulo()).isEqualTo("e".repeat(40));
+        assertThat(atualizado.getBody().titulo()).isEqualTo("e".repeat(80));
         verificarErro(enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
-                new TopicoRequest("e".repeat(41), "Descricao"), ErroHttp.class), 400);
-        assertThat(topicos.findById(topico.id()).orElseThrow().getTitulo()).isEqualTo("e".repeat(40));
+                new TopicoRequest("e".repeat(81), "Descricao"), ErroHttp.class), 400);
+        assertThat(topicos.findById(topico.id()).orElseThrow().getTitulo()).isEqualTo("e".repeat(80));
     }
 
     @Test
