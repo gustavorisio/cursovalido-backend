@@ -17,14 +17,15 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 class YoutubeClientTest {
     private MockRestServiceServer servidor;
     private YoutubeClient cliente;
+    private static final String CANAL = "UCabcdefghijklmnopqrstuv";
     private static final String ID = "M7lc1UVf-VE";
-    private static final String URL = "https://www.googleapis.com/youtube/v3/videos?part=status&id=" + ID;
+    private static final String URL = "https://www.googleapis.com/youtube/v3/videos?part=status,snippet&id=" + ID;
 
     @BeforeEach
     void preparar() {
         var builder = RestClient.builder().baseUrl("https://www.googleapis.com/youtube/v3");
         servidor = MockRestServiceServer.bindTo(builder).build();
-        cliente = new YoutubeClient(builder.build(), "chave-ficticia");
+        cliente = new YoutubeClient(builder.build(), "chave-ficticia", CANAL);
     }
 
     @ParameterizedTest
@@ -89,8 +90,35 @@ class YoutubeClientTest {
 
     @Test
     void chaveAusenteNaoFazRequisicao() {
-        cliente = new YoutubeClient(RestClient.create(), "");
+        cliente = new YoutubeClient(RestClient.create(), "", CANAL);
         esperarErro(503);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "", " ", "@meucanal", "https://youtube.com/c/meucanal", "UCcurto" })
+    void canalAusenteOuInvalidoNaoFazRequisicao(String canal) {
+        cliente = new YoutubeClient(RestClient.create(), "chave-ficticia", canal);
+        esperarErro(503);
+    }
+
+    @Test
+    void rejeitarVideoDeOutroCanal() {
+        servidor.expect(requestTo(URL)).andRespond(withSuccess(
+                video(true, "public", "processed").replace(CANAL, "UCzyxwvutsrqponmlkjihgfe"), MediaType.APPLICATION_JSON));
+        assertThatThrownBy(() -> cliente.validarVideo(ID)).isInstanceOfSatisfying(ResponseStatusException.class, erro -> {
+            assertThat(erro.getStatusCode().value()).isEqualTo(400);
+            assertThat(erro.getReason()).contains("canal autorizado");
+        });
+        servidor.verify();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "null", "{}", "{\"channelId\":null}", "{\"channelId\":\"\"}", "{\"channelId\":\" \"}" })
+    void canalAusenteNaRespostaNaoAutorizaVideo(String snippet) {
+        String corpo = "{\"items\":[{\"id\":\"" + ID + "\",\"snippet\":" + snippet
+                + ",\"status\":{\"embeddable\":true,\"privacyStatus\":\"public\",\"uploadStatus\":\"processed\"}}]}";
+        servidor.expect(requestTo(URL)).andRespond(withSuccess(corpo, MediaType.APPLICATION_JSON));
+        esperarErro(502);
     }
 
     private void esperarErro(int status) {
@@ -105,7 +133,7 @@ class YoutubeClientTest {
 
     private String video(boolean incorporavel, String privacidade, String processamento) {
         return """
-                {"etag":"ignorar","items":[{"id":"M7lc1UVf-VE","snippet":{"title":"Extra"},
+                {"etag":"ignorar","items":[{"id":"M7lc1UVf-VE","snippet":{"title":"Extra","channelId":"UCabcdefghijklmnopqrstuv"},
                 "status":{"embeddable":%s,"privacyStatus":"%s","uploadStatus":"%s"}}]}
                 """.formatted(incorporavel, privacidade, processamento);
     }

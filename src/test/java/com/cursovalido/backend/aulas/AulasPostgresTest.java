@@ -18,6 +18,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.test.util.ReflectionTestUtils;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import com.cursovalido.backend.forum.configuration.FlywayConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -67,9 +68,11 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     private AulaService aulas;
     @Autowired
     private ProgressoAulaService progressos;
+    @Autowired
+    private com.cursovalido.backend.authentication.service.ResponsabilidadeService responsabilidade;
 
     @Test
-    void excluirContaDoAlunoRemoveMatriculaEPreservaCurso() {
+    void excluirContaDoAlunoPreservaMatriculaEHistoricoDoCurso() {
         var professor = usuarios.findByEmail("professor@aulas.example.com").orElseThrow();
         var curso = cursos.criar(new CursoRequest("Java", "Curso gratuito"), professor.getId());
         var aluno = criarProfessor("aluno-matriculado");
@@ -84,12 +87,12 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         usuarios.flush();
         assertThat(
                 jdbc.queryForObject("select count(*) from tb_matriculas where aluno_id = ?", Long.class, aluno.getId()))
-                .isZero();
+                .isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from tb_cursos where id = ?", Long.class, curso.getId()))
                 .isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from tb_progresso_aulas where aula_id = ?", Long.class,
                 aula.getId()))
-                .isZero();
+                .isEqualTo(1);
     }
 
     @Test
@@ -107,16 +110,27 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     }
 
     @Test
-    void excluirContaPreservaCursoSemResponsavel() {
+    void excluirContaPreservaReferenciaHistoricaDoProfessor() {
         var professor = usuarios.findByEmail("professor@aulas.example.com").orElseThrow();
         var curso = cursos.criar(new CursoRequest("Java", "Curso preservado"), professor.getId());
+        responsabilidade.registrar(professor, true, "1.0", "127.0.0.1");
+        jdbc.update("insert into tb_forum_users (id, name, email, role, active) values (?, ?, ?, 'PROFESSOR', true)",
+                professor.getId(), professor.getNomeCompleto(), professor.getEmail());
+        Long topico = jdbc.queryForObject("insert into tb_topics (title, description, author_id, created_at) values ('Historico', 'Texto', ?, CURRENT_TIMESTAMP) returning id",
+                Long.class, professor.getId());
         contas.excluirConta(professor.getId(), tokensEmail.criarExclusao(professor));
         usuarios.flush();
-        assertThat(usuarios.findById(professor.getId())).isEmpty();
+        assertThat(usuarios.findById(professor.getId()).orElseThrow().getExcluidoEm()).isNotNull();
         assertThat(jdbc.queryForObject("select professor_id from tb_cursos where id = ?", Long.class, curso.getId()))
-                .isNull();
+                .isEqualTo(professor.getId());
         assertThat(jdbc.queryForObject("select titulo from tb_cursos where id = ?", String.class, curso.getId()))
                 .isEqualTo("Java");
+        assertThat(jdbc.queryForObject("select author_id from tb_topics where id = ?", Long.class, topico))
+                .isEqualTo(professor.getId());
+        assertThat(jdbc.queryForObject("select active from tb_forum_users where id = ?", Boolean.class, professor.getId()))
+                .isFalse();
+        assertThat(jdbc.queryForObject("select count(*) from tb_aceites_responsabilidade where user_id = ? and ip_address = '127.0.0.1'", Long.class, professor.getId()))
+                .isEqualTo(1);
     }
 
     @DynamicPropertySource
@@ -188,17 +202,14 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     }
 
     @Test
-    void migracoesCriamSchemaSemEnderecoEDocumentosSeparados() {
-        String schema = "v1_" + java.util.UUID.randomUUID().toString().replace("-", "");
-        var flyway = Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
-        assertThat(flyway.info().applied()).filteredOn(item -> item.getVersion() != null).hasSize(2);
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("2");
-        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class))
-                .isEqualTo(1);
-        assertThat(jdbc.queryForObject("select nome from " + schema + ".tb_politicas_privacidade where ativa = true",
-                String.class)).isEqualTo("Politica de Privacidade");
+    void v3CriaSchemaSemDadosLegadosOuDocumentosPublicados() {
+        String schema = "v3_" + java.util.UUID.randomUUID().toString().replace("-", "");
+        var flyway = FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.info().applied()).filteredOn(item -> item.getVersion() != null).hasSize(1);
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("3");
+        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class)).isZero();
         assertThat(jdbc.queryForObject("select concluida from " + schema + ".tb_inicializacao_administrador",
                 Boolean.class)).isFalse();
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_contas_excluidas", Long.class)).isZero();
@@ -206,76 +217,14 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 "select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_usuarios'",
                 String.class, schema))
                 .doesNotContain("cpf", "cpf_hash", "telefone", "cep", "logradouro", "bairro", "cidade", "estado");
-        assertThat(jdbc.queryForObject("select conteudo from " + schema + ".tb_politicas where ativa = true",
-                String.class))
-                .contains("CPF.CNPJ").doesNotContain("telefone", "ViaCEP", "logradouro");
-        assertThat(jdbc.queryForObject(
-                "select conteudo from " + schema + ".tb_politicas_privacidade where ativa = true", String.class))
-                .contains("CPF.CNPJ").doesNotContain("telefone", "ViaCEP", "logradouro");
         assertThat(flyway.migrate().migrationsExecuted).isZero();
-    }
-
-    @Test
-    void migracaoV2AtualizaV1EPreservaContasEAceites() throws Exception {
-        validarAtualizacaoV1(false);
-    }
-
-    @Test
-    void migracaoV2AceitaBaselineV1SemHistorico() throws Exception {
-        validarAtualizacaoV1(true);
-    }
-
-    private void validarAtualizacaoV1(boolean semHistorico) throws Exception {
-        String schema = "cadastro_" + java.util.UUID.randomUUID().toString().replace("-", "");
-        Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema).target("1").load().migrate();
-        try (var conexao = fonte.getConnection(); var comando = conexao.createStatement()) {
-            conexao.setAutoCommit(true);
-            if (semHistorico) comando.executeUpdate("drop table " + schema + ".flyway_schema_history");
-            comando.executeUpdate("insert into " + schema + ".tb_cursos (id, titulo, descricao, criado_em) values (999, 'Curso legado', 'Conteudo preservado', CURRENT_TIMESTAMP)");
-            // Dados reais no formato original da V1, incluindo os campos removidos na V2.
-            comando.executeUpdate("insert into " + schema + ".tb_usuarios values (999, 'Aluno', 'legado@example.com', 'hash', 'cpf-legado', 'cpf-hash-legado', DATE '1990-01-01', '999', TRUE, TRUE, CURRENT_TIMESTAMP, '1.0', 'ALUNO', TRUE, TRUE, 'APROVADO')");
-            comando.executeUpdate("insert into " + schema + ".tb_contas_excluidas values (998, 'email-hash', 'cpf-hash-excluido', CURRENT_TIMESTAMP)");
-        }
-        var termosAntes = jdbc.queryForList("select * from " + schema + ".tb_politicas order by id");
-        var privacidadeAntes = jdbc.queryForList("select * from " + schema + ".tb_politicas_privacidade order by id");
-        var flyway = Flyway.configure().dataSource(fonte).schemas(schema).defaultSchema(schema)
-                .baselineOnMigrate(semHistorico).baselineVersion("1").load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
-        assertThat(jdbc.queryForList(
-                "select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_usuarios'",
-                String.class, schema)).containsExactlyInAnyOrder("id", "nome_completo", "email", "senha",
-                        "data_nascimento", "matricula", "declarou_maior_idade", "aceitou_termos_lgpd",
-                        "data_hora_aceite", "versao_termos", "perfil", "ativo", "email_confirmado", "status_aprovacao");
-        assertThat(jdbc.queryForList(
-                "select column_name from information_schema.columns where table_schema = ? and table_name = 'tb_contas_excluidas'",
-                String.class, schema)).containsExactlyInAnyOrder("id", "email_hash", "bloqueada_ate");
-        assertThat(jdbc.queryForObject("select email from " + schema + ".tb_usuarios where id = 999", String.class))
-                .isEqualTo("legado@example.com");
-        assertThat(jdbc.queryForObject("select versao_termos from " + schema + ".tb_usuarios where id = 999", String.class))
-                .isEqualTo("1.0");
-        assertThat(jdbc.queryForObject("select descricao from " + schema + ".tb_cursos where id = 999", String.class))
-                .isEqualTo("Conteudo preservado");
-        assertThat(jdbc.queryForObject("select email_hash from " + schema + ".tb_contas_excluidas where id = 998", String.class))
-                .isEqualTo("email-hash");
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("2");
-        assertThat(flyway.migrate().migrationsExecuted).isZero();
-        assertThat(jdbc.queryForList("select * from " + schema + ".tb_politicas order by id"))
-                .isEqualTo(termosAntes);
-        assertThat(jdbc.queryForList("select * from " + schema + ".tb_politicas_privacidade order by id"))
-                .isEqualTo(privacidadeAntes);
-        for (String tabela : new String[]{"tb_politicas", "tb_politicas_privacidade"}) {
-            assertThat(jdbc.queryForObject("select versao from " + schema + "." + tabela + " where ativa = true", String.class))
-                    .isEqualTo("1.0");
-            assertThat(jdbc.queryForObject("select count(*) from " + schema + "." + tabela + " where versao = '1.0' and ativa = true", Long.class))
-                    .isEqualTo(1);
-        }
     }
 
     @TestConfiguration
     static class MigracaoTeste {
         @Bean(initMethod = "migrate")
         Flyway flyway(DataSource dataSource) {
-            return Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load();
+            return FlywayConfig.configuracao().dataSource(dataSource).load();
         }
 
         @Bean
