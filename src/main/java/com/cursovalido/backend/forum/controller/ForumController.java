@@ -16,6 +16,8 @@ import com.cursovalido.backend.forum.service.ComentarioService;
 import com.cursovalido.backend.forum.service.TopicoService;
 import com.cursovalido.backend.forum.service.UsuarioForumService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import com.cursovalido.backend.authentication.security.VisibilidadeEmail;
+import com.cursovalido.backend.authentication.entity.Perfil;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -124,9 +126,10 @@ public class ForumController {
     }
 
     @GetMapping("/users")
-    public UsuariosForumResponse listarUsuarios() {
+    public UsuariosForumResponse listarUsuarios(@AuthenticationPrincipal UsuarioAutenticado principal) {
+        boolean administrador = principal != null && principal.getPerfil() == Perfil.ADMINISTRADOR;
         List<UsuarioForumResponse> usuarios = servicoUsuarios.listarAtivos().stream()
-                .map(this::converter)
+                .map(usuario -> converter(usuario, administrador))
                 .toList();
         return new UsuariosForumResponse(usuarios);
     }
@@ -143,8 +146,9 @@ public class ForumController {
                 comentario.getPapelAutor(), comentario.getIdAutor(), comentario.getCriadoEm(), comentario.isAtivo());
     }
 
-    private UsuarioForumResponse converter(UsuarioForum usuario) {
-        return new UsuarioForumResponse(usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.getPerfil());
+    private UsuarioForumResponse converter(UsuarioForum usuario, boolean administrador) {
+        return new UsuarioForumResponse(usuario.getId(), usuario.getNome(),
+                VisibilidadeEmail.paraListagem(usuario.getEmail(), usuario.getPerfil(), administrador), usuario.getPerfil());
     }
 
 }

@@ -242,6 +242,14 @@ class ForumHttpIntegracaoTest {
         assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", comum.token(), null,
                 com.cursovalido.backend.authentication.controller.ModeracaoController.UsuarioAdministracaoResposta[].class).getBody())
                 .allSatisfy(u -> assertThat(u.podeExcluir()).isFalse());
+        for (String token : new String[] { principal.token(), comum.token() }) {
+            assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
+                    .doesNotContain(emailAluno).contains(emailProfessor, emailComum);
+        }
+        for (String token : new String[] { autor.token(), professor.token() }) {
+            assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
+                    .doesNotContain(emailAluno, emailProfessor, emailComum, "principal-listagem@example.com");
+        }
         assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", autor.token(), null, String.class).getBody())
                 .contains(emailAluno);
     }
