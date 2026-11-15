@@ -147,7 +147,7 @@ class ForumControllerTest {
     @Test
     void listarUsuarios_comUsuariosAtivos_deveConverterEContar() {
         when(usuarios.listarAtivos()).thenReturn(List.of(autor));
-        assertThat(controlador.listarUsuarios()).isEqualTo(new UsuariosForumResponse(
-                List.of(new UsuarioForumResponse(7L, "Autor", "autor@example.com", "ALUNO")), 1));
+        assertThat(controlador.listarUsuarios(principal)).isEqualTo(new UsuariosForumResponse(
+                List.of(new UsuarioForumResponse(7L, "Autor", "a*******@example.com", "ALUNO")), 1));
     }
 }

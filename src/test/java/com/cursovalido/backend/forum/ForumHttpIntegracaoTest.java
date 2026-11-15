@@ -242,6 +242,14 @@ class ForumHttpIntegracaoTest {
         assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", comum.token(), null,
                 com.cursovalido.backend.authentication.controller.ModeracaoController.UsuarioAdministracaoResposta[].class).getBody())
                 .allSatisfy(u -> assertThat(u.podeExcluir()).isFalse());
+        for (String token : new String[] { principal.token(), comum.token() }) {
+            assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
+                    .doesNotContain(emailAluno).contains(emailProfessor, emailComum);
+        }
+        for (String token : new String[] { autor.token(), professor.token() }) {
+            assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
+                    .doesNotContain(emailAluno, emailProfessor, emailComum, "principal-listagem@example.com");
+        }
         assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", autor.token(), null, String.class).getBody())
                 .contains(emailAluno);
     }
@@ -502,17 +510,55 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
-    void tituloTopico_deveAceitar40ERecusar41NaCriacaoEEdicao() {
-        var topico = criarTopico("t".repeat(40));
+    void paginacaoPadraoDoForumEMeusTopicosExibeDezPorPagina() {
+        for (int i = 0; i < 11; i++) criarTopico("Topico " + i);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, TopicoResumoDTO[].class).getBody())
+                .hasSize(10);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos?page=1", null, null, TopicoResumoDTO[].class).getBody())
+                .hasSize(1);
+        var respostaMeus = enviar(HttpMethod.GET, "/api/forum/topicos/meus", autor.token(), null, Map.class);
+        assertThat(respostaMeus.getStatusCode()).as("Resposta: %s", respostaMeus.getBody()).isEqualTo(HttpStatus.OK);
+        var meus = respostaMeus.getBody();
+        assertThat(meus).containsKey("content");
+        assertThat((java.util.List<?>) meus.get("content")).hasSize(10);
+        assertThat(meus.get("totalPages")).isEqualTo(2);
+    }
+
+    @Test
+    void buscasDoForumNaoRetornam500ComPaginacao() {
+        for (int i = 0; i < 7; i++) {
+            criarTopico("Java " + i);
+            criarTopico("aaaaaaaaaaaaaaaa " + i);
+        }
+        for (String busca : new String[] { "java", "aaaaaaaaaaaaaaaa", "sem-resultados" }) {
+            int encontrados = busca.equals("sem-resultados") ? 0 : 5;
+            String parametros = "?page=0&size=5&busca=" + busca;
+            var publicos = enviar(HttpMethod.GET, "/api/forum/topicos" + parametros, autor.token(), null,
+                    TopicoResumoDTO[].class);
+            assertThat(publicos.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(publicos.getBody()).hasSize(encontrados);
+            var meus = enviar(HttpMethod.GET, "/api/forum/topicos/meus" + parametros, autor.token(), null, Map.class);
+            assertThat(meus.getStatusCode()).as("Busca: %s; resposta: %s", busca, meus.getBody())
+                    .isEqualTo(HttpStatus.OK);
+            assertThat((java.util.List<?>) meus.getBody().get("content")).hasSize(encontrados);
+        }
+        // A consulta autenticada pode registrar auditoria no PostgreSQL.
+        assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id=? "
+                + "and tipo_acao='CONSULTA_MEUS_TOPICOS'", Long.class, autor.id())).isEqualTo(3);
+    }
+
+    @Test
+    void tituloTopico_deveAceitar80ERecusar81NaCriacaoEEdicao() {
+        var topico = criarTopico("t".repeat(80));
         verificarErro(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
-                new TopicoRequest("t".repeat(41), "Descricao"), ErroHttp.class), 400);
+                new TopicoRequest("t".repeat(81), "Descricao"), ErroHttp.class), 400);
         var atualizado = enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
-                new TopicoRequest("e".repeat(40), "Descricao"), TopicoResponse.class);
+                new TopicoRequest("e".repeat(80), "Descricao"), TopicoResponse.class);
         assertThat(atualizado.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(atualizado.getBody().titulo()).isEqualTo("e".repeat(40));
+        assertThat(atualizado.getBody().titulo()).isEqualTo("e".repeat(80));
         verificarErro(enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
-                new TopicoRequest("e".repeat(41), "Descricao"), ErroHttp.class), 400);
-        assertThat(topicos.findById(topico.id()).orElseThrow().getTitulo()).isEqualTo("e".repeat(40));
+                new TopicoRequest("e".repeat(81), "Descricao"), ErroHttp.class), 400);
+        assertThat(topicos.findById(topico.id()).orElseThrow().getTitulo()).isEqualTo("e".repeat(80));
     }
 
     @Test

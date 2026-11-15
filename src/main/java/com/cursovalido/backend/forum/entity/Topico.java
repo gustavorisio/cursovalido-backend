@@ -21,7 +21,7 @@ public class Topico {
     private Long id;
 
     @NotBlank
-    @Size(max = 40)
+    @Size(max = 80)
     @Column(name = "title", nullable = false)
     private String titulo;
     @NotBlank
