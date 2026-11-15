@@ -150,6 +150,7 @@ class ModeracaoIntegracaoTest {
 
         @BeforeEach
         void preparar() {
+                jdbcExclusao.update("INSERT INTO tb_versoes_documentos (tipo, numero) VALUES ('TERMOS', 0), ('PRIVACIDADE', 0)");
                 principal = criar("principal@example.com", Perfil.ADMINISTRADOR);
                 var registro = inicializacao.findById(1L).orElseThrow();
                 registro.concluir(principal.getId());
@@ -376,7 +377,7 @@ class ModeracaoIntegracaoTest {
                                 .content("{\"nome\":\"Novo documento\",\"versao\":\"depois-publicar\",\"conteudo\":\"Texto definido pelo administrador\"}"))
                                 .andExpect(status().isCreated())
                                 .andExpect(jsonPath("$.conteudo").value("Texto definido pelo administrador"));
-                assertThat(politicas.findByVersao("depois-publicar").orElseThrow().getConteudo())
+                assertThat(politicas.findByVersao("1.0").orElseThrow().getConteudo())
                                 .isEqualTo("Texto definido pelo administrador");
                 mvc.perform(get("/termos-aceite.html"))
                                 .andExpect(status().isOk())
@@ -476,7 +477,7 @@ class ModeracaoIntegracaoTest {
                 mvc.perform(post("/api/autenticacao/aceitar-termos-novamente")
                                 .header("Authorization", "Bearer " + tokens.gerarTermos(aluno))
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"versaoTermos\":\"sessao-preservada\"}"))
+                                .content("{\"versaoTermos\":\"1.0\"}"))
                                 .andExpect(status().isNoContent());
                 mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON).content(login))
                                 .andExpect(status().isOk());
@@ -498,7 +499,7 @@ class ModeracaoIntegracaoTest {
                                 .contentType(MediaType.APPLICATION_JSON).content(documento))
                                 .andExpect(status().isCreated());
                 mvc.perform(get("/api/politicas/privacidade/ativa"))
-                                .andExpect(status().isOk()).andExpect(jsonPath("$.versao").value("privacidade-1"));
+                                .andExpect(status().isOk()).andExpect(jsonPath("$.versao").value("1.0"));
                 mvc.perform(get("/politica-privacidade.html"))
                                 .andExpect(status().isOk())
                                 .andExpect(content().string(

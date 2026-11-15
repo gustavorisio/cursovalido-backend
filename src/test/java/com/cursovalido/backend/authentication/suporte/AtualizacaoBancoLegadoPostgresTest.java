@@ -44,9 +44,9 @@ class AtualizacaoBancoLegadoPostgresTest {
                 """);
 
         var atual = new FlywayConfig().flyway(fonte, false, "1");
-        assertThat(atual.info().pending()).hasSize(1);
-        assertThat(atual.migrate().migrationsExecuted).isEqualTo(1);
-        assertThat(atual.info().current().getVersion().toString()).isEqualTo("3");
+        assertThat(atual.info().pending()).hasSize(2);
+        assertThat(atual.migrate().migrationsExecuted).isEqualTo(2);
+        assertThat(atual.info().current().getVersion().toString()).isEqualTo("4");
         assertThat(atual.info().applied()[0].getChecksum()).isEqualTo(-1935617500);
         assertThat(atual.info().applied()[1].getChecksum()).isEqualTo(-175556913);
         assertThat(jdbc.queryForObject("SELECT email FROM tb_usuarios WHERE id = 101", String.class))

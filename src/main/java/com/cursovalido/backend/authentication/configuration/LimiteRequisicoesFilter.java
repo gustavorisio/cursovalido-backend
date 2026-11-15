@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.cursovalido.backend.authentication.security.RespostaErroHttp;
 
 public class LimiteRequisicoesFilter extends OncePerRequestFilter {
     private final Map<String, Janela> janelas = new HashMap<>();
@@ -29,7 +30,8 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
         if (deveLimitar(request)) {
             if (!permitir(request.getRemoteAddr() + ":" + caminho)) {
                 response.setHeader("Retry-After", "60");
-                response.sendError(429, "Muitas solicitacoes. Aguarde um minuto.");
+                RespostaErroHttp.escrever(response, 429, "Muitas solicitacoes. Aguarde um minuto.",
+                        "LIMITE_REQUISICOES_ATINGIDO");
                 return;
             }
         }

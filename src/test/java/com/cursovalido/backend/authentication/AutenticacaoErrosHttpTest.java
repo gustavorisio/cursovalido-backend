@@ -17,7 +17,7 @@ class AutenticacaoErrosHttpTest {
         private final ConviteAcessoService convites = mock(ConviteAcessoService.class);
 
         @Test
-        void preservaStatusEMotivoDaRecusa() throws Exception {
+        void preservaStatusSemExporMotivoDeFalhasInternas() throws Exception {
                 for (var status : new HttpStatus[] { HttpStatus.BAD_REQUEST, HttpStatus.FORBIDDEN,
                                 HttpStatus.SERVICE_UNAVAILABLE }) {
                         doThrow(new ResponseStatusException(status, "Motivo da recusa"))
@@ -28,8 +28,11 @@ class AutenticacaoErrosHttpTest {
                                                         .contentType(MediaType.APPLICATION_JSON)
                                                         .content("{\"token\":\"token\"}"))
                                         .andExpect(status().is(status.value()))
-                                        .andExpect(jsonPath("$.erro").value("Motivo da recusa"))
-                                        .andExpect(jsonPath("$.codigo").value("OPERACAO_RECUSADA"));
+                                        .andExpect(jsonPath("$.erro").value(status.is5xxServerError()
+                                                        ? "Nao foi possivel concluir a operacao. Tente novamente mais tarde."
+                                                        : "Motivo da recusa"))
+                                        .andExpect(jsonPath("$.codigo").value(status.is5xxServerError()
+                                                        ? "ERRO_INTERNO" : "OPERACAO_RECUSADA"));
                 }
         }
 

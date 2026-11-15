@@ -7,6 +7,6 @@ public class EmailNaoConfirmadoException extends ResponseStatusException {
     public static final String CODIGO = "EMAIL_NAO_CONFIRMADO";
 
     public EmailNaoConfirmadoException() {
-        super(HttpStatus.FORBIDDEN, "E-mail nao confirmado");
+        super(HttpStatus.FORBIDDEN, "Confirme seu e-mail para entrar. Abra a mensagem de confirmação ou peça um novo envio.");
     }
 }

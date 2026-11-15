@@ -69,7 +69,7 @@ class SchemaV3PostgresTest extends AulasIntegracaoTest {
                 .isEqualTo(1);
         assertThat(jdbc.queryForObject("select concluida from tb_inicializacao_administrador where id = 1",
                 Boolean.class)).isFalse();
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("3");
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("4");
         assertThat(flyway.migrate().migrationsExecuted).isZero();
     }
 

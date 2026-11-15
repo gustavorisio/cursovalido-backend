@@ -5,6 +5,7 @@ import jakarta.servlet.http.*;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.cursovalido.backend.authentication.security.RespostaErroHttp;
 
 @RequiredArgsConstructor
 public class HttpsFilter extends OncePerRequestFilter {
@@ -18,7 +19,7 @@ public class HttpsFilter extends OncePerRequestFilter {
             return;
         }
         if (!request.isSecure()) {
-            response.sendError(426, "Use HTTPS para acessar a API");
+            RespostaErroHttp.escrever(response, 426, "Não foi possível abrir uma conexão segura. Atualize a página e tente novamente.", "HTTPS_OBRIGATORIO");
             return;
         }
         cadeia.doFilter(request, response);

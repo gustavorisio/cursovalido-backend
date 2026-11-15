@@ -17,7 +17,7 @@ public class Politica {
     private Long id;
     @Column(nullable = false)
     private String nome;
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true, length = 30)
     private String versao;
     @Column(nullable = false, columnDefinition = "TEXT")
     private String conteudo;

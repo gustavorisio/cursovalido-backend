@@ -7,6 +7,6 @@ public class Codigo2faExpiradoException extends ResponseStatusException {
     public static final String CODIGO = "CODIGO_2FA_EXPIRADO";
 
     public Codigo2faExpiradoException() {
-        super(HttpStatus.BAD_REQUEST, "O codigo 2FA expirou");
+        super(HttpStatus.BAD_REQUEST, "O código enviado ao seu e-mail venceu. Peça um novo código e tente novamente.");
     }
 }
