@@ -10,8 +10,8 @@ public record CadastroUsuarioRequest(
         @NotBlank @Email @Size(max = 254) String email,
         @NotBlank @Size(max = 72, message = SenhaValida.MENSAGEM) @SenhaValida String senha,
         @NotNull @Past LocalDate dataNascimento,
-        @NotNull @AssertTrue Boolean declarouMaiorIdade,
-        @NotNull @AssertTrue Boolean aceitouTermosLgpd,
+        @NotNull @AssertTrue(message = "Confirme que você tem 18 anos ou mais.") Boolean declarouMaiorIdade,
+        @NotNull @AssertTrue(message = "Aceite os Termos de Uso e a Política de Privacidade para continuar.") Boolean aceitouTermosLgpd,
         @NotBlank @Size(max = 30) String versaoTermos,
         Boolean aceitouResponsabilidade,
         @Size(max = 30) String versaoResponsabilidade) {

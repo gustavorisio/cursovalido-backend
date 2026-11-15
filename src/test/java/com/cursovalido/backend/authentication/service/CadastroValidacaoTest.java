@@ -64,7 +64,7 @@ class CadastroValidacaoTest {
         for (String senha : new String[] { "ABC!", "abc!", "Abc", "A! ", "123!" }) {
             var erros = VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", senha);
             assertFalse(erros.isEmpty(), senha);
-            assertTrue(erros.stream().anyMatch(erro -> erro.getMessage().contains("72 bytes")));
+            assertTrue(erros.stream().anyMatch(erro -> erro.getMessage().contains("reduza o tamanho")));
         }
     }
 }

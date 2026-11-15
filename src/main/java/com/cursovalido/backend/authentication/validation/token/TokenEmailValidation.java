@@ -13,7 +13,7 @@ public final class TokenEmailValidation {
 
     public static void validarCodigo2fa(TokenEmail registro) {
         if (registro.isUtilizado())
-            throw new IllegalArgumentException("Codigo ja utilizado");
+            throw new IllegalArgumentException("Este código já foi usado. Peça um novo código para continuar.");
         if (registro.getExpiraEm().isBefore(LocalDateTime.now())) {
             throw new Codigo2faExpiradoException();
         }
@@ -21,9 +21,9 @@ public final class TokenEmailValidation {
 
     public static void validarToken(TokenEmail registro) {
         if (registro.isUtilizado())
-            throw new IllegalArgumentException("Token ja utilizado");
+            throw new IllegalArgumentException("Este link já foi usado. Solicite um novo link para continuar.");
         if (registro.getExpiraEm().isBefore(LocalDateTime.now()))
-            throw new IllegalArgumentException("Token expirado");
+            throw new IllegalArgumentException("Este link venceu. Solicite um novo link para continuar.");
     }
 
     public static void verificarLimite(Usuario usuario, String finalidade, TokenEmailRepository repositorio) {

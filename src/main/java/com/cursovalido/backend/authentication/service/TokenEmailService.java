@@ -66,7 +66,7 @@ public class TokenEmailService {
         TokenEmail registro = repositorio.findByTokenHashAndFinalidade(
                 hash(email.toLowerCase(Locale.ROOT) + ":" + codigo), CODIGO_2FA)
                 .filter(token -> token.getUsuario().getEmail().equalsIgnoreCase(email))
-                .orElseThrow(() -> new IllegalArgumentException("Codigo invalido ou expirado"));
+                .orElseThrow(() -> new IllegalArgumentException("O código está incorreto ou venceu. Confira o código mais recente enviado ao seu e-mail ou peça um novo."));
         TokenEmailValidation.validarCodigo2fa(registro);
         registro.setUtilizado(true);
         repositorio.save(registro);
@@ -107,7 +107,7 @@ public class TokenEmailService {
                 .filter(t -> t.getUsuario().getId().equals(idUsuario))
                 .filter(t -> !t.isUtilizado())
                 .filter(t -> t.getExpiraEm().isAfter(LocalDateTime.now()))
-                .orElseThrow(() -> new IllegalArgumentException("Codigo invalido ou expirado"));
+                .orElseThrow(() -> new IllegalArgumentException("O código está incorreto ou venceu. Confira o código mais recente enviado ao seu e-mail ou peça um novo."));
         registro.setUtilizado(true);
         repositorio.save(registro);
     }
@@ -126,7 +126,7 @@ public class TokenEmailService {
     // Valida um token de e-mail e marca seu uso.
     public TokenEmail validar(String token, String finalidade) {
         TokenEmail registro = repositorio.findByTokenHashAndFinalidade(hash(token), finalidade)
-                .orElseThrow(() -> new IllegalArgumentException("Token invalido"));
+                .orElseThrow(() -> new IllegalArgumentException("Este link não é válido ou já venceu. Solicite um novo link para continuar."));
         TokenEmailValidation.validarToken(registro);
         registro.setUtilizado(true);
         return repositorio.save(registro);

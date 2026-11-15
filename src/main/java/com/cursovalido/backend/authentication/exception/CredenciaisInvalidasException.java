@@ -7,6 +7,6 @@ public class CredenciaisInvalidasException extends ResponseStatusException {
     public static final String CODIGO = "CREDENCIAIS_INVALIDAS";
 
     public CredenciaisInvalidasException() {
-        super(HttpStatus.UNAUTHORIZED, "E-mail ou senha incorretos. " + com.cursovalido.backend.authentication.validation.senha.SenhaValida.MENSAGEM);
+        super(HttpStatus.UNAUTHORIZED, "E-mail ou senha incorretos. Confira os dados e tente novamente.");
     }
 }

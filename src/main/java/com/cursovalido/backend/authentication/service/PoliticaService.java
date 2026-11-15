@@ -5,7 +5,7 @@ import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.entity.Politica;
 import com.cursovalido.backend.authentication.repository.PoliticaRepository;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
-import com.cursovalido.backend.authentication.validation.politica.PoliticaValidation;
+import com.cursovalido.backend.authentication.validation.politica.ConteudoDocumento;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,7 @@ public class PoliticaService {
 
     private final LogAuditoriaService auditoria;
     private final PrivilegiosAdministrativosService privilegios;
+    private final VersaoDocumentoService versoes;
 
     // Lista as politicas que estao ativas no momento.
     public List<PoliticaResponse> listarAtivas() {
@@ -37,7 +38,8 @@ public class PoliticaService {
     // Publica uma nova versao e pede novo aceite aos usuarios.
     public PoliticaResponse publicar(PoliticaRequest requisicao, Long administradorId) {
         privilegios.verificarPrincipal(administradorId);
-        PoliticaValidation.validarPublicacao(requisicao, repositorio);
+        String conteudo = ConteudoDocumento.preparar(requisicao.conteudo());
+        String versao = versoes.proxima("TERMOS");
 
         repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().forEach(politica -> {
             politica.setAtiva(false);
@@ -45,7 +47,7 @@ public class PoliticaService {
         });
 
         Politica publicada = repositorio.save(new Politica(requisicao.nome().trim(),
-                requisicao.versao().trim(), requisicao.conteudo().trim()));
+                versao, conteudo));
         auditoria.registrar(administradorId, "POLITICA_PUBLICADA", publicada.getVersao(), null);
         return converter(publicada);
     }

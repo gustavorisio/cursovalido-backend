@@ -10,7 +10,7 @@ public class TermosNaoAceitosException extends ResponseStatusException {
     private final String token;
 
     public TermosNaoAceitosException(String token) {
-        super(HttpStatus.FORBIDDEN, "E necessario ler e aceitar os termos novamente");
+        super(HttpStatus.FORBIDDEN, "Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.");
         this.token = token;
     }
 }

@@ -5,7 +5,7 @@ import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.entity.PoliticaPrivacidade;
 import com.cursovalido.backend.authentication.repository.PrivacidadeRepository;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
-import com.cursovalido.backend.authentication.validation.privacidade.PrivacidadeValidation;
+import com.cursovalido.backend.authentication.validation.politica.ConteudoDocumento;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +17,7 @@ public class PrivacidadeService {
     private final PrivacidadeRepository repositorio;
     private final PrivilegiosAdministrativosService privilegios;
     private final LogAuditoriaService auditoria;
+    private final VersaoDocumentoService versoes;
 
     public PoliticaResponse buscarAtiva() {
         return repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().stream()
@@ -37,14 +38,15 @@ public class PrivacidadeService {
     @Transactional
     public PoliticaResponse publicar(PoliticaRequest dados, Long administradorId) {
         privilegios.verificarPrincipal(administradorId);
-        PrivacidadeValidation.validarPublicacao(dados, repositorio);
+        String conteudo = ConteudoDocumento.preparar(dados.conteudo());
+        String versao = versoes.proxima("PRIVACIDADE");
 
         repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().forEach(politica -> {
             politica.setAtiva(false);
             repositorio.save(politica);
         });
         var publicada = repositorio
-                .save(new PoliticaPrivacidade(dados.nome().trim(), dados.versao().trim(), dados.conteudo().trim()));
+                .save(new PoliticaPrivacidade(dados.nome().trim(), versao, conteudo));
         auditoria.registrar(administradorId, "PRIVACIDADE_PUBLICADA", publicada.getVersao(), null);
         return converter(publicada);
     }

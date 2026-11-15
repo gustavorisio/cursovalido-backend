@@ -3,6 +3,7 @@ package com.cursovalido.backend.authentication.configuration;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
 import com.cursovalido.backend.authentication.service.UsuarioDetalhesService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import com.cursovalido.backend.authentication.security.RespostaErroHttp;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -76,12 +77,12 @@ public class TokenJwtFilter extends OncePerRequestFilter {
                     var detalhes = usuarios.loadUserByUsername(email);
                     if (detalhes instanceof UsuarioAutenticado usuario) {
                         if (!usuario.getId().equals(tokens.extrairIdUsuario(token))) {
-                            response.sendError(401, "Sessao de outra conta");
+                            RespostaErroHttp.escrever(response, 401, "Seu acesso não é mais válido. Entre na sua conta novamente.", "SESSAO_INVALIDA");
                             return;
                         }
                     }
                     if (!detalhes.isEnabled()) {
-                        response.sendError(403, "Conta sem permissao de acesso");
+                        RespostaErroHttp.escrever(response, 403, "Sua conta não tem acesso no momento. Entre em contato pelo Suporte.", "ACESSO_NEGADO");
                         return;
                     }
                     boolean termos = tokens.apenasTermos(token);
@@ -89,16 +90,17 @@ public class TokenJwtFilter extends OncePerRequestFilter {
                         UsuarioAutenticado usuario = (UsuarioAutenticado) detalhes;
                         var conta = repositorio.findById(usuario.getId()).orElseThrow();
                         response.setStatus(403);
+                        response.setHeader("Cache-Control", "no-store");
                         response.setContentType("application/json");
                         response.setCharacterEncoding("UTF-8");
                         response.getWriter().write(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(
                                 new com.cursovalido.backend.authentication.dto.TermosPendentesResponse(
-                                        "É necessário aceitar a nova versão dos termos.", "TERMOS_NAO_ACEITOS",
+                                        "Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.", "TERMOS_NAO_ACEITOS",
                                         tokens.gerarTermos(conta))));
                         return;
                     }
                     if (rotaBloqueadaParaTokenDeTermos(termos, request.getRequestURI())) {
-                        response.sendError(403, "Token permitido apenas para aceite dos termos");
+                        RespostaErroHttp.escrever(response, 403, "Você não tem permissão para fazer isso.", "ACESSO_NEGADO");
                         return;
                     }
                     var autenticacao = new UsernamePasswordAuthenticationToken(detalhes, null,

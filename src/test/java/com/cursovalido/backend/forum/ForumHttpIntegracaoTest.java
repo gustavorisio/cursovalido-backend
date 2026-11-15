@@ -110,7 +110,189 @@ class ForumHttpIntegracaoTest {
             return null;
         }).when(emails).enviarCodigo2fa(any(), anyString());
         politicas.save(new Politica("Termos", "teste-v1", "Termos de teste"));
+        jdbc.update("INSERT INTO tb_versoes_documentos (tipo, numero) VALUES ('TERMOS', 0), ('PRIVACIDADE', 0)");
         autor = cadastrarEAutenticar(Perfil.ALUNO);
+    }
+
+    @Test
+    void publicarIgnoraVersaoDoClienteEIncrementaAPersistida() {
+        var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-versoes@example.com");
+        for (int numero = 1; numero <= 2; numero++) {
+            var resposta = enviar(HttpMethod.POST, "/api/politicas", admin.token(),
+                    Map.of("nome", "Termos", "conteudo", "Texto " + numero, "versao", "999.0"),
+                    PoliticaResponse.class);
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            assertThat(resposta.getBody().versao()).isEqualTo(numero + ".0");
+        }
+        assertThat(politicas.findByVersao("999.0")).isEmpty();
+        assertThat(politicas.findByAtivaTrueOrderByDataPublicacaoDesc()).extracting(Politica::getVersao)
+                .containsExactly("2.0");
+    }
+
+    @Test
+    void publicarPrivacidadeGeraVersaoSemEntradaManual() {
+        var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-privacidade@example.com");
+        for (int numero = 1; numero <= 2; numero++) {
+            var resposta = enviar(HttpMethod.POST, "/api/politicas/privacidade", admin.token(),
+                    new PoliticaRequest("Privacidade", "Texto " + numero), PoliticaResponse.class);
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            assertThat(resposta.getBody().versao()).isEqualTo(numero + ".0");
+        }
+    }
+
+    @Test
+    void exclusaoAdministrativaRejeitaAutoexclusaoAlunoEAdministradoresComuns() {
+        var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-exclusao@example.com");
+        var comum = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
+        var professor = cadastrarEAutenticar(Perfil.PROFESSOR);
+        String rota = "/api/administracao/usuarios/";
+        assertThat(enviar(HttpMethod.DELETE, rota + principal.id(), principal.token(), null, String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(enviar(HttpMethod.DELETE, rota + professor.id(), comum.token(), null, String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(enviar(HttpMethod.DELETE, rota + principal.id(), comum.token(), null, String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(enviar(HttpMethod.DELETE, rota + autor.id(), principal.token(), null, String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(enviar(HttpMethod.DELETE, rota + comum.id(), professor.token(), null, String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(enviar(HttpMethod.DELETE, rota + comum.id(), null, null, String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(usuarios.findById(principal.id()).orElseThrow().getExcluidoEm()).isNull();
+        assertThat(usuarios.findById(professor.id()).orElseThrow().getExcluidoEm()).isNull();
+        assertThat(enviar(HttpMethod.DELETE, rota + Long.MAX_VALUE, principal.token(), null, String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PROFESSOR", "ADMINISTRADOR"})
+    void exclusaoAdministrativaDesidentificaEquipeRevogaAcessoEPreservaHistorico(String perfil) {
+        var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-exclusao@example.com");
+        var alvo = cadastrarEAutenticar(Perfil.valueOf(perfil));
+        var original = usuarios.findById(alvo.id()).orElseThrow();
+        String email = original.getEmail();
+        var topico = enviar(HttpMethod.POST, "/api/forum/topicos", alvo.token(),
+                new TopicoRequest("Historico da equipe", "Conteudo educacional preservado"), TopicoResponse.class).getBody();
+        tokensEmail.criarExclusao(original);
+        long aceitesAntes = jdbc.queryForObject("select count(*) from tb_aceites_responsabilidade where user_id=?",
+                Long.class, alvo.id());
+        assertThat(aceitesAntes).isPositive();
+        String rota = "/api/administracao/usuarios/" + alvo.id();
+        assertThat(enviar(HttpMethod.DELETE, rota, principal.token(), null, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+        var excluido = usuarios.findById(alvo.id()).orElseThrow();
+        assertThat(excluido.getExcluidoEm()).isNotNull();
+        assertThat(excluido.isAtivo()).isFalse();
+        assertThat(excluido.getNomeCompleto()).isEqualTo("Usuario excluido");
+        assertThat(excluido.getEmail()).isEqualTo("excluido-" + alvo.id() + "@conta.invalid");
+        assertThat(excluido.getSenha()).isEmpty();
+        assertThat(excluido.getDataNascimento()).isNull();
+        assertThat(excluido.getMatricula()).isEqualTo("excluido-" + alvo.id());
+        assertThat(usuarios.findByEmail(email)).isEmpty();
+        assertThat(jdbc.queryForObject("select count(*) from tb_sessoes where usuario_id=?", Long.class, alvo.id())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from tb_tokens_email where usuario_id=?", Long.class, alvo.id())).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from tb_aceites_responsabilidade where user_id=?", Long.class, alvo.id()))
+                .isEqualTo(aceitesAntes);
+        assertThat(jdbc.queryForObject("select count(*) from tb_aceites_termos_arquivados where usuario_id_original=?",
+                Long.class, alvo.id())).isPositive();
+        assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id=? "
+                + "and tipo_acao='EXCLUSAO_ADMINISTRATIVA_CONTA'", Long.class, principal.id())).isEqualTo(1);
+        var leitura = enviar(HttpMethod.GET, "/api/forum/topicos", null, null, TopicoResumoDTO[].class);
+        assertThat(leitura.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(leitura.getBody()).filteredOn(t -> t.id().equals(topico.id())).singleElement().satisfies(t -> {
+            assertThat(t.descricao()).isEqualTo("Conteudo educacional preservado");
+            assertThat(t.nomeAutor()).isEqualTo("Usuario excluido");
+            assertThat(t.idAutor()).isEqualTo(alvo.id());
+        });
+        assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", alvo.token(), null, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", principal.token(), null, String.class).getBody())
+                .doesNotContain(email, "excluido-" + alvo.id() + "@conta.invalid");
+        // Repetir a requisicao nao cria novo registro de exclusao.
+        assertThat(enviar(HttpMethod.DELETE, rota, principal.token(), null, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id=? "
+                + "and tipo_acao='EXCLUSAO_ADMINISTRATIVA_CONTA'", Long.class, principal.id())).isEqualTo(1);
+    }
+
+    @Test
+    void listagensMascaramAlunosEExibemEquipeSomenteParaAdministradores() {
+        var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-listagem@example.com");
+        var comum = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
+        var professor = cadastrarEAutenticar(Perfil.PROFESSOR);
+        String emailAluno = usuarios.findById(autor.id()).orElseThrow().getEmail();
+        String emailProfessor = usuarios.findById(professor.id()).orElseThrow().getEmail();
+        String emailComum = usuarios.findById(comum.id()).orElseThrow().getEmail();
+        var resposta = enviar(HttpMethod.GET, "/api/administracao/usuarios", principal.token(), null,
+                com.cursovalido.backend.authentication.controller.ModeracaoController.UsuarioAdministracaoResposta[].class);
+        assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(autor.id())).singleElement().satisfies(u -> {
+            assertThat(u.email()).isEqualTo(emailAluno.substring(0, 1) + "*******@example.com");
+            assertThat(u.podeExcluir()).isFalse();
+        });
+        assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(professor.id())).singleElement().satisfies(u -> {
+            assertThat(u.email()).isEqualTo(emailProfessor);
+            assertThat(u.podeExcluir()).isTrue();
+        });
+        assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(comum.id())).singleElement().satisfies(u -> {
+            assertThat(u.email()).isEqualTo(emailComum);
+            assertThat(u.podeExcluir()).isTrue();
+        });
+        assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(principal.id())).singleElement()
+                .satisfies(u -> assertThat(u.podeExcluir()).isFalse());
+        assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", comum.token(), null,
+                com.cursovalido.backend.authentication.controller.ModeracaoController.UsuarioAdministracaoResposta[].class).getBody())
+                .allSatisfy(u -> assertThat(u.podeExcluir()).isFalse());
+        for (String token : new String[] { principal.token(), comum.token() }) {
+            assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
+                    .doesNotContain(emailAluno).contains(emailProfessor, emailComum);
+        }
+        for (String token : new String[] { autor.token(), professor.token() }) {
+            assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
+                    .doesNotContain(emailAluno, emailProfessor, emailComum, "principal-listagem@example.com");
+        }
+        assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", autor.token(), null, String.class).getBody())
+                .contains(emailAluno);
+    }
+
+    @Test
+    void errosDeAutenticacaoEPermissaoNaoExibemCaminhosOuTokens() {
+        for (String token : new String[] { null, "token-invalido-privado" }) {
+            var resposta = enviar(HttpMethod.GET, "/api/administracao/usuarios", token, null, String.class);
+            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+            assertThat(resposta.getHeaders().getContentType().isCompatibleWith(MediaType.APPLICATION_JSON)).isTrue();
+            assertThat(resposta.getHeaders().getCacheControl()).contains("no-store");
+            assertThat(resposta.getBody()).contains("AUTENTICACAO_NECESSARIA")
+                    .doesNotContain("/api/", "token-invalido", "timestamp", "exception", "trace");
+        }
+        var negado = enviar(HttpMethod.GET, "/api/administracao/usuarios", autor.token(), null, String.class);
+        assertThat(negado.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(negado.getBody()).contains("ACESSO_NEGADO").doesNotContain("/api/", "ROLE_", autor.token());
+    }
+
+    @Test
+    void corsPermiteSomenteOrigemECabecalhosConfigurados() {
+        var permitido = cliente.options().uri("/api/administracao/usuarios")
+                .header("Origin", "http://localhost:3000")
+                .header("Access-Control-Request-Method", "GET")
+                .header("Access-Control-Request-Headers", "authorization,content-type")
+                .retrieve().toEntity(String.class);
+        assertThat(permitido.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(permitido.getHeaders().getFirst("Access-Control-Allow-Origin")).isEqualTo("http://localhost:3000");
+        assertThat(permitido.getHeaders().getFirst("Access-Control-Allow-Credentials")).isNull();
+        var bloqueado = cliente.options().uri("/api/administracao/usuarios")
+                .header("Origin", "https://nao-autorizado.example")
+                .header("Access-Control-Request-Method", "GET")
+                .header("Access-Control-Request-Headers", "authorization")
+                .retrieve().toEntity(String.class);
+        assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(bloqueado.getHeaders().getFirst("Access-Control-Allow-Origin")).isNull();
+        var cabecalhoInvalido = cliente.options().uri("/api/administracao/usuarios")
+                .header("Origin", "http://localhost:3000")
+                .header("Access-Control-Request-Method", "GET")
+                .header("Access-Control-Request-Headers", "x-user-id")
+                .retrieve().toEntity(String.class);
+        assertThat(cabecalhoInvalido.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(cabecalhoInvalido.getHeaders().getFirst("Access-Control-Allow-Headers")).isNull();
     }
 
     @Test
@@ -328,17 +510,55 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
-    void tituloTopico_deveAceitar40ERecusar41NaCriacaoEEdicao() {
-        var topico = criarTopico("t".repeat(40));
+    void paginacaoPadraoDoForumEMeusTopicosExibeDezPorPagina() {
+        for (int i = 0; i < 11; i++) criarTopico("Topico " + i);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, TopicoResumoDTO[].class).getBody())
+                .hasSize(10);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos?page=1", null, null, TopicoResumoDTO[].class).getBody())
+                .hasSize(1);
+        var respostaMeus = enviar(HttpMethod.GET, "/api/forum/topicos/meus", autor.token(), null, Map.class);
+        assertThat(respostaMeus.getStatusCode()).as("Resposta: %s", respostaMeus.getBody()).isEqualTo(HttpStatus.OK);
+        var meus = respostaMeus.getBody();
+        assertThat(meus).containsKey("content");
+        assertThat((java.util.List<?>) meus.get("content")).hasSize(10);
+        assertThat(meus.get("totalPages")).isEqualTo(2);
+    }
+
+    @Test
+    void buscasDoForumNaoRetornam500ComPaginacao() {
+        for (int i = 0; i < 7; i++) {
+            criarTopico("Java " + i);
+            criarTopico("aaaaaaaaaaaaaaaa " + i);
+        }
+        for (String busca : new String[] { "java", "aaaaaaaaaaaaaaaa", "sem-resultados" }) {
+            int encontrados = busca.equals("sem-resultados") ? 0 : 5;
+            String parametros = "?page=0&size=5&busca=" + busca;
+            var publicos = enviar(HttpMethod.GET, "/api/forum/topicos" + parametros, autor.token(), null,
+                    TopicoResumoDTO[].class);
+            assertThat(publicos.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(publicos.getBody()).hasSize(encontrados);
+            var meus = enviar(HttpMethod.GET, "/api/forum/topicos/meus" + parametros, autor.token(), null, Map.class);
+            assertThat(meus.getStatusCode()).as("Busca: %s; resposta: %s", busca, meus.getBody())
+                    .isEqualTo(HttpStatus.OK);
+            assertThat((java.util.List<?>) meus.getBody().get("content")).hasSize(encontrados);
+        }
+        // A consulta autenticada pode registrar auditoria no PostgreSQL.
+        assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id=? "
+                + "and tipo_acao='CONSULTA_MEUS_TOPICOS'", Long.class, autor.id())).isEqualTo(3);
+    }
+
+    @Test
+    void tituloTopico_deveAceitar80ERecusar81NaCriacaoEEdicao() {
+        var topico = criarTopico("t".repeat(80));
         verificarErro(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
-                new TopicoRequest("t".repeat(41), "Descricao"), ErroHttp.class), 400);
+                new TopicoRequest("t".repeat(81), "Descricao"), ErroHttp.class), 400);
         var atualizado = enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
-                new TopicoRequest("e".repeat(40), "Descricao"), TopicoResponse.class);
+                new TopicoRequest("e".repeat(80), "Descricao"), TopicoResponse.class);
         assertThat(atualizado.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(atualizado.getBody().titulo()).isEqualTo("e".repeat(40));
+        assertThat(atualizado.getBody().titulo()).isEqualTo("e".repeat(80));
         verificarErro(enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
-                new TopicoRequest("e".repeat(41), "Descricao"), ErroHttp.class), 400);
-        assertThat(topicos.findById(topico.id()).orElseThrow().getTitulo()).isEqualTo("e".repeat(40));
+                new TopicoRequest("e".repeat(81), "Descricao"), ErroHttp.class), 400);
+        assertThat(topicos.findById(topico.id()).orElseThrow().getTitulo()).isEqualTo("e".repeat(80));
     }
 
     @Test
@@ -559,14 +779,14 @@ class ForumHttpIntegracaoTest {
     void publicarPolitica_comAdministradorPrincipal_deveRetornar201EPersistirNovaVersao() {
         var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal@example.com");
         var resposta = enviar(HttpMethod.POST, "/api/politicas", admin.token(),
-                new PoliticaRequest("Novos termos", "teste-v2", "Conteudo novo"), PoliticaResponse.class);
+                new PoliticaRequest("Novos termos", "Conteudo novo"), PoliticaResponse.class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(resposta.getBody().versao()).isEqualTo("teste-v2");
+        assertThat(resposta.getBody().versao()).isEqualTo("1.0");
         assertThat(resposta.getBody().nome()).isEqualTo("Novos termos");
         assertThat(resposta.getBody().conteudo()).isEqualTo("Conteudo novo");
-        assertThat(politicas.findByVersao("teste-v2")).isPresent();
+        assertThat(politicas.findByVersao("1.0")).isPresent();
         assertThat(politicas.findByAtivaTrueOrderByDataPublicacaoDesc()).extracting(Politica::getVersao)
-                .containsExactly("teste-v2");
+                .containsExactly("1.0");
         assertThat(usuarios.findById(autor.id()).orElseThrow().getAceitouTermosLgpd()).isTrue();
         assertThat(usuarios.findById(autor.id()).orElseThrow().getVersaoTermos()).isEqualTo("teste-v1");
     }
@@ -574,8 +794,8 @@ class ForumHttpIntegracaoTest {
     @Test
     void publicarPolitica_comAluno_deveRetornar403SemPersistir() {
         verificarErro(enviar(HttpMethod.POST, "/api/politicas", autor.token(),
-                new PoliticaRequest("Termos", "teste-v2", "Conteudo"), ErroHttp.class), 403);
-        assertThat(politicas.findByVersao("teste-v2")).isEmpty();
+                new PoliticaRequest("Termos", "Conteudo"), ErroHttp.class), 403);
+        assertThat(politicas.findByVersao("1.0")).isEmpty();
     }
 
     @Test

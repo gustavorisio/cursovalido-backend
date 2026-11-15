@@ -28,12 +28,12 @@ class ValidacaoModulosHttpTest {
     }
 
     @Test
-    void tituloAceita40ERejeita41Caracteres() {
+    void tituloAceita80ERejeita81Caracteres() {
         try (var factory = Validation.buildDefaultValidatorFactory()) {
             var validator = factory.getValidator();
-            assertTrue(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(40), "Texto"))
+            assertTrue(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(80), "Texto"))
                     .isEmpty());
-            assertFalse(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(41), "Texto"))
+            assertFalse(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(81), "Texto"))
                     .isEmpty());
         }
     }
@@ -62,9 +62,9 @@ class ValidacaoModulosHttpTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.campos.page").exists());
         mvc.perform(post("/api/forum/topicos").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"titulo\":\"11111111111111111111111111111111111111111\",\"descricao\":\"Texto\"}"))
+                .content("{\"titulo\":\"" + "t".repeat(81) + "\",\"descricao\":\"Texto\"}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.campos.titulo").value("O titulo deve ter no maximo 40 caracteres"));
+                .andExpect(jsonPath("$.campos.titulo").value("O titulo deve ter no maximo 80 caracteres"));
         verifyNoInteractions(forum, cursos, noticias);
     }
 

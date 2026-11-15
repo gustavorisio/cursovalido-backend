@@ -3,6 +3,7 @@ package com.cursovalido.backend.forum.configuration;
 import com.cursovalido.backend.authentication.configuration.HttpsFilter;
 import com.cursovalido.backend.authentication.configuration.LimiteRequisicoesFilter;
 import com.cursovalido.backend.authentication.configuration.TokenJwtFilter;
+import com.cursovalido.backend.authentication.security.RespostaErroHttp;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -55,8 +56,12 @@ public class SecurityConfig {
                                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(
                                                 SessionCreationPolicy.STATELESS))
                                 .exceptionHandling(excecoes -> excecoes
-                                                .authenticationEntryPoint((request, response, exception) -> response
-                                                                .sendError(401, "Autenticacao necessaria")))
+                                                .authenticationEntryPoint((request, response, exception) ->
+                                                                RespostaErroHttp.escrever(response, 401,
+                                                                                "Entre na sua conta para continuar.", "AUTENTICACAO_NECESSARIA"))
+                                                .accessDeniedHandler((request, response, exception) ->
+                                                                RespostaErroHttp.escrever(response, 403,
+                                                                                "Você não tem permissão para fazer isso.", "ACESSO_NEGADO")))
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -109,6 +114,7 @@ public class SecurityConfig {
                                                                 "/api/administracao/usuarios/*/suspensoes")
                                                 .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/administracao/convites/*",
+                                                                "/api/administracao/usuarios/*",
                                                                 "/api/administracao/convites/*/cancelar",
                                                                 "/api/administracao/usuarios/*/suspensoes/*")
                                                 .hasRole("ADMINISTRADOR")
@@ -235,11 +241,11 @@ public class SecurityConfig {
                 CorsConfiguration configuracao = new CorsConfiguration();
                 configuracao.setAllowedOrigins(java.util.Arrays.stream(origensFrontend.split(","))
                                 .map(String::trim).filter(origem -> !origem.isEmpty()).distinct().toList());
-                configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"));
-                configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "Cache-Control", "X-User-Id"));
-                configuracao.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+                configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"));
+                configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "Cache-Control"));
+                configuracao.setExposedHeaders(List.of("Content-Disposition", "Retry-After"));
                 configuracao.setMaxAge(3600L);
-                configuracao.setAllowCredentials(true);
+                configuracao.setAllowCredentials(false);
 
                 UrlBasedCorsConfigurationSource origem = new UrlBasedCorsConfigurationSource();
                 origem.registerCorsConfiguration("/**", configuracao);

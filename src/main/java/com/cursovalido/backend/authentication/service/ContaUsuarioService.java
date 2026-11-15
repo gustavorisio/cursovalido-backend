@@ -9,10 +9,14 @@ import com.cursovalido.backend.authentication.repository.SessaoRepository;
 import com.cursovalido.backend.authentication.repository.TokenEmailRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.conta.ContaValidation;
+import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.forum.repository.UsuarioForumRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -28,6 +32,7 @@ public class ContaUsuarioService {
     private final AceiteTermoArquivadoRepository repositorioAceitesArquivados;
     private final UsuarioForumRepository usuariosForumRepositorio;
     private final SessaoRepository sessoes;
+    private final PrivilegiosAdministrativosService privilegios;
 
     private void arquivarAceite(Usuario usuario) {
         if (usuario.getVersaoTermos() == null) {
@@ -83,6 +88,26 @@ public class ContaUsuarioService {
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
         encerrarConta(usuario);
+    }
+
+    @Transactional
+    public void excluirPelaAdministracao(Long idUsuario, Long idAdministrador) {
+        privilegios.verificarPrincipal(idAdministrador);
+        if (idUsuario.equals(idAdministrador)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nao e permitido excluir a propria conta pelo painel");
+        }
+        Usuario usuario = repositorio.buscarParaAtualizar(idUsuario)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
+        if (privilegios.ehPrincipal(usuario)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nao e permitido excluir o administrador principal");
+        }
+        if (usuario.getPerfil() != Perfil.PROFESSOR && usuario.getPerfil() != Perfil.ADMINISTRADOR) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A exclusao administrativa e restrita a equipe");
+        }
+        if (usuario.getExcluidoEm() != null) return;
+        encerrarConta(usuario);
+        auditoria.registrar(idAdministrador, "EXCLUSAO_ADMINISTRATIVA_CONTA",
+                "Usuario " + idUsuario + "; perfil " + usuario.getPerfil(), null);
     }
 
     @Transactional
