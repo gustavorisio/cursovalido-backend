@@ -44,7 +44,7 @@ public class TopicoService {
         return repositorioTopicos.listarRecentes(PageRequest.of(pagina, tamanho), termo);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public org.springframework.data.domain.Page<TopicoResumoDTO> listarMeus(int pagina, int tamanho, String busca, Long idUsuario) {
         servicoUsuarios.buscarAtivo(idUsuario);
         if (pagina < 0 || tamanho < 1 || tamanho > 100) {

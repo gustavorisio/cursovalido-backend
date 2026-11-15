@@ -502,6 +502,29 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
+    void buscasDoForumNaoRetornam500ComPaginacao() {
+        for (int i = 0; i < 7; i++) {
+            criarTopico("Java " + i);
+            criarTopico("aaaaaaaaaaaaaaaa " + i);
+        }
+        for (String busca : new String[] { "java", "aaaaaaaaaaaaaaaa", "sem-resultados" }) {
+            int encontrados = busca.equals("sem-resultados") ? 0 : 5;
+            String parametros = "?page=0&size=5&busca=" + busca;
+            var publicos = enviar(HttpMethod.GET, "/api/forum/topicos" + parametros, autor.token(), null,
+                    TopicoResumoDTO[].class);
+            assertThat(publicos.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(publicos.getBody()).hasSize(encontrados);
+            var meus = enviar(HttpMethod.GET, "/api/forum/topicos/meus" + parametros, autor.token(), null, Map.class);
+            assertThat(meus.getStatusCode()).as("Busca: %s; resposta: %s", busca, meus.getBody())
+                    .isEqualTo(HttpStatus.OK);
+            assertThat((java.util.List<?>) meus.getBody().get("content")).hasSize(encontrados);
+        }
+        // A consulta autenticada pode registrar auditoria no PostgreSQL.
+        assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id=? "
+                + "and tipo_acao='CONSULTA_MEUS_TOPICOS'", Long.class, autor.id())).isEqualTo(3);
+    }
+
+    @Test
     void tituloTopico_deveAceitar80ERecusar81NaCriacaoEEdicao() {
         var topico = criarTopico("t".repeat(80));
         verificarErro(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
