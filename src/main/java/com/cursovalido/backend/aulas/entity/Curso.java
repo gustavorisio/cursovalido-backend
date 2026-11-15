@@ -19,6 +19,8 @@ public class Curso {
     private String titulo;
     @Column(nullable = false, length = 5000)
     private String descricao;
+    @Column(name = "capa_jpeg", columnDefinition = "text")
+    private String capaJpeg;
     @Column(nullable = false)
     private boolean ativo = true;
     @Column(name = "criado_em", nullable = false)

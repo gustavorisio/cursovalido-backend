@@ -76,6 +76,10 @@ public class CursoService {
     }
 
     void atualizarDados(Curso curso, CursoRequest dados) {
+        if (!java.util.Objects.equals(dados.capaJpeg(), curso.getCapaJpeg())) {
+            CapaCurso.validar(dados.capaJpeg());
+        }
+        curso.setCapaJpeg(dados.capaJpeg());
         curso.setTitulo(dados.titulo().trim());
         curso.setDescricao(dados.descricao().trim());
         curso.setTema(dados.idTema() == null ? null : temas.buscar(dados.idTema()));
