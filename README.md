@@ -21,9 +21,9 @@ O projeto está em desenvolvimento. A versão atual do back-end possui autentica
 
 ### Cadastro e acesso
 
-A idade é validada localmente pela data de nascimento informada. O cadastro de aluno exige confirmação de maioridade, aceite dos termos vigentes e confirmação do e-mail. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. Depois dessa confirmação, a API emite o JWT usado nas requisições autenticadas.
+A idade é validada localmente pela data de nascimento informada, entre 18 e 90 anos. O cadastro de aluno exige confirmação de maioridade, aceite dos termos vigentes e confirmação do e-mail. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. Depois dessa confirmação, a API emite o JWT usado nas requisições autenticadas. Há uma sessão ativa por conta: um novo login completo encerra a anterior. Termos pendentes ou revogados também exigem 2FA antes de liberar o token restrito ao novo aceite.
 
-As senhas são armazenadas com BCrypt. Também há recuperação de senha e proteção contra tentativas repetidas de acesso. Professores e administradores entram por convite, com conclusão do cadastro e aprovação administrativa.
+As senhas são armazenadas com BCrypt. Também há recuperação de senha e proteção contra tentativas repetidas de acesso. Se a conta ainda não confirmou o e-mail, a recuperação reenvia a confirmação em vez de emitir um link de redefinição. Professores e administradores entram por convite, com conclusão do cadastro e aprovação administrativa.
 
 ### Comunidade
 
@@ -47,7 +47,7 @@ Esse módulo complementa as aulas com conteúdos sobre ferramentas, linguagens e
 
 A área administrativa reúne gestão de convites, aprovações, documentos, restrições de usuários e consulta e moderação de aulas. Algumas operações são exclusivas do administrador principal. O dashboard apresenta indicadores operacionais, como quantidades de usuários, cursos, aulas, matrículas, tópicos e notícias, além de matrículas por mês, cursos mais procurados e distribuição de usuários por perfil.
 
-O formulário público de suporte gera um protocolo e encaminha a solicitação por e-mail, sujeito à configuração e aos limites de envio. O recurso não mantém um sistema completo de acompanhamento de chamados.
+O formulário público de suporte gera um protocolo e encaminha a solicitação por e-mail, sujeito à configuração e aos limites de envio. O retorno usa o e-mail da conta; não há campo separado de contato. O recurso não mantém um sistema completo de acompanhamento de chamados.
 
 ### Dados pessoais e termos de uso
 
@@ -91,13 +91,17 @@ No pgAdmin ou em outro cliente PostgreSQL, crie o banco:
 CREATE DATABASE cursovalido;
 ```
 
-Utilize um usuário com permissão para conectar ao banco e criar os objetos das migrações. O Flyway cria as tabelas na inicialização, a partir dos scripts em `src/main/resources/db/migration`. Depois, o Hibernate valida a estrutura do banco.
+Utilize um usuário com permissão para conectar ao banco e criar tabelas. O único script SQL é [`src/main/resources/db/v3.sql`](src/main/resources/db/v3.sql), sem comentários, CPF, usuários, senhas, textos de documentos ou conteúdo de exemplo. As tabelas de documentos e aceites permanecem porque são usadas pelo backend.
 
-O histórico possui apenas a **V1 original, imutável**, e a **V2**, que reúne a atualização do backend. Em banco novo, ambas são executadas. Em banco com a V1 registrada no Flyway, a inicialização valida seu checksum e aplica apenas a V2; mantenha as variáveis de conexão do banco existente. Não execute repair para contornar uma V1 alterada.
+Em banco vazio, o Flyway executa automaticamente o `v3.sql` na primeira inicialização e registra a versão 3. Nas próximas inicializações, apenas valida o histórico; o Hibernate valida a estrutura. O histórico antigo V1/V2 não é mais distribuído: esta configuração se destina a bancos novos.
 
-Somente se o banco já tiver **exatamente a estrutura original da V1, mas não possuir histórico Flyway**, defina temporariamente `FLYWAY_BASELINE_ON_MIGRATE=true`. O baseline registra a versão 1 sem executar sua criação e aplica a V2. Após a atualização, remova essa variável (padrão `false`). A validação das migrações permanece ativa e o comando clean permanece desabilitado. Bancos com migrações intermediárias de desenvolvimento V3–V10 devem ser recriados para usar este histórico consolidado.
+Para executar o arquivo manualmente em um banco vazio, use:
 
-A V2 remove CPF e seu hash do cadastro e das contas excluídas, preserva contas, aceites e documentos existentes. A V2 altera somente a estrutura: não insere áreas, seções, questionários ou conteúdo de exemplo, nem publica, desativa ou atualiza termos e políticas. A partir da V2, esses conteúdos são gerenciados manualmente pela administração. As colunas removidas não são recuperáveis pela migração; faça backup se precisar preservar esses dados. A recriação do banco é uma operação manual.
+```powershell
+psql -h localhost -U seu_usuario -d cursovalido -v ON_ERROR_STOP=1 --single-transaction -f src/main/resources/db/v3.sql
+```
+
+Somente se executar o SQL manualmente, configure `FLYWAY_BASELINE_ON_MIGRATE=true` na primeira inicialização (versão padrão: 3). Após a inicialização bem-sucedida, remova essa variável. O administrador principal é criado com `ADMIN_EMAIL` e `ADMIN_PASSWORD`. Publique os termos e a política de privacidade pela API administrativa antes de liberar o cadastro público.
 
 ### 4. Configurar as variáveis de ambiente
 
@@ -137,10 +141,11 @@ Para validar os vídeos vinculados às aulas e receber solicitações de suporte
 
 ```text
 YOUTUBE_API_KEY=sua_chave_da_api_youtube
+YOUTUBE_ALLOWED_CHANNEL_ID=UCxxxxxxxxxxxxxxxxxxxxxx
 SUPPORT_EMAIL=email_de_atendimento
 ```
 
-Utilize uma chave com acesso à YouTube Data API v3. Sem ela, os fluxos que validam vídeos retornam indisponibilidade. Sem `SUPPORT_EMAIL`, o envio do formulário de suporte fica indisponível.
+Utilize uma chave com acesso à YouTube Data API v3. Configure `YOUTUBE_ALLOWED_CHANNEL_ID` com o ID exato do único canal autorizado (prefixo `UC` seguido de 22 caracteres; não use o nome, @handle ou URL do canal). Na criação e edição de aulas, tanto por professores quanto por administradores, o backend consulta `status,snippet` e compara `snippet.channelId` antes de salvar. Vídeos de outros canais são rejeitados com HTTP 400. Canal ausente ou inválido bloqueia a validação com HTTP 503, sem consultar o YouTube. Após alterar a variável, reinicie o backend. A mudança vale para novos cadastros e edições; aulas já salvas não são revalidadas automaticamente. Sem ela, os fluxos que validam vídeos retornam indisponibilidade. Sem `SUPPORT_EMAIL`, o envio do formulário de suporte fica indisponível.
 
 Para criar o primeiro administrador em um banco novo:
 
@@ -149,7 +154,7 @@ ADMIN_EMAIL=email_do_administrador
 ADMIN_PASSWORD=senha_do_administrador
 ```
 
-A senha deve ter pelo menos oito caracteres, uma letra maiúscula, um caractere especial e no máximo 72 bytes em UTF-8. A inicialização é executada uma única vez por banco e não promove uma conta existente. Após criar a conta, remova essas duas variáveis do ambiente. O primeiro acesso exige regularizar o aceite dos documentos; o login utiliza confirmação por e-mail.
+A senha deve conter uma letra maiúscula, uma minúscula e um caractere especial, com no máximo 72 bytes em UTF-8, sem quantidade mínima de caracteres. A inicialização é executada uma única vez por banco e não promove uma conta existente. Após criar a conta, remova essas duas variáveis do ambiente. O primeiro acesso exige regularizar o aceite dos documentos; o login utiliza confirmação por e-mail.
 
 Também é possível definir `SERVER_PORT`, cujo padrão é `8080`, `JWT_EXPIRATION`, cujo padrão é `3600000` milissegundos, ou uma hora, e `BCRYPT_STRENGTH`, cujo padrão é `12` e cujo intervalo permitido é de `10` a `16`. A variável `REQUIRE_HTTPS` controla a exigência de HTTPS e possui padrão `false`.
 
@@ -235,3 +240,46 @@ O back-end segue uma organização em camadas, com controladores, serviços, rep
 **Coorientador:** Prof. Alessandro Aparecido da Silva Horas.
 
 **Instituição:** Universidade de Mogi das Cruzes - Engenharia de Software, 2026.
+
+## Gestão de contas e termos por perfil (V3)
+
+Plano de implementação aplicado:
+
+1. Preservar o identificador do usuário na exclusão, com `excluido_em`, conta inativa, credenciais inutilizadas e dados pessoais anonimizados. Revogar sessões e remover tokens de e-mail na mesma transação. Preservar auditoria, aceites, cursos, publicações e demais históricos ligados à conta.
+2. Liberar o e-mail pela substituição do endereço da conta excluída. Remover a verificação de carência e a coluna `bloqueada_ate`, inclusive para registros anteriores. O hash do e-mail continua servindo à regra existente de preservação de sanções, sem impedir cadastro ou convite.
+3. Preservar convites anteriores, criar um registro para cada novo convite e identificar seu criador em `criado_por`. Cancelar convites sem apagá-los. Rejeitar/remover cadastros pendentes pelo mesmo fluxo de anonimização.
+4. Disponibilizar documentos específicos para `PROFESSOR` e `ADMINISTRADOR` e exigir aceite explícito no convite ou primeiro acesso. Integrar a pendência ao token restrito de termos e ao filtro JWT para contas existentes.
+5. Registrar cada aceite em `tb_aceites_responsabilidade`, com `user_id`, `perfil`, `termo_version`, `ip_address` e `accepted_at`. Preservar esses registros após exclusão. Validar migração PostgreSQL e fluxos de autenticação, exclusão e convites.
+
+O nome do perfil administrador na API permanece `ADMINISTRADOR`.
+
+Consulta pública do termo: `GET /api/politicas/responsabilidade/PROFESSOR` ou `GET /api/politicas/responsabilidade/ADMINISTRADOR`. A resposta contém `perfil`, `versao` e `conteudo`. Os documentos iniciais estão versionados em `ResponsabilidadeService`; qualquer alteração de conteúdo deve incrementar a versão, exigindo novo aceite. O conteúdo não substitui os Termos Gerais e a Política de Privacidade.
+
+Em `POST /api/convites/completar-cadastro`, incluir no objeto `cadastro`, além dos campos existentes:
+
+```json
+{
+  "aceitouResponsabilidade": true,
+  "versaoResponsabilidade": "1.0"
+}
+```
+
+Aceite ausente, falso ou de versão diferente da vigente retorna HTTP 400 e não cria a conta. O perfil exigido vem do convite, nunca de um campo enviado pelo cliente.
+
+Para uma conta existente, o login retorna `TERMOS_NAO_ACEITOS` com o token restrito já utilizado pela plataforma. Consultar o documento do perfil e enviar a `POST /api/autenticacao/aceitar-termos-novamente`, usando esse token:
+
+```json
+{
+  "versaoTermos": "<versão vigente dos termos gerais>",
+  "aceitouResponsabilidade": true,
+  "versaoResponsabilidade": "1.0"
+}
+```
+
+Após HTTP 204, fazer login novamente. O IP é obtido da requisição no servidor; não é aceito como campo do corpo. Alunos mantêm o contrato anterior de aceite dos termos gerais. Uma mudança de perfil exige o aceite correspondente ao novo perfil.
+
+A exclusão continua exigindo o código enviado por e-mail nos endpoints existentes. O e-mail fica disponível assim que a transação de exclusão termina; uma nova conta recebe outro identificador e não reutiliza sessões antigas. Contas excluídas deixam a listagem operacional de usuários; suas referências permanecem no banco para rastreabilidade. Os logs anteriores não são reescritos, preservando suas assinaturas.
+
+A V3 é incremental e não modifica V1/V2. Ela não consegue recuperar referências apagadas antes da atualização nem identificar retroativamente criadores de convites antigos; `criado_por` é preenchido nos novos convites. A exclusão do administrador principal continua permitida; a regra existente de inicialização única não cria automaticamente um substituto.
+
+Integração com o frontend: `POST /api/convites/consultar`, com `{ "token": "..." }`, retorna `email` e `perfil` apenas para um convite pendente e não expirado. O frontend usa esses dados para selecionar o Termo de Responsabilidade e fixar o e-mail do cadastro; o perfil enviado pelo cliente não define permissões. O token vai no corpo da requisição, seguindo o padrão de confirmação de convites.
