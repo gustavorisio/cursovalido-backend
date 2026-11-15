@@ -8,7 +8,7 @@ import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.service.EmailService;
-import com.cursovalido.backend.authentication.service.ValidacaoEmailService;
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 import com.cursovalido.backend.forum.dto.*;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.repository.*;
