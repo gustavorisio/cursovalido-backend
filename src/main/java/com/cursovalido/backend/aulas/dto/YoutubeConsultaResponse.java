@@ -6,7 +6,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record YoutubeConsultaResponse(List<Video> items) {
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Video(String id, Status status) {
+    public record Video(String id, Status status, Snippet snippet) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Snippet(String channelId) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
