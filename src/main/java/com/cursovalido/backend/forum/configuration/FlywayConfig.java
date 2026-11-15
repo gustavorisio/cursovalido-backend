@@ -16,7 +16,7 @@ public class FlywayConfig {
     @Bean(initMethod = "migrate")
     public Flyway flyway(DataSource dataSource,
             @Value("${spring.flyway.baseline-on-migrate:false}") boolean baselineOnMigrate,
-            @Value("${spring.flyway.baseline-version:3}") String baselineVersion) {
+            @Value("${spring.flyway.baseline-version:1}") String baselineVersion) {
         return configuracao()
                 .dataSource(dataSource)
                 .baselineOnMigrate(baselineOnMigrate)
@@ -27,7 +27,7 @@ public class FlywayConfig {
     }
 
     public static FluentConfiguration configuracao() {
-        return Flyway.configure().locations("classpath:db").sqlMigrationPrefix("v");
+        return Flyway.configure().locations("classpath:db/migration");
     }
 
     @Bean
