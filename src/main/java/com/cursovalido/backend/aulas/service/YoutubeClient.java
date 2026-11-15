@@ -19,10 +19,12 @@ import org.springframework.web.server.ResponseStatusException;
 public class YoutubeClient {
     private final RestClient cliente;
     private final String chaveApi;
+    private final String canalAutorizado;
 
     @Autowired
     public YoutubeClient(@Value("${external.youtube.base-url:https://www.googleapis.com/youtube/v3}") String url,
             @Value("${external.youtube.api-key:}") String chaveApi,
+            @Value("${external.youtube.allowed-channel-id:}") String canalAutorizado,
             @Value("${external.youtube.connect-timeout-ms:3000}") int conexaoMs,
             @Value("${external.youtube.read-timeout-ms:5000}") int leituraMs) {
         HttpClient httpClient = HttpClient.newBuilder()
@@ -31,12 +33,14 @@ public class YoutubeClient {
         fabrica.setReadTimeout(Duration.ofMillis(leituraMs));
         this.cliente = RestClient.builder().baseUrl(url).requestFactory(fabrica).build();
         this.chaveApi = chaveApi;
+        this.canalAutorizado = canalAutorizado == null ? "" : canalAutorizado.trim();
     }
 
     // Permite testar o cliente HTTP sem chamar o YouTube real.
-    YoutubeClient(RestClient cliente, String chaveApi) {
+    YoutubeClient(RestClient cliente, String chaveApi, String canalAutorizado) {
         this.cliente = cliente;
         this.chaveApi = chaveApi;
+        this.canalAutorizado = canalAutorizado == null ? "" : canalAutorizado.trim();
     }
 
     public void validarVideo(String videoId) {
@@ -44,10 +48,14 @@ public class YoutubeClient {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "Integracao com YouTube nao configurada");
         }
+        if (!canalAutorizado.matches("UC[A-Za-z0-9_-]{22}")) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Canal autorizado do YouTube nao configurado ou invalido (YOUTUBE_ALLOWED_CHANNEL_ID)");
+        }
         YoutubeConsultaResponse resposta;
         try {
             resposta = cliente.get()
-                    .uri(uri -> uri.path("/videos").queryParam("part", "status")
+                    .uri(uri -> uri.path("/videos").queryParam("part", "status,snippet")
                             .queryParam("id", videoId).build())
                     .header("X-Goog-Api-Key", chaveApi)
                     .retrieve().body(YoutubeConsultaResponse.class);
@@ -115,6 +123,13 @@ public class YoutubeClient {
         }
         if (!"processed".equals(status.uploadStatus())) {
             throw videoInvalido("O video ainda nao esta pronto para reproducao");
+        }
+        if (video.snippet() == null || video.snippet().channelId() == null
+                || video.snippet().channelId().isBlank()) {
+            throw respostaInvalida();
+        }
+        if (!canalAutorizado.equals(video.snippet().channelId())) {
+            throw videoInvalido("O video deve pertencer ao canal autorizado da plataforma");
         }
     }
 

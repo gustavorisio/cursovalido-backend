@@ -1,4 +1,4 @@
-package com.cursovalido.backend.authentication.service;
+package com.cursovalido.backend.authentication.validation.email;
 
 import java.util.Hashtable;
 import javax.naming.NameNotFoundException;

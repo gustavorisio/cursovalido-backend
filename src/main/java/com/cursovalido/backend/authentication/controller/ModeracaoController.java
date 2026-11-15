@@ -1,5 +1,7 @@
 package com.cursovalido.backend.authentication.controller;
 
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+
 import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
@@ -29,7 +31,7 @@ public class ModeracaoController {
     @GetMapping("/api/administracao/usuarios")
     public List<UsuarioAdministracaoResposta> listar(@AuthenticationPrincipal UsuarioAutenticado principal) {
         var administrador = privilegios.verificarAdministrador(principal.getId());
-        return usuarios.findAll().stream().map(usuario -> {
+        return usuarios.findAll().stream().filter(usuario -> usuario.getExcluidoEm() == null).map(usuario -> {
             boolean podeModerar = !usuario.getId().equals(administrador.getId());
             if (privilegios.ehPrincipal(usuario))
                 podeModerar = false;

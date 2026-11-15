@@ -41,6 +41,8 @@ public class Usuario {
     private Perfil perfil;
     @Column(nullable = false)
     private boolean ativo = true;
+    @Column(name = "excluido_em")
+    private LocalDateTime excluidoEm;
     @Column(name = "email_confirmado", nullable = false)
     private boolean emailConfirmado = false;
     @Enumerated(EnumType.STRING)

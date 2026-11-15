@@ -36,7 +36,7 @@ public class DocumentoTermosController {
             modelo = new String(entrada.readAllBytes(), StandardCharsets.UTF_8);
         }
         String html = politica == null ? modelo : renderizarDocumento(modelo, politica);
-        return ResponseEntity.ok().header("Cache-Control", "no-store")
+        return ResponseEntity.ok().header("Cache-Control", "public, max-age=60")
                 .contentType(new MediaType("text", "html", StandardCharsets.UTF_8)).body(html);
     }
 

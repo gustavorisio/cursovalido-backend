@@ -1,9 +1,9 @@
-package com.cursovalido.backend.authentication.service;
+package com.cursovalido.backend.authentication.validation.administracao;
 
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.repository.InicializacaoAdministradorRepository;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

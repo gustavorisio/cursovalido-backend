@@ -1,5 +1,7 @@
 package com.cursovalido.backend.authentication.service;
 
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 

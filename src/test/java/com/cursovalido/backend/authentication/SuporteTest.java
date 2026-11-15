@@ -54,17 +54,17 @@ class SuporteTest {
                                 .andExpect(status().isTooManyRequests())
                                 .andExpect(jsonPath("$.codigo").value("LIMITE_SUPORTE_ATINGIDO"))
                                 .andExpect(header().string("Retry-After", "86400"));
-                verify(limites).enviar(eq("127.0.0.1"), eq("conta@example.com"), eq("retorno@example.com"),
+                verify(limites).enviar(eq("127.0.0.1"), eq("conta@example.com"), eq("conta@example.com"),
                                 any(Runnable.class));
                 verifyNoInteractions(emails);
         }
 
         @Test
-        void recebeSemLoginMesmoComTokenAntigoERespondeParaContato() throws Exception {
+        void recebeSemLoginMesmoComTokenAntigoERespondeParaConta() throws Exception {
                 mvc.perform(post("/api/suporte/solicitacoes").header("Authorization", "Bearer token-antigo")
                                 .contentType(MediaType.APPLICATION_JSON).content(JSON))
                                 .andExpect(status().isCreated()).andExpect(jsonPath("$.protocolo").isNotEmpty());
-                verify(emails).enviarSuporte(eq("suporte@example.com"), eq("retorno@example.com"),
+                verify(emails).enviarSuporte(eq("suporte@example.com"), eq("conta@example.com"),
                                 contains("REVISAO_BANIMENTO"), argThat(texto -> texto.contains("conta@example.com")
                                                 && texto.contains("Maria") && texto.contains("por engano")));
         }

@@ -2,6 +2,7 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.entity.LogAuditoria;
 import com.cursovalido.backend.authentication.repository.LogAuditoriaRepository;
+import com.cursovalido.backend.authentication.validation.auditoria.AuditoriaValidation;
 import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -25,10 +26,7 @@ public class LogAuditoriaService {
 
     @PostConstruct
     public void validarChave() {
-        if (chaveTexto == null)
-            throw new IllegalStateException("AUDITORIA_CHAVE deve ter pelo menos 32 bytes");
-        if (chaveTexto.getBytes(StandardCharsets.UTF_8).length < 32)
-            throw new IllegalStateException("AUDITORIA_CHAVE deve ter pelo menos 32 bytes");
+        AuditoriaValidation.validarChave(chaveTexto);
     }
 
     // Registra uma acao e liga o registro ao anterior.

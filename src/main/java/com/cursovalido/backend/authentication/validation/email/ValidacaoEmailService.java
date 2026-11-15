@@ -1,4 +1,4 @@
-package com.cursovalido.backend.authentication.service;
+package com.cursovalido.backend.authentication.validation.email;
 
 import java.net.IDN;
 import java.util.regex.Pattern;

@@ -1,5 +1,6 @@
 package com.cursovalido.backend.authentication.suporte;
 
+import com.cursovalido.backend.authentication.validation.suporte.SuporteValidation;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -50,10 +51,7 @@ public class LimiteSuporteService {
                         liberacao = expiracao;
                 }
             }
-            if (liberacao.isAfter(agora)) {
-                throw new LimiteSuporteException(
-                        Math.max(1, (Duration.between(agora, liberacao).toMillis() + 999) / 1000));
-            }
+            SuporteValidation.validarLimite(agora, liberacao);
             envio.run();
             // Falha no provedor desfaz a transacao e nao consome a cota diaria.
             Instant fim = relogio.instant().plus(Duration.ofHours(24));

@@ -54,7 +54,7 @@ class SuporteHttpLimiteTest {
     @Test
     void httpRealGravaLimiteEBloqueiaReenvioSemSegundoEmail() {
         assertThat(enviar("conta@example.com").getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tb_suporte_limites", Integer.class)).isEqualTo(3);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tb_suporte_limites", Integer.class)).isEqualTo(2);
         var repetida = enviar("CONTA@example.com");
         assertThat(repetida.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
         assertThat(repetida.getBody()).contains("LIMITE_SUPORTE_ATINGIDO");

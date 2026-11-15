@@ -53,6 +53,8 @@ class AulasHttpIntegracaoTest {
     private JdbcTemplate jdbc;
     @MockitoBean
     private YoutubeClient youtube;
+    @Autowired
+    private com.cursovalido.backend.authentication.service.ResponsabilidadeService responsabilidade;
     private RestClient cliente;
     private Usuario aluno;
     private String tokenAluno;
@@ -212,7 +214,7 @@ class AulasHttpIntegracaoTest {
         String limitado = tokens.gerarTermos(aluno);
         assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", limitado, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.FORBIDDEN);
-        tokens.encerrar(tokenAluno);
+        tokens.encerrar(limitado);
         assertThat(
                 enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokenAluno, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
@@ -255,7 +257,8 @@ class AulasHttpIntegracaoTest {
         var salvo = enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno,
                 new ProgressoAulaRequest(145L), ProgressoAulaResponse.class);
         assertThat(salvo.getStatusCode()).isEqualTo(HttpStatus.OK);
-        var consulta = enviar(HttpMethod.GET, rotaProgresso(), tokens.gerar(aluno), null, ProgressoAulaResponse.class);
+        tokenAluno = tokens.gerar(aluno);
+        var consulta = enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class);
         assertThat(consulta.getBody().posicaoSegundos()).isEqualTo(145);
         var conclusao = enviar(HttpMethod.POST, "/api/aluno/aulas/" + idAula + "/conclusao",
                 tokenAluno, null, ProgressoAulaResponse.class);
@@ -400,6 +403,8 @@ class AulasHttpIntegracaoTest {
         usuario.setVersaoTermos("teste-v1");
         usuario.setPerfil(perfil);
         usuario.setEmailConfirmado(true);
-        return usuarios.saveAndFlush(usuario);
+        usuarios.saveAndFlush(usuario);
+        if (perfil != Perfil.ALUNO) responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
+        return usuario;
     }
 }

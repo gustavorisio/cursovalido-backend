@@ -26,7 +26,7 @@ public class ComentarioService {
     private final UsuarioForumService servicoUsuarios;
     private final LogAuditoriaService auditoria;
 
-    // Lista os comentarios ativos de um topico.
+    // Lista os comentarios de um topico, incluindo os excluidos logicamente.
     public List<Comentario> listarPorTopico(Long idTopico) {
         return listarPorTopico(idTopico, null);
     }

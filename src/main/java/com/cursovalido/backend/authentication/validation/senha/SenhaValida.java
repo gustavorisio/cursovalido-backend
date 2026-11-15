@@ -1,4 +1,4 @@
-package com.cursovalido.backend.authentication.validation;
+package com.cursovalido.backend.authentication.validation.senha;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
@@ -8,7 +8,9 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = SenhaValidaValidator.class)
 public @interface SenhaValida {
-    String message() default "Informe uma senha valida.";
+    String MENSAGEM = "A senha deve conter ao menos uma letra maiuscula, uma minuscula e um caractere especial, com no maximo 72 bytes.";
+
+    String message() default MENSAGEM;
 
     Class<?>[] groups() default {};
 

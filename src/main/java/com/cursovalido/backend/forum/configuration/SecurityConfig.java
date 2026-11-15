@@ -71,11 +71,11 @@ public class SecurityConfig {
                                                                 "/api/autenticacao/reenviar-confirmacao",
                                                                 "/api/autenticacao/solicitar-alteracao-senha",
                                                                 "/api/autenticacao/alterar-senha",
-                                                                "/api/convites/confirmar-email",
+                                                                "/api/convites/consultar", "/api/convites/confirmar-email",
                                                                 "/api/convites/completar-cadastro")
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/politicas/ativas",
-                                                                "/api/politicas/privacidade/ativa",
+                                                                "/api/politicas/privacidade/ativa", "/api/politicas/responsabilidade/*",
                                                                 "/politica-privacidade.html", "/termos-aceite.html")
                                                 .permitAll()
                                                 // Administracao; os servicos exigem o principal nas operacoes

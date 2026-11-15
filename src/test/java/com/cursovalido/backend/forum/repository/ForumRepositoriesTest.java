@@ -85,12 +85,12 @@ class ForumRepositoriesTest {
         var outro = topico("Outro", 2);
         var segundo = comentario(principal, true, 2);
         var primeiro = comentario(principal, true, 1);
-        comentario(principal, false, 3);
+        var apagado = comentario(principal, false, 3);
         comentario(outro, true, 4);
         comentarios.flush();
         entityManager.clear();
         assertThat(comentarios.listarPorTopicoAtivo(principal.getId())).extracting(Comentario::getId)
-                .containsExactly(primeiro.getId(), segundo.getId());
+                .containsExactly(primeiro.getId(), segundo.getId(), apagado.getId());
     }
 
     @Test

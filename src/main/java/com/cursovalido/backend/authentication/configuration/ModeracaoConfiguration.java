@@ -3,7 +3,7 @@ package com.cursovalido.backend.authentication.configuration;
 import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.ModeracaoUsuarioService;
-import com.cursovalido.backend.authentication.service.PrivilegiosAdministrativosService;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

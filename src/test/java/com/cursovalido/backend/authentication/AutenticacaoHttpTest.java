@@ -1,5 +1,7 @@
 package com.cursovalido.backend.authentication;
 
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -50,6 +52,8 @@ class AutenticacaoHttpTest {
     private ValidacaoEmailService validacaoEmail;
     @MockitoBean
     private UsuarioForumService usuariosForum;
+    @Autowired
+    private ResponsabilidadeService responsabilidade;
     private RestClient cliente;
     private Usuario usuario;
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
@@ -121,6 +125,67 @@ class AutenticacaoHttpTest {
         return (String) segundaEtapa.getBody().get("token");
     }
 
+    private ResponseEntity<Map> autenticarAteTermos() {
+        var inicio = post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!"));
+        assertEquals(200, inicio.getStatusCode().value());
+        assertNull(inicio.getBody().get("token"));
+        return post("confirmar-2fa", Map.of("email", usuario.getEmail(), "codigo", codigos.get(usuario.getEmail())));
+    }
+    @Test
+    void emissoesSimultaneasMantemUmaUnicaSessaoAtiva() throws Exception {
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var inicio = new java.util.concurrent.CountDownLatch(1);
+            var tarefas = java.util.stream.IntStream.range(0, 2).mapToObj(i -> executor.submit(() -> {
+                inicio.await();
+                return tokens.gerar(usuario);
+            })).toList();
+            inicio.countDown();
+            var emitidos = new java.util.ArrayList<String>();
+            for (var tarefa : tarefas) emitidos.add(tarefa.get(10, java.util.concurrent.TimeUnit.SECONDS));
+            int ativos = 0;
+            for (String token : emitidos) {
+                try { tokens.extrairEmail(token); ativos++; }
+                catch (IllegalArgumentException encerrada) { }
+            }
+            assertEquals(1, ativos);
+            assertEquals(1, jdbc.queryForObject(
+                    "select count(*) from tb_sessoes where usuario_id = ? and revogada = false", Integer.class,
+                    usuario.getId()));
+        }
+    }
+
+    @Test
+    void novoLoginEncerraSessaoAnteriorSomenteDepoisDoSegundoFator() {
+        String anterior = entrar();
+        assertEquals(200, post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!"))
+                .getStatusCode().value());
+        assertEquals(200, cliente.get().uri("/api/autenticacao/meus-dados")
+                .headers(h -> h.setBearerAuth(anterior)).retrieve().toBodilessEntity().getStatusCode().value());
+        var acesso = post("confirmar-2fa", Map.of("email", usuario.getEmail(), "codigo", codigos.get(usuario.getEmail())));
+        String novo = acesso.getBody().get("token").toString();
+        assertEquals(401, cliente.get().uri("/api/autenticacao/meus-dados")
+                .headers(h -> h.setBearerAuth(anterior)).retrieve().toBodilessEntity().getStatusCode().value());
+        assertEquals(200, cliente.get().uri("/api/autenticacao/meus-dados")
+                .headers(h -> h.setBearerAuth(novo)).retrieve().toBodilessEntity().getStatusCode().value());
+    }
+
+    @Test
+    void recuperacaoDeContaNaoConfirmadaReenviaConfirmacaoValida() {
+        usuario.setEmailConfirmado(false);
+        usuarios.saveAndFlush(usuario);
+        tokensExclusao.criarConfirmacao(usuario);
+        for (int tentativa = 0; tentativa < 2; tentativa++) {
+            assertEquals(204, post("solicitar-alteracao-senha", Map.of("email", usuario.getEmail()))
+                    .getStatusCode().value());
+        }
+        var confirmacao = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(emails, times(2)).enviarConfirmacao(any(), confirmacao.capture());
+        verify(emails, never()).enviarRedefinicaoSenha(any(), anyString());
+        assertEquals(200, post("confirmar-email", Map.of("token", confirmacao.getValue())).getStatusCode().value());
+        assertTrue(usuarios.findById(usuario.getId()).orElseThrow().isEmailConfirmado());
+        assertNotNull(entrar());
+    }
+
     @Test
     void logoutInvalidaJwtEExportacaoNaoExibeSegredos() {
         String token = entrar();
@@ -152,7 +217,7 @@ class AutenticacaoHttpTest {
     void tokenDeTermosNaoViraTokenDeAcessoDepoisDoAceite() {
         usuario.setAceitouTermosLgpd(false);
         usuarios.save(usuario);
-        var login = post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!"));
+        var login = autenticarAteTermos();
         assertEquals(403, login.getStatusCode().value());
         String token = (String) login.getBody().get("token");
         assertNotNull(token);
@@ -222,7 +287,7 @@ class AutenticacaoHttpTest {
                 .retrieve().toBodilessEntity().getStatusCode().value());
         assertEquals(401, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(token))
                 .retrieve().toBodilessEntity().getStatusCode().value());
-        var login = post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!"));
+        var login = autenticarAteTermos();
         assertEquals(403, login.getStatusCode().value());
         assertEquals("TERMOS_NAO_ACEITOS", login.getBody().get("codigo"));
     }
@@ -234,8 +299,35 @@ class AutenticacaoHttpTest {
         assertEquals(204, cliente.method(org.springframework.http.HttpMethod.DELETE).uri("/api/autenticacao/conta")
                 .headers(h -> h.setBearerAuth(token)).body(Map.of("codigo", codigo))
                 .retrieve().toBodilessEntity().getStatusCode().value());
-        assertTrue(usuarios.findById(usuario.getId()).isEmpty());
+        assertNotNull(usuarios.findById(usuario.getId()).orElseThrow().getExcluidoEm());
         assertEquals(401, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(token))
+                .retrieve().toBodilessEntity().getStatusCode().value());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = Perfil.class, names = {"PROFESSOR", "ADMINISTRADOR"})
+    void perfilElevadoExigeResponsabilidadeNoLoginENasSessoesExistentes(Perfil perfil) {
+        usuario.setPerfil(perfil);
+        usuarios.saveAndFlush(usuario);
+        String sessaoAntiga = tokens.gerar(usuario);
+        var bloqueio = cliente.get().uri("/api/autenticacao/meus-dados")
+                .headers(h -> h.setBearerAuth(sessaoAntiga)).retrieve().toEntity(Map.class);
+        assertEquals(403, bloqueio.getStatusCode().value());
+        assertEquals("TERMOS_NAO_ACEITOS", bloqueio.getBody().get("codigo"));
+        var login = autenticarAteTermos();
+        assertEquals(403, login.getStatusCode().value());
+        String restrito = login.getBody().get("token").toString();
+        assertEquals(200, cliente.get().uri("/api/politicas/responsabilidade/" + perfil)
+                .retrieve().toBodilessEntity().getStatusCode().value());
+        assertEquals(400, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
+                .headers(h -> h.setBearerAuth(restrito)).body(Map.of("versaoTermos", "teste-http"))
+                .retrieve().toBodilessEntity().getStatusCode().value());
+        assertEquals(204, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
+                .headers(h -> h.setBearerAuth(restrito)).body(Map.of("versaoTermos", "teste-http",
+                        "aceitouResponsabilidade", true, "versaoResponsabilidade", "1.0"))
+                .retrieve().toBodilessEntity().getStatusCode().value());
+        assertEquals(200, cliente.post().uri("/api/autenticacao/login")
+                .body(Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!"))
                 .retrieve().toBodilessEntity().getStatusCode().value());
     }
 
@@ -258,8 +350,9 @@ class AutenticacaoHttpTest {
     void todosOsPerfisAlteramSenhaERevogamSessoes(Perfil perfil) {
         usuario.setPerfil(perfil);
         usuarios.save(usuario);
-        String token = tokens.gerar(usuario);
+        if (perfil != Perfil.ALUNO) responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
         String outraSessao = tokens.gerar(usuario);
+        String token = tokens.gerar(usuario);
         var resposta = cliente.post().uri("/api/autenticacao/alterar-senha-autenticado")
                 .headers(h -> h.setBearerAuth(token))
                 .body(Map.of("senhaAtual", "SenhaTeste123!", "novaSenha", "NovaSenha123!", "confirmacaoSenha", "NovaSenha123!"))

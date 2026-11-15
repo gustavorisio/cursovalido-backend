@@ -3,6 +3,8 @@ package com.cursovalido.backend.authentication.service;
 import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+import com.cursovalido.backend.authentication.validation.moderacao.ModeracaoValidation;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -58,11 +60,7 @@ public class ModeracaoUsuarioService {
     @Transactional
     public SuspensaoResponse aplicar(Long idUsuario, SuspensaoRequest dados, Long idAdministrador) {
         verificarAlvo(idUsuario, idAdministrador);
-        if (dados.expiraEm() != null) {
-            if (!dados.expiraEm().isAfter(Instant.now())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A expiracao deve estar no futuro");
-            }
-        }
+        ModeracaoValidation.validarExpiracao(dados);
         for (var existente : vigentes(idUsuario)) {
             if (substituiSuspensao(dados.escopo(), existente.getEscopo())) {
                 existente.setRevogadaEm(Instant.now());
@@ -87,9 +85,7 @@ public class ModeracaoUsuarioService {
         verificarAlvo(idUsuario, idAdministrador);
         var suspensao = suspensoes.findById(idSuspensao)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Suspensao nao encontrada"));
-        if (!suspensaoPertenceAoUsuario(suspensao, idUsuario)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Suspensao nao encontrada");
-        }
+        ModeracaoValidation.validarVinculo(suspensaoPertenceAoUsuario(suspensao, idUsuario));
         if (suspensao.getRevogadaEm() != null)
             return;
         suspensao.setRevogadaEm(Instant.now());
@@ -126,20 +122,7 @@ public class ModeracaoUsuarioService {
     }
 
     private void verificarAlvo(Long idUsuario, Long idAdministrador) {
-        var administrador = privilegios.verificarAdministrador(idAdministrador);
-        var alvo = usuarios.findById(idUsuario)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
-        if (idUsuario.equals(idAdministrador))
-            throw negado();
-        if (privilegios.ehPrincipal(alvo))
-            throw negado();
-        if (alvo.getPerfil() == Perfil.ADMINISTRADOR) {
-            if (!privilegios.ehPrincipal(administrador))
-                throw negado();
-        }
+        ModeracaoValidation.verificarAlvo(idUsuario, idAdministrador, privilegios, usuarios);
     }
 
-    private ResponseStatusException negado() {
-        return new ResponseStatusException(HttpStatus.FORBIDDEN, "Voce nao pode moderar esta conta");
-    }
 }

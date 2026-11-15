@@ -8,7 +8,7 @@ import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.service.EmailService;
-import com.cursovalido.backend.authentication.service.ValidacaoEmailService;
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 import com.cursovalido.backend.forum.dto.*;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.repository.*;
@@ -70,6 +70,8 @@ class ForumHttpIntegracaoTest {
     private final Map<String, String> confirmacoes = new ConcurrentHashMap<>();
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
     private final Map<String, String> convitesEnviados = new ConcurrentHashMap<>();
+    @Autowired
+    private com.cursovalido.backend.authentication.service.ResponsabilidadeService responsabilidade;
     private RestClient cliente;
     private Sessao autor;
 
@@ -258,7 +260,7 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
-    void listarComentarios_comDoisTopicos_deveListarSomenteAtivosDoTopicoEmOrdem() {
+    void listarComentarios_comDoisTopicos_deveManterExcluidosSemExporConteudo() {
         var topico = criarTopico("Principal");
         var outro = criarTopico("Outro");
         var primeiro = criarComentario(topico.id(), "Primeiro");
@@ -269,8 +271,9 @@ class ForumHttpIntegracaoTest {
         var resposta = enviar(HttpMethod.GET, comentariosUrl(topico.id()), autor.token(), null,
                 ComentarioResponse[].class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(resposta.getBody()).extracting(ComentarioResponse::id).containsExactly(primeiro.id(), segundo.id());
-        assertThat(resposta.getBody()).extracting(ComentarioResponse::conteudo).containsExactly("Primeiro", "Segundo");
+        assertThat(resposta.getBody()).extracting(ComentarioResponse::id).containsExactly(primeiro.id(), segundo.id(), apagado.id());
+        assertThat(resposta.getBody()).extracting(ComentarioResponse::conteudo).containsExactly("Primeiro", "Segundo", "Esta mensagem foi excluída.");
+        assertThat(resposta.getBody()[2].ativo()).isFalse();
     }
 
     @Test
@@ -322,6 +325,20 @@ class ForumHttpIntegracaoTest {
                 enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), new TopicoRequest("", ""), ErroHttp.class),
                 400);
         assertThat(topicos.count()).isZero();
+    }
+
+    @Test
+    void tituloTopico_deveAceitar40ERecusar41NaCriacaoEEdicao() {
+        var topico = criarTopico("t".repeat(40));
+        verificarErro(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
+                new TopicoRequest("t".repeat(41), "Descricao"), ErroHttp.class), 400);
+        var atualizado = enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
+                new TopicoRequest("e".repeat(40), "Descricao"), TopicoResponse.class);
+        assertThat(atualizado.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(atualizado.getBody().titulo()).isEqualTo("e".repeat(40));
+        verificarErro(enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id(), autor.token(),
+                new TopicoRequest("e".repeat(41), "Descricao"), ErroHttp.class), 400);
+        assertThat(topicos.findById(topico.id()).orElseThrow().getTitulo()).isEqualTo("e".repeat(40));
     }
 
     @Test
@@ -540,7 +557,7 @@ class ForumHttpIntegracaoTest {
 
     @Test
     void publicarPolitica_comAdministradorPrincipal_deveRetornar201EPersistirNovaVersao() {
-        var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "cursovalido@gmail.com");
+        var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal@example.com");
         var resposta = enviar(HttpMethod.POST, "/api/politicas", admin.token(),
                 new PoliticaRequest("Novos termos", "teste-v2", "Conteudo novo"), PoliticaResponse.class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -573,12 +590,10 @@ class ForumHttpIntegracaoTest {
                 Map.of("codigo", codigoExclusao), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(usuarios.findByEmail(email)).isEmpty();
-        assertThat(convites.findByEmail(email)).isEmpty();
+        assertThat(convites.findByEmail(email)).isPresent();
         assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", sessaoAnterior, null, String.class)
                 .getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
-        jdbc.update("update tb_contas_excluidas set bloqueada_ate = ? where id = ?",
-                java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(1)), idAnterior);
         long idNovo = cadastrarConvidado(email, principal.token());
         assertThat(idNovo).isNotEqualTo(idAnterior);
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", linkAnterior),
@@ -611,11 +626,11 @@ class ForumHttpIntegracaoTest {
                 new ConviteAcessoRequest(email, Perfil.ADMINISTRADOR), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         var novo = convites.findByEmail(email).orElseThrow();
-        assertThat(novo.getId()).isEqualTo(idConvite);
+        assertThat(novo.getId()).isNotEqualTo(idConvite);
         assertThat(novo.getPerfil()).isEqualTo(Perfil.ADMINISTRADOR);
         assertThat(novo.getStatus()).isEqualTo(StatusConvite.PENDENTE);
         assertThat(novo.isEmailConfirmado()).isFalse();
-        assertThat(convites.count()).isEqualTo(1);
+        assertThat(convites.count()).isEqualTo(2);
         assertThat(convitesEnviados.get(email)).isNotEqualTo(tokenAnterior);
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", tokenAnterior),
                 String.class).getStatusCode())
@@ -645,12 +660,17 @@ class ForumHttpIntegracaoTest {
                 new ConviteAcessoRequest(email, Perfil.PROFESSOR), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         String token = convitesEnviados.get(email);
+        var dadosConvite = enviar(HttpMethod.POST, "/api/convites/consultar", null,
+                Map.of("token", token), ConviteDadosResponse.class);
+        assertThat(dadosConvite.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(dadosConvite.getBody().email()).isEqualTo(email);
+        assertThat(dadosConvite.getBody().perfil()).isEqualTo(Perfil.PROFESSOR);
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", token), String.class)
                 .getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
         var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA,
                 LocalDate.of(1990, 1, 1),
-                true, true, "teste-v1");
+                true, true, "teste-v1", true, "1.0");
         assertThat(enviar(HttpMethod.POST, "/api/convites/completar-cadastro", null,
                 Map.of("token", token, "cadastro", cadastro), String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
@@ -692,6 +712,7 @@ class ForumHttpIntegracaoTest {
             var usuario = usuarios.findByEmail(email).orElseThrow();
             usuario.setPerfil(perfil);
             usuarios.saveAndFlush(usuario);
+            responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
             if (emailPrincipal != null) {
                 var registro = new InicializacaoAdministrador();
                 registro.concluir(usuario.getId());

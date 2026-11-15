@@ -3,5 +3,9 @@ package com.cursovalido.backend.authentication.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record AceiteTermosRequest(@NotBlank @Size(max = 30) String versaoTermos) {
+public record AceiteTermosRequest(@NotBlank @Size(max = 30) String versaoTermos,
+        Boolean aceitouResponsabilidade, @Size(max = 30) String versaoResponsabilidade) {
+    public AceiteTermosRequest(String versaoTermos) {
+        this(versaoTermos, null, null);
+    }
 }
