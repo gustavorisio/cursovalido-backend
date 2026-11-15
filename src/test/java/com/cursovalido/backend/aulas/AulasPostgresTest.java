@@ -205,9 +205,9 @@ class AulasPostgresTest extends AulasIntegracaoTest {
     void bancoNovoAplicaHistoricoOriginalEAAtualizacaoIncremental() {
         String schema = "v3_" + java.util.UUID.randomUUID().toString().replace("-", "");
         var flyway = FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
-        assertThat(flyway.info().applied()).filteredOn(item -> item.getVersion() != null).hasSize(4);
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("4");
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5);
+        assertThat(flyway.info().applied()).filteredOn(item -> item.getVersion() != null).hasSize(5);
+        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("5");
         // A V1 imutavel contem os documentos originais; V2 e V3 nao os alteram.
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade", Long.class)).isEqualTo(1);
