@@ -502,6 +502,21 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
+    void paginacaoPadraoDoForumEMeusTopicosExibeDezPorPagina() {
+        for (int i = 0; i < 11; i++) criarTopico("Topico " + i);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, TopicoResumoDTO[].class).getBody())
+                .hasSize(10);
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos?page=1", null, null, TopicoResumoDTO[].class).getBody())
+                .hasSize(1);
+        var respostaMeus = enviar(HttpMethod.GET, "/api/forum/topicos/meus", autor.token(), null, Map.class);
+        assertThat(respostaMeus.getStatusCode()).as("Resposta: %s", respostaMeus.getBody()).isEqualTo(HttpStatus.OK);
+        var meus = respostaMeus.getBody();
+        assertThat(meus).containsKey("content");
+        assertThat((java.util.List<?>) meus.get("content")).hasSize(10);
+        assertThat(meus.get("totalPages")).isEqualTo(2);
+    }
+
+    @Test
     void buscasDoForumNaoRetornam500ComPaginacao() {
         for (int i = 0; i < 7; i++) {
             criarTopico("Java " + i);

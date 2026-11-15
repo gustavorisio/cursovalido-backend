@@ -34,7 +34,7 @@ public class ForumController {
     public List<TopicoResumoDTO> listarTopicosRecentes(
             @AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "") String busca) {
         return servicoTopicos.listarRecentes(page, size, busca, usuario == null ? null : usuario.getId());
     }
@@ -43,7 +43,7 @@ public class ForumController {
     public org.springframework.data.domain.Page<TopicoResumoDTO> listarMeusTopicos(
             @AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "") String busca) {
         return servicoTopicos.listarMeus(page, size, busca, usuario.getId());
     }
