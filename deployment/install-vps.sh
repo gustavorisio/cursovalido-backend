@@ -22,7 +22,9 @@ install -d -o root -g root -m 755 /etc/ssh/cursovalido-keys
 for user in deploy-backend deploy-frontend; do
     touch "/etc/ssh/cursovalido-keys/$user"
     chown root:root "/etc/ssh/cursovalido-keys/$user"
-    chmod 600 "/etc/ssh/cursovalido-keys/$user"
+    # O sshd le authorized_keys com o UID do usuario autenticado.
+    # As chaves sao publicas; apenas root pode alterar as autorizacoes.
+    chmod 644 "/etc/ssh/cursovalido-keys/$user"
 done
 cat > /etc/ssh/sshd_config.d/60-cursovalido-deploy.conf <<'EOF'
 Match User deploy-backend
