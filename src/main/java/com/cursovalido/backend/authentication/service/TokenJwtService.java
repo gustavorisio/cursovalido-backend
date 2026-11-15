@@ -3,6 +3,7 @@ package com.cursovalido.backend.authentication.service;
 import com.cursovalido.backend.authentication.entity.Sessao;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
+import com.cursovalido.backend.authentication.validation.token.TokenJwtValidation;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -26,6 +27,7 @@ public class TokenJwtService {
     private long expiracaoMs;
     private Key chave;
     private final SessaoRepository sessoes;
+    private final com.cursovalido.backend.authentication.repository.UsuarioRepository usuarios;
 
     @PostConstruct
     // Prepara a chave usada para assinar os tokens.
@@ -34,15 +36,19 @@ public class TokenJwtService {
     }
 
     // Gera um JWT com os dados basicos do usuario.
+    @org.springframework.transaction.annotation.Transactional
     public String gerar(Usuario usuario) {
         return criar(usuario, "ACESSO", expiracaoMs);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public String gerarTermos(Usuario usuario) {
         return criar(usuario, "TERMOS", 300_000);
     }
 
     private String criar(Usuario usuario, String finalidade, long duracao) {
+        usuarios.buscarParaAtualizar(usuario.getId()).orElseThrow();
+        sessoes.revogarPorUsuario(usuario.getId());
         Instant agora = Instant.now();
         String id = UUID.randomUUID().toString();
         sessoes.save(new Sessao(id, usuario.getId(),
@@ -73,12 +79,7 @@ public class TokenJwtService {
                 .parseSignedClaims(token).getPayload();
         var sessao = sessoes.findById(dados.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Sessao invalida"));
-        if (sessao.isRevogada())
-            throw new IllegalArgumentException("Sessao encerrada");
-        if (!sessao.getExpiraEm().isAfter(LocalDateTime.now()))
-            throw new IllegalArgumentException("Sessao expirada");
-        if (!java.util.Objects.equals(sessao.getUsuarioId(), dados.get("idUsuario", Long.class)))
-            throw new IllegalArgumentException("Sessao de outro usuario");
+        TokenJwtValidation.validarSessao(sessao, dados);
         return dados;
     }
 

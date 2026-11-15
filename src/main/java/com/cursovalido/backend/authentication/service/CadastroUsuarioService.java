@@ -3,16 +3,12 @@ package com.cursovalido.backend.authentication.service;
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
-import com.cursovalido.backend.authentication.exception.LimiteReenvioException;
-import com.cursovalido.backend.authentication.exception.MenorDeIdadeException;
-import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.validation.cadastro.CadastroValidation;
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.security.SecureRandom;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,22 +28,13 @@ public class CadastroUsuarioService {
     private final TokenEmailService tokensEmail;
     private final EmailService emails;
     private final ValidacaoEmailService validacaoEmail;
-    private final IdentidadeExcluidaService identidades;
     private final SecureRandom geradorRa = new SecureRandom();
 
     @Transactional
     // Cria uma conta de aluno e envia a confirmacao de e-mail.
     public Usuario cadastrar(CadastroUsuarioRequest requisicao, String enderecoIp) {
         validacaoEmail.validar(requisicao.email());
-        identidades.verificarCadastro(requisicao.email());
-        if (!politicas.versaoAtiva(requisicao.versaoTermos()))
-            throw new TermosNaoDisponiveisException();
-        if (Period.between(requisicao.dataNascimento(), LocalDate.now()).getYears() < 18) {
-            auditoria.registrar(null, "TENTATIVA_CADASTRO_MENOR_IDADE", "Maioridade nao atendida", enderecoIp);
-            throw new MenorDeIdadeException();
-        }
-        if (repositorio.existsByEmail(requisicao.email()))
-            throw new CadastroDuplicadoException("E-mail");
+        CadastroValidation.validar(requisicao, enderecoIp, politicas, repositorio, auditoria);
 
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(requisicao.nomeCompleto());
@@ -82,8 +69,7 @@ public class CadastroUsuarioService {
     // Reenvia o e-mail de confirmacao quando ainda for necessario.
     public void reenviarConfirmacao(String email) {
         repositorio.findByEmail(email).filter(usuario -> !usuario.isEmailConfirmado()).ifPresent(usuario -> {
-            if (tokensEmail.excedeuLimiteConfirmacao(usuario))
-                throw new LimiteReenvioException();
+            CadastroValidation.validarReenvio(tokensEmail.excedeuLimiteConfirmacao(usuario));
             String token = tokensEmail.criarNovaConfirmacao(usuario);
             emails.enviarConfirmacao(usuario, token);
         });

@@ -126,8 +126,9 @@ public class AutenticacaoController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void aceitarTermosNovamente(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestHeader("Authorization") String autorizacao,
-            @Valid @RequestBody AceiteTermosRequest requisicao) {
-        termosUsuarios.aceitarTermosNovamente(usuario.getId(), requisicao.versaoTermos());
+            @Valid @RequestBody AceiteTermosRequest requisicao, HttpServletRequest request) {
+        termosUsuarios.aceitarTermosNovamente(usuario.getId(), requisicao.versaoTermos(),
+                requisicao.aceitouResponsabilidade(), requisicao.versaoResponsabilidade(), request.getRemoteAddr());
         tokens.encerrar(autorizacao.substring(7));
     }
 

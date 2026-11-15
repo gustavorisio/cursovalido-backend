@@ -1,4 +1,4 @@
-package com.cursovalido.backend.authentication.service;
+package com.cursovalido.backend.authentication.validation.login;
 
 import com.cursovalido.backend.authentication.exception.AcessoTemporariamenteBloqueadoException;
 import java.time.LocalDateTime;

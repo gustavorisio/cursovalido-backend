@@ -1,13 +1,12 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.dto.ConviteAcessoRequest;
 import com.cursovalido.backend.authentication.entity.InicializacaoAdministrador;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.InicializacaoAdministradorRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.validation.administracao.AdministradorInicialValidation;
 import jakarta.validation.Validator;
-import com.cursovalido.backend.authentication.validation.SenhaValidaValidator;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -54,15 +53,7 @@ public class AdministradorInicialService {
             }
         }
         String endereco = email.trim().toLowerCase(Locale.ROOT);
-        var configuracao = new ConviteAcessoRequest(endereco, Perfil.ADMINISTRADOR);
-        if (!validador.validate(configuracao).isEmpty()) {
-            throw new IllegalStateException("Defina ADMIN_EMAIL com um endereco de e-mail valido.");
-        }
-        if (!new SenhaValidaValidator().isValid(senha, null))
-            throw senhaInvalida();
-        if (usuarios.existsByEmail(endereco)) {
-            throw new IllegalStateException("ADMIN_EMAIL ja pertence a uma conta. Nenhuma conta sera promovida.");
-        }
+        AdministradorInicialValidation.validarConfiguracao(endereco, senha, validador, usuarios);
 
         Usuario administrador = new Usuario();
         administrador.setNomeCompleto("Administrador Curso Valido");
@@ -79,8 +70,4 @@ public class AdministradorInicialService {
         log.info("Administrador principal criado. A criacao inicial foi encerrada definitivamente neste banco.");
     }
 
-    private IllegalStateException senhaInvalida() {
-        return new IllegalStateException(
-                "ADMIN_PASSWORD deve ter pelo menos 8 caracteres, uma maiuscula, um especial e no maximo 72 bytes.");
-    }
 }

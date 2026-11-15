@@ -37,6 +37,10 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
     }
 
     private boolean deveLimitar(HttpServletRequest request) {
+        String documento = request.getRequestURI();
+        if ("GET".equals(request.getMethod()) && ("/termos-aceite.html".equals(documento)
+                || "/politica-privacidade.html".equals(documento)))
+            return true;
         boolean metodoLimitado = "POST".equals(request.getMethod());
         if ("DELETE".equals(request.getMethod())) {
             metodoLimitado = true;

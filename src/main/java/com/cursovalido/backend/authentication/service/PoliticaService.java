@@ -2,11 +2,10 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.dto.PoliticaRequest;
 import com.cursovalido.backend.authentication.dto.PoliticaResponse;
-
 import com.cursovalido.backend.authentication.entity.Politica;
-
 import com.cursovalido.backend.authentication.repository.PoliticaRepository;
-
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+import com.cursovalido.backend.authentication.validation.politica.PoliticaValidation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,9 +37,7 @@ public class PoliticaService {
     // Publica uma nova versao e pede novo aceite aos usuarios.
     public PoliticaResponse publicar(PoliticaRequest requisicao, Long administradorId) {
         privilegios.verificarPrincipal(administradorId);
-        if (repositorio.findByVersao(requisicao.versao()).isPresent()) {
-            throw new IllegalArgumentException("A versao informada ja existe");
-        }
+        PoliticaValidation.validarPublicacao(requisicao, repositorio);
 
         repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().forEach(politica -> {
             politica.setAtiva(false);

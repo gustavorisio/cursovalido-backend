@@ -8,9 +8,7 @@ import com.cursovalido.backend.authentication.repository.LogAuditoriaRepository;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
 import com.cursovalido.backend.authentication.repository.TokenEmailRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.authentication.repository.ConviteAcessoRepository;
-import com.cursovalido.backend.forum.repository.ComentarioRepository;
-import com.cursovalido.backend.forum.repository.TopicoRepository;
+import com.cursovalido.backend.authentication.validation.conta.ContaValidation;
 import com.cursovalido.backend.forum.repository.UsuarioForumRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,16 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class ContaUsuarioService {
     private final UsuarioRepository repositorio;
     private final IdentidadeExcluidaService identidades;
+    private final LogAuditoriaService auditoria;
     private final TokenEmailService tokensEmail;
     private final EmailService emails;
     private final TokenEmailRepository repositorioTokens;
     private final LogAuditoriaRepository repositorioAuditoria;
     private final AceiteTermoArquivadoRepository repositorioAceitesArquivados;
-    private final ComentarioRepository comentarios;
-    private final TopicoRepository topicos;
     private final UsuarioForumRepository usuariosForumRepositorio;
     private final SessaoRepository sessoes;
-    private final ConviteAcessoRepository convites;
 
     private void arquivarAceite(Usuario usuario) {
         if (usuario.getVersaoTermos() == null) {
@@ -86,18 +82,36 @@ public class ContaUsuarioService {
         tokensEmail.validarExclusao(idUsuario, codigo);
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
+        encerrarConta(usuario);
+    }
+
+    @Transactional
+    public void excluirPendencia(Long idUsuario) {
+        Usuario usuario = repositorio.findById(idUsuario).orElseThrow();
+        ContaValidation.validarPendencia(usuario);
+        usuario.setStatusAprovacao(com.cursovalido.backend.authentication.entity.StatusAprovacao.REJEITADO);
+        encerrarConta(usuario);
+    }
+
+    private void encerrarConta(Usuario usuario) {
+        Long idUsuario = usuario.getId();
+        ContaValidation.validarExclusao(usuario);
         identidades.registrar(usuario);
-        var topicosDoUsuario = topicos.findByIdAutor(idUsuario);
-        for (var topico : topicosDoUsuario)
-            comentarios.deleteByTopicoId(topico.getId());
-        comentarios.deleteByIdAutor(idUsuario);
-        topicosDoUsuario.forEach(topico -> topicos.deleteById(topico.getId()));
+        auditoria.registrar(idUsuario, "EXCLUSAO_CONTA", "Conta anonimizada e acessos revogados", null);
         repositorioTokens.deleteByUsuarioId(idUsuario);
         sessoes.deleteByUsuarioId(idUsuario);
-        convites.deleteByEmail(usuario.getEmail());
         arquivarAceite(usuario);
-        repositorioAuditoria.anonimizarPorUsuarioId(idUsuario);
-        usuariosForumRepositorio.deleteById(idUsuario);
-        repositorio.deleteById(idUsuario);
+        usuario.setAtivo(false);
+        usuario.setEmailConfirmado(false);
+        usuario.setExcluidoEm(java.time.LocalDateTime.now());
+        usuario.setNomeCompleto("Usuario excluido");
+        usuario.setEmail("excluido-" + idUsuario + "@conta.invalid");
+        usuario.setSenha("");
+        usuario.setDataNascimento(null);
+        usuario.setMatricula("excluido-" + idUsuario);
+        repositorio.saveAndFlush(usuario);
+        usuariosForumRepositorio.findById(idUsuario).ifPresent(forum ->
+                usuariosForumRepositorio.sincronizar(idUsuario, usuario.getNomeCompleto(), usuario.getEmail(),
+                        usuario.getPerfil().name(), false));
     }
 }

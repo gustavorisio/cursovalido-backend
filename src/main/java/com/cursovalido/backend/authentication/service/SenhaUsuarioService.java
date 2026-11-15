@@ -3,6 +3,7 @@ package com.cursovalido.backend.authentication.service;
 import com.cursovalido.backend.authentication.entity.TokenEmail;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.validation.senha.SenhaUsuarioValidation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,21 +18,14 @@ public class SenhaUsuarioService {
     private final TokenEmailService tokensEmail;
     private final EmailService emails;
     private final SessaoRepository sessoes;
+    private final CadastroUsuarioService cadastro;
 
     @Transactional
     public void alterarSenhaAutenticado(Long idUsuario, String senhaAtual, String novaSenha, String confirmacaoSenha) {
         var usuario = repositorio.findById(idUsuario)
                 .filter(conta -> conta.isAtivo())
                 .orElseThrow(() -> new IllegalArgumentException("Conta indisponivel."));
-        if (!codificadorSenha.matches(senhaAtual, usuario.getSenha())) {
-            throw new IllegalArgumentException("Senha atual incorreta.");
-        }
-        if (!novaSenha.equals(confirmacaoSenha)) {
-            throw new IllegalArgumentException("As senhas nao conferem.");
-        }
-        if (!new com.cursovalido.backend.authentication.validation.SenhaValidaValidator().isValid(novaSenha, null)) {
-            throw new IllegalArgumentException("Informe uma senha valida.");
-        }
+        SenhaUsuarioValidation.validarAlteracao(usuario, senhaAtual, novaSenha, confirmacaoSenha, codificadorSenha);
         usuario.setSenha(codificadorSenha.encode(novaSenha));
         repositorio.save(usuario);
         sessoes.revogarPorUsuario(usuario.getId());
@@ -43,6 +37,10 @@ public class SenhaUsuarioService {
     public void solicitarAlteracaoSenha(String email) {
         auditoria.registrar(null, "RECUPERACAO_SOLICITADA", "Solicitacao recebida", null);
         repositorio.findByEmail(email).filter(usuario -> usuario.isAtivo()).ifPresent(usuario -> {
+            if (!usuario.isEmailConfirmado()) {
+                cadastro.reenviarConfirmacao(email);
+                return;
+            }
             String token = tokensEmail.criarAlteracaoSenha(usuario);
             emails.enviarRedefinicaoSenha(usuario, token);
         });
@@ -51,10 +49,7 @@ public class SenhaUsuarioService {
     @Transactional(noRollbackFor = IllegalArgumentException.class)
     // Valida o token e salva a nova senha do usuario.
     public void alterarSenha(String token, String novaSenha, String confirmacaoSenha) {
-        if (!novaSenha.equals(confirmacaoSenha)) {
-            auditoria.registrar(null, "RECUPERACAO_FALHOU", "Senhas diferentes", null);
-            throw new IllegalArgumentException("As senhas nao conferem");
-        }
+        SenhaUsuarioValidation.validarRecuperacao(novaSenha, confirmacaoSenha, auditoria);
         TokenEmail registro;
         try {
             registro = tokensEmail.validar(token, tokensEmail.finalidadeAlteracaoSenha());

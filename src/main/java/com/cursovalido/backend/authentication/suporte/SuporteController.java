@@ -1,12 +1,12 @@
 package com.cursovalido.backend.authentication.suporte;
 
 import com.cursovalido.backend.authentication.service.EmailService;
+import com.cursovalido.backend.authentication.validation.suporte.SuporteValidation;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import com.cursovalido.backend.authentication.exception.SuporteIndisponivelException;
 
 @RestController
 @RequestMapping("/api/suporte/solicitacoes")
@@ -27,23 +27,19 @@ public class SuporteController {
     @ResponseStatus(HttpStatus.CREATED)
     public SuporteResponse enviar(@Valid @RequestBody SolicitacaoSuporteRequest pedido,
             jakarta.servlet.http.HttpServletRequest request) {
-        if (destinatario.isBlank()) {
-            log.warn("Suporte indisponivel: configure SUPPORT_EMAIL no ambiente do processo e reinicie o backend.");
-            throw new SuporteIndisponivelException();
-        }
+        SuporteValidation.validarDisponibilidade(destinatario, log);
         String protocolo = UUID.randomUUID().toString();
         String conteudo = "Protocolo: " + protocolo
                 + "\nE-mail da conta: " + pedido.emailConta().strip()
                 + "\nUsuario: " + pedido.usuario().strip()
-                + "\nE-mail para retorno: " + pedido.emailContato().strip()
                 + "\nMotivo: " + pedido.motivo()
                 + "\nAssunto: " + pedido.assunto().strip()
                 + "\n\n" + pedido.descricao().strip()
                 + "\n\nDados declarados pelo solicitante; confirme a identidade antes de alterar a conta.";
-        limites.enviar(request.getRemoteAddr(), pedido.emailConta(), pedido.emailContato(),
-                () -> emails.enviarSuporte(destinatario, pedido.emailContato().strip(),
+        limites.enviar(request.getRemoteAddr(), pedido.emailConta(), pedido.emailConta(),
+                () -> emails.enviarSuporte(destinatario, pedido.emailConta().strip(),
                         "[Suporte " + protocolo + "] " + pedido.motivo(), conteudo));
-        return new SuporteResponse(protocolo, "Solicitacao enviada. O suporte respondera pelo e-mail de contato.");
+        return new SuporteResponse(protocolo, "Solicitacao enviada. O suporte respondera pelo e-mail da conta.");
     }
 
     public record SuporteResponse(String protocolo, String mensagem) {

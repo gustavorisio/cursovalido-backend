@@ -16,8 +16,12 @@ public class ConviteAcesso {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
+
+    @Column(name = "criado_por")
+    @Setter
+    private Long criadoPor;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
