@@ -16,6 +16,3 @@ FROM tb_politicas_privacidade;
 -- Nao reescrever duplicatas legadas: isso alteraria a referencia de aceites.
 -- Se houver duplicatas nos termos, a migracao falha para permitir investigacao.
 ALTER TABLE tb_politicas ADD CONSTRAINT uk_politicas_versao UNIQUE (versao);
-
--- Capa JPEG dos cursos.
-ALTER TABLE tb_cursos ADD COLUMN capa_jpeg TEXT;

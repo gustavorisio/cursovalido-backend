@@ -44,9 +44,9 @@ class AtualizacaoBancoLegadoPostgresTest {
                 """);
 
         var atual = new FlywayConfig().flyway(fonte, false, "1");
-        assertThat(atual.info().pending()).hasSize(2);
-        assertThat(atual.migrate().migrationsExecuted).isEqualTo(2);
-        assertThat(atual.info().current().getVersion().toString()).isEqualTo("4");
+        assertThat(atual.info().pending()).hasSize(3);
+        assertThat(atual.migrate().migrationsExecuted).isEqualTo(3);
+        assertThat(atual.info().current().getVersion().toString()).isEqualTo("5");
         assertThat(atual.info().applied()[0].getChecksum()).isEqualTo(-1935617500);
         assertThat(atual.info().applied()[1].getChecksum()).isEqualTo(-175556913);
         assertThat(jdbc.queryForObject("SELECT email FROM tb_usuarios WHERE id = 101", String.class))
@@ -75,6 +75,26 @@ class AtualizacaoBancoLegadoPostgresTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM tb_convites_acesso WHERE email = 'convite@example.com'", Long.class))
                 .isEqualTo(2);
         assertThat(atual.migrate().migrationsExecuted).isZero();
+    }
+
+    @Test
+    void atualizaV4ComChecksumOriginalEAdicionaCapaSemPerderCursos() {
+        var fonte = fonte("atualizacao_v_quatro");
+        var legado = FlywayConfig.configuracao().dataSource(fonte).target("4").load();
+        legado.migrate();
+        assertThat(legado.info().current().getChecksum()).isEqualTo(-766395840);
+        var jdbc = new JdbcTemplate(fonte);
+        jdbc.update("INSERT INTO tb_cursos (id, titulo, descricao, criado_em) VALUES (101, 'Curso existente', 'Conteudo preservado', CURRENT_TIMESTAMP)");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'tb_cursos' AND column_name = 'capa_jpeg'", Integer.class)).isZero();
+        var atual = new FlywayConfig().flyway(fonte, false, "1");
+        assertThat(atual.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(atual.info().current().getVersion().toString()).isEqualTo("5");
+        assertThat(jdbc.queryForObject("SELECT checksum FROM flyway_schema_history WHERE version = '4'", Integer.class)).isEqualTo(-766395840);
+        assertThat(jdbc.queryForObject("SELECT descricao FROM tb_cursos WHERE id = 101", String.class)).isEqualTo("Conteudo preservado");
+        assertThat(jdbc.queryForObject("SELECT capa_jpeg FROM tb_cursos WHERE id = 101", String.class)).isNull();
+        jdbc.update("UPDATE tb_cursos SET capa_jpeg = 'capa-preservada' WHERE id = 101");
+        assertThat(atual.migrate().migrationsExecuted).isZero();
+        assertThat(jdbc.queryForObject("SELECT capa_jpeg FROM tb_cursos WHERE id = 101", String.class)).isEqualTo("capa-preservada");
     }
 
     @Test
