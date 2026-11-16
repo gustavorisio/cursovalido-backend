@@ -114,6 +114,23 @@ class AutenticacaoHttpTest {
         return cliente.post().uri("/api/autenticacao/" + caminho).body(corpo).retrieve().toEntity(Map.class);
     }
 
+    @Test
+    void loginsSimultaneosEnviamUmUnicoCodigo2fa() throws Exception {
+        var credenciais = Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!");
+        var inicio = new java.util.concurrent.CountDownLatch(1);
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var tarefas = java.util.stream.IntStream.range(0, 2).mapToObj(i -> executor.submit(() -> {
+                inicio.await();
+                return post("login", credenciais).getStatusCode().value();
+            })).toList();
+            inicio.countDown();
+            for (var tarefa : tarefas) assertEquals(200, tarefa.get(10, java.util.concurrent.TimeUnit.SECONDS));
+        }
+        verify(emails, times(1)).enviarCodigo2fa(any(), anyString());
+        assertEquals(429, post("reenviar-2fa", Map.of("email", usuario.getEmail())).getStatusCode().value());
+        verify(emails, times(1)).enviarCodigo2fa(any(), anyString());
+    }
+
     private String entrar() {
         var primeiraEtapa = post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!"));
         assertEquals(200, primeiraEtapa.getStatusCode().value());
@@ -213,12 +230,61 @@ class AutenticacaoHttpTest {
         assertNotNull(token);
         assertEquals(403, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(token))
                 .retrieve().toBodilessEntity().getStatusCode().value());
-        assertEquals(204, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
+        assertEquals(200, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
                 .headers(h -> h.setBearerAuth(token)).body(Map.of("versaoTermos", "teste-http"))
                 .retrieve().toBodilessEntity().getStatusCode().value());
         assertEquals(401, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(token))
                 .retrieve().toBodilessEntity().getStatusCode().value());
         assertNotNull(entrar());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {true, false})
+    void trocaDeTermosRegistraAceiteSomenteAposNovoLogin(boolean aceitou) {
+        String anterior = entrar();
+        jdbc.update("update tb_politicas set ativa = false where versao = 'teste-http'");
+        var publicada = politicas.saveAndFlush(new Politica("Novo termo", "v1.2", "Leia o novo termo"));
+        try {
+            var aviso = cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(anterior))
+                    .retrieve().toEntity(Map.class);
+            assertEquals(403, aviso.getStatusCode().value());
+            assertEquals("TERMOS_REAUTENTICACAO", aviso.getBody().get("codigo"));
+            assertNull(aviso.getBody().get("token"));
+            assertEquals(403, enviarDecisao("aceitar-termos-novamente", anterior, Map.of("versaoTermos", "v1.2"))
+                    .getStatusCode().value());
+            assertEquals(204, enviarDecisao("decidir-termos", anterior, Map.of("aceitou", aceitou))
+                    .getStatusCode().value());
+            assertEquals(401, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(anterior))
+                    .retrieve().toBodilessEntity().getStatusCode().value());
+
+            var pendencia = autenticarAteTermos();
+            assertEquals("TERMOS_NAO_ACEITOS", pendencia.getBody().get("codigo"));
+            String recusado = (String) pendencia.getBody().get("token");
+            assertEquals(204, enviarDecisao("decidir-termos", recusado, Map.of("aceitou", false))
+                    .getStatusCode().value());
+            assertEquals(401, enviarDecisao("aceitar-termos-novamente", recusado, Map.of("versaoTermos", "v1.2"))
+                    .getStatusCode().value());
+            var antes = usuarios.findById(usuario.getId()).orElseThrow();
+            assertEquals("teste-http", antes.getVersaoTermos());
+
+            String restrito = (String) autenticarAteTermos().getBody().get("token");
+            var aceite = enviarDecisao("aceitar-termos-novamente", restrito, Map.of("versaoTermos", "v1.2"));
+            assertEquals(200, aceite.getStatusCode().value());
+            String acesso = (String) aceite.getBody().get("token");
+            assertEquals(200, cliente.get().uri("/api/autenticacao/meus-dados").headers(h -> h.setBearerAuth(acesso))
+                    .retrieve().toBodilessEntity().getStatusCode().value());
+            var depois = usuarios.findById(usuario.getId()).orElseThrow();
+            assertEquals("v1.2", depois.getVersaoTermos());
+            assertTrue(depois.getDataHoraAceite().isAfter(antes.getDataHoraAceite()));
+        } finally {
+            politicas.delete(publicada);
+            jdbc.update("update tb_politicas set ativa = true where versao = 'teste-http'");
+        }
+    }
+
+    private ResponseEntity<Map> enviarDecisao(String caminho, String token, Map<String, ?> corpo) {
+        return cliente.post().uri("/api/autenticacao/" + caminho).headers(h -> h.setBearerAuth(token))
+                .body(corpo).retrieve().toEntity(Map.class);
     }
 
     @Test
@@ -303,7 +369,7 @@ class AutenticacaoHttpTest {
         var bloqueio = cliente.get().uri("/api/autenticacao/meus-dados")
                 .headers(h -> h.setBearerAuth(sessaoAntiga)).retrieve().toEntity(Map.class);
         assertEquals(403, bloqueio.getStatusCode().value());
-        assertEquals("TERMOS_NAO_ACEITOS", bloqueio.getBody().get("codigo"));
+        assertEquals("TERMOS_REAUTENTICACAO", bloqueio.getBody().get("codigo"));
         var login = autenticarAteTermos();
         assertEquals(403, login.getStatusCode().value());
         String restrito = login.getBody().get("token").toString();
@@ -312,7 +378,7 @@ class AutenticacaoHttpTest {
         assertEquals(400, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
                 .headers(h -> h.setBearerAuth(restrito)).body(Map.of("versaoTermos", "teste-http"))
                 .retrieve().toBodilessEntity().getStatusCode().value());
-        assertEquals(204, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
+        assertEquals(200, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
                 .headers(h -> h.setBearerAuth(restrito)).body(Map.of("versaoTermos", "teste-http",
                         "aceitouResponsabilidade", true, "versaoResponsabilidade", "1.0"))
                 .retrieve().toBodilessEntity().getStatusCode().value());

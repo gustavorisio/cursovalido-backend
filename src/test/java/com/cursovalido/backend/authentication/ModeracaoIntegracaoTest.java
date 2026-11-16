@@ -151,6 +151,7 @@ class ModeracaoIntegracaoTest {
         @BeforeEach
         void preparar() {
                 jdbcExclusao.update("INSERT INTO tb_versoes_documentos (tipo, numero) VALUES ('TERMOS', 0), ('PRIVACIDADE', 0)");
+                politicas.saveAndFlush(new Politica("Termos iniciais", "base-teste", "Texto inicial"));
                 principal = criar("principal@example.com", Perfil.ADMINISTRADOR);
                 var registro = inicializacao.findById(1L).orElseThrow();
                 registro.concluir(principal.getId());
@@ -366,7 +367,7 @@ class ModeracaoIntegracaoTest {
         }
 
         @Test
-        void publicarTermosPersisteConteudoEPreservaSessaoDoAdministrador() throws Exception {
+        void publicarTermosPersisteConteudoEPedeReautenticacaoDoAdministrador() throws Exception {
                 politicas.save(new Politica("Anterior", "antes-publicar", "Conteudo anterior"));
                 principal.setVersaoTermos("antes-publicar");
                 principal.setDataHoraAceite(java.time.LocalDateTime.now());
@@ -377,7 +378,7 @@ class ModeracaoIntegracaoTest {
                                 .content("{\"nome\":\"Novo documento\",\"versao\":\"depois-publicar\",\"conteudo\":\"Texto definido pelo administrador\"}"))
                                 .andExpect(status().isCreated())
                                 .andExpect(jsonPath("$.conteudo").value("Texto definido pelo administrador"));
-                assertThat(politicas.findByVersao("1.0").orElseThrow().getConteudo())
+                assertThat(politicas.findByVersao("v1.0").orElseThrow().getConteudo())
                                 .isEqualTo("Texto definido pelo administrador");
                 mvc.perform(get("/termos-aceite.html"))
                                 .andExpect(status().isOk())
@@ -385,7 +386,7 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(content().string(org.hamcrest.Matchers
                                                 .containsString("Texto definido pelo administrador")));
                 mvc.perform(get("/api/administracao/permissoes").header("Authorization", "Bearer " + token))
-                                .andExpect(status().isOk()).andExpect(jsonPath("$.principal").value(true));
+                                .andExpect(status().isForbidden()).andExpect(jsonPath("$.codigo").value("TERMOS_REAUTENTICACAO"));
         }
 
         @Test
@@ -452,7 +453,7 @@ class ModeracaoIntegracaoTest {
         }
 
         @Test
-        void publicarDocumentosPreservaSessaoEExigeAceiteNoProximoLogin() throws Exception {
+        void publicarDocumentosBloqueiaSessaoEExigeAceiteNoProximoLogin() throws Exception {
                 var anterior = politicas
                                 .saveAndFlush(new Politica("Anterior", "anterior-regressao", "Conteúdo anterior"));
                 aluno.setVersaoTermos(anterior.getVersao());
@@ -467,9 +468,9 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isCreated());
                 assertThat(usuarios.findById(aluno.getId()).orElseThrow().getAceitouTermosLgpd()).isTrue();
                 mvc.perform(get("/api/administracao/permissoes").header("Authorization", "Bearer " + tokenAdmin))
-                                .andExpect(status().isOk());
+                                .andExpect(status().isForbidden());
                 mvc.perform(get("/api/autenticacao/restricoes").header("Authorization", "Bearer " + tokenAluno))
-                                .andExpect(status().isOk());
+                                .andExpect(status().isForbidden());
                 String login = "{\"email\":\"aluno@example.com\",\"senha\":\"SenhaTeste123!\"}";
                 mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON).content(login))
                                 .andExpect(status().isOk())
@@ -477,8 +478,8 @@ class ModeracaoIntegracaoTest {
                 mvc.perform(post("/api/autenticacao/aceitar-termos-novamente")
                                 .header("Authorization", "Bearer " + tokens.gerarTermos(aluno))
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"versaoTermos\":\"1.0\"}"))
-                                .andExpect(status().isNoContent());
+                                .content("{\"versaoTermos\":\"v1.0\"}"))
+                                .andExpect(status().isOk());
                 mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON).content(login))
                                 .andExpect(status().isOk());
         }
@@ -533,6 +534,7 @@ class ModeracaoIntegracaoTest {
                 usuario.setEmailConfirmado(true);
                 usuario.setDeclarouMaiorIdade(true);
                 usuario.setAceitouTermosLgpd(true);
+                usuario.setVersaoTermos("base-teste");
                 usuarios.saveAndFlush(usuario);
                 if (perfil != Perfil.ALUNO) responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
                 return usuario;
