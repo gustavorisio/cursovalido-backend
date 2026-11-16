@@ -65,6 +65,9 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**",
+                                                                "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml")
+                                                .permitAll()
                                                 // Rotas publicas de autenticacao e cadastro.
                                                 .requestMatchers(HttpMethod.POST, "/api/suporte/solicitacoes")
                                                 .permitAll()
