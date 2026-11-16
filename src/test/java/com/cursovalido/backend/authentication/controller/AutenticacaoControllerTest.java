@@ -1,6 +1,8 @@
 package com.cursovalido.backend.authentication.controller;
 
 import com.cursovalido.backend.authentication.dto.AceiteTermosRequest;
+import com.cursovalido.backend.authentication.dto.AlteracaoSenhaAutenticadoRequest;
+import com.cursovalido.backend.authentication.dto.AlteracaoSenhaRequest;
 import com.cursovalido.backend.authentication.dto.AutenticacaoResponse;
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.dto.Codigo2faRequest;
@@ -33,10 +35,11 @@ class AutenticacaoControllerTest {
     private final CadastroUsuarioService cadastros = mock(CadastroUsuarioService.class);
     private final TermosUsuarioService termos = mock(TermosUsuarioService.class);
     private final ContaUsuarioService contas = mock(ContaUsuarioService.class);
+    private final SenhaUsuarioService senhas = mock(SenhaUsuarioService.class);
     private final TokenJwtService tokens = mock(TokenJwtService.class);
     private final LogAuditoriaService auditoria = mock(LogAuditoriaService.class);
     private final AutenticacaoController controller = new AutenticacaoController(cadastros,
-            mock(SenhaUsuarioService.class), termos, contas, autenticacao, tokens, auditoria);
+            senhas, termos, contas, autenticacao, tokens, auditoria);
 
     @Test
     void deveIndicarNecessidadeDeSegundoFatorNoLogin() {
@@ -116,6 +119,45 @@ class AutenticacaoControllerTest {
         controller.excluirConta(usuario, new ExclusaoContaRequest("123456"));
 
         verify(contas).excluirConta(1L, "123456");
+    }
+
+    @Test
+    void deveSolicitarCodigoDeExclusaoParaContaAutenticada() {
+        controller.solicitarExclusao(usuario);
+
+        verify(contas).solicitarExclusao(1L);
+    }
+
+    @Test
+    void deveRevogarTermosDaContaAutenticada() {
+        controller.revogarTermos(usuario);
+
+        verify(termos).revogarTermos(1L);
+    }
+
+    @Test
+    void deveEncaminharEmailAoSolicitarRecuperacaoDeSenha() {
+        controller.solicitarAlteracaoSenha(new EmailRequest(EMAIL));
+
+        verify(senhas).solicitarAlteracaoSenha(EMAIL);
+    }
+
+    @Test
+    void deveEncaminharTokenENovaSenhaNaRecuperacao() {
+        var dados = new AlteracaoSenhaRequest("token", "NovaSenha@123", "NovaSenha@123");
+
+        controller.alterarSenha(dados);
+
+        verify(senhas).alterarSenha("token", "NovaSenha@123", "NovaSenha@123");
+    }
+
+    @Test
+    void deveEncaminharIdESenhasNaAlteracaoAutenticada() {
+        var dados = new AlteracaoSenhaAutenticadoRequest("senha-atual", "NovaSenha@123", "NovaSenha@123");
+
+        controller.alterarSenhaAutenticado(usuario, dados);
+
+        verify(senhas).alterarSenhaAutenticado(1L, "senha-atual", "NovaSenha@123", "NovaSenha@123");
     }
 
     private MockHttpServletRequest requisicao() {

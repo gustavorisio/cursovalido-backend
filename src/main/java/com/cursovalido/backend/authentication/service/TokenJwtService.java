@@ -2,7 +2,9 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.entity.Sessao;
 import com.cursovalido.backend.authentication.entity.Usuario;
+import com.cursovalido.backend.authentication.exception.CredenciaisInvalidasException;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.token.TokenJwtValidation;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -17,6 +19,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +30,7 @@ public class TokenJwtService {
     private long expiracaoMs;
     private Key chave;
     private final SessaoRepository sessoes;
-    private final com.cursovalido.backend.authentication.repository.UsuarioRepository usuarios;
+    private final UsuarioRepository usuarios;
 
     @PostConstruct
     // Prepara a chave usada para assinar os tokens.
@@ -36,18 +39,19 @@ public class TokenJwtService {
     }
 
     // Gera um JWT com os dados basicos do usuario.
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public String gerar(Usuario usuario) {
         return criar(usuario, "ACESSO", Math.min(expiracaoMs, 86_400_000L));
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public String gerarTermos(Usuario usuario) {
         return criar(usuario, "TERMOS", 300_000);
     }
 
     private String criar(Usuario usuario, String finalidade, long duracao) {
-        usuarios.buscarParaAtualizar(usuario.getId()).orElseThrow();
+        usuarios.buscarParaAtualizar(usuario.getId())
+                .orElseThrow(CredenciaisInvalidasException::new);
         sessoes.revogarPorUsuario(usuario.getId());
         Instant agora = Instant.now();
         String id = UUID.randomUUID().toString();
@@ -89,7 +93,8 @@ public class TokenJwtService {
 
     public void encerrar(String token) {
         var dados = validar(token);
-        var sessao = sessoes.findById(dados.getId()).orElseThrow();
+        var sessao = sessoes.findById(dados.getId())
+                .orElseThrow(CredenciaisInvalidasException::new);
         sessao.revogar();
         sessoes.save(sessao);
     }

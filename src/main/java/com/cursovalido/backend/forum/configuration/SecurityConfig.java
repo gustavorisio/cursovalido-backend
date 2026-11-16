@@ -227,8 +227,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, "/api/forum/comentarios/*",
                                                                 "/api/forum/topicos/*/comentarios/*")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.DELETE, "/api/forum/topicos/*")
-                                                .hasRole("ADMINISTRADOR")
                                                 .anyRequest().denyAll())
                                 .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(new HttpsFilter(httpsObrigatorio),

@@ -378,10 +378,10 @@ class AutenticacaoHttpTest {
         assertEquals(400, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
                 .headers(h -> h.setBearerAuth(restrito)).body(Map.of("versaoTermos", "teste-http"))
                 .retrieve().toBodilessEntity().getStatusCode().value());
-        assertEquals(200, cliente.post().uri("/api/autenticacao/aceitar-termos-novamente")
-                .headers(h -> h.setBearerAuth(restrito)).body(Map.of("versaoTermos", "teste-http",
-                        "aceitouResponsabilidade", true, "versaoResponsabilidade", "1.0"))
-                .retrieve().toBodilessEntity().getStatusCode().value());
+        var confirmacao = Map.of("versaoTermos", "teste-http",
+                "aceitouResponsabilidade", true, "versaoResponsabilidade", "1.0");
+        assertEquals(200, enviarDecisao("aceitar-termos-novamente", restrito, confirmacao).getStatusCode().value());
+        assertEquals(401, enviarDecisao("aceitar-termos-novamente", restrito, confirmacao).getStatusCode().value());
         assertEquals(200, cliente.post().uri("/api/autenticacao/login")
                 .body(Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!"))
                 .retrieve().toBodilessEntity().getStatusCode().value());

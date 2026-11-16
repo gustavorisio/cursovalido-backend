@@ -1,9 +1,27 @@
 package com.cursovalido.backend.authentication.controller;
 
+import com.cursovalido.backend.authentication.dto.PoliticaResponse;
+import com.cursovalido.backend.authentication.service.PoliticaService;
+import com.cursovalido.backend.authentication.service.PrivacidadeService;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class DocumentoTermosRenderizacaoTest {
+    @Test
+    void deveExibirPoliticaDePrivacidadePublicada() throws Exception {
+        var privacidade = mock(PrivacidadeService.class);
+        when(privacidade.buscarAtiva()).thenReturn(new PoliticaResponse(
+                "Privacidade", "2.0", "Texto vigente", LocalDateTime.of(2025, 1, 1, 12, 0)));
+        var controller = new DocumentoTermosController(mock(PoliticaService.class), privacidade);
+
+        var resposta = controller.documentoPrivacidade();
+
+        assertEquals("public, max-age=60", resposta.getHeaders().getCacheControl());
+        assertTrue(resposta.getBody().contains("Texto vigente"));
+    }
+
     @Test
     void renderizaCorpoSemExibirCabecalhoHtml() {
         String html = DocumentoTermosController.renderizarConteudo(
