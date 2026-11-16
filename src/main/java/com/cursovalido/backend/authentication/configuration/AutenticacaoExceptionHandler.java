@@ -3,7 +3,6 @@ package com.cursovalido.backend.authentication.configuration;
 import com.cursovalido.backend.authentication.dto.Codigo2faErroResponse;
 import com.cursovalido.backend.authentication.dto.TermosPendentesResponse;
 import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoException;
-import com.cursovalido.backend.authentication.exception.EmailNaoConfirmadoException;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
 import com.cursovalido.backend.authentication.exception.TermosNaoAceitosException;
 import com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException;
@@ -132,13 +131,6 @@ public class AutenticacaoExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Codigo2faErroResponse requisicaoInvalida(IllegalArgumentException excecao) {
         return new Codigo2faErroResponse(excecao.getMessage(), "REQUISICAO_INVALIDA");
-    }
-
-    @ExceptionHandler(EmailNaoConfirmadoException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public Codigo2faErroResponse emailNaoConfirmado(
-            EmailNaoConfirmadoException excecao) {
-        return new Codigo2faErroResponse(excecao.getReason(), EmailNaoConfirmadoException.CODIGO);
     }
 
     @ExceptionHandler(Codigo2faExpiradoException.class)

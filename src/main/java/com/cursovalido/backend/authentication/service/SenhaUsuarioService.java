@@ -18,7 +18,6 @@ public class SenhaUsuarioService {
     private final TokenEmailService tokensEmail;
     private final EmailService emails;
     private final SessaoRepository sessoes;
-    private final CadastroUsuarioService cadastro;
 
     @Transactional
     public void alterarSenhaAutenticado(Long idUsuario, String senhaAtual, String novaSenha, String confirmacaoSenha) {
@@ -37,10 +36,6 @@ public class SenhaUsuarioService {
     public void solicitarAlteracaoSenha(String email) {
         auditoria.registrar(null, "RECUPERACAO_SOLICITADA", "Solicitacao recebida", null);
         repositorio.findByEmail(email).filter(usuario -> usuario.isAtivo()).ifPresent(usuario -> {
-            if (!usuario.isEmailConfirmado()) {
-                cadastro.reenviarConfirmacao(email);
-                return;
-            }
             String token = tokensEmail.criarAlteracaoSenha(usuario);
             emails.enviarRedefinicaoSenha(usuario, token);
         });

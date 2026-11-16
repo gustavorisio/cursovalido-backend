@@ -37,15 +37,6 @@ public class EmailService {
         this.urlAplicacao = urlAplicacao;
     }
 
-    // Envia o link para confirmar o cadastro.
-    public void enviarConfirmacao(Usuario usuario, String token) {
-        enviar(usuario.getEmail(), "Confirme seu cadastro no Curso Valido",
-                "Ola, " + usuario.getNomeCompleto() + ".\n\n"
-                        + "Confirme seu e-mail acessando:\n"
-                        + urlAplicacao + "/confirmacao-email?token=" + token + "\n\n"
-                        + "Este link expira em 24 horas.");
-    }
-
     // Envia o link para redefinir a senha.
     public void enviarRedefinicaoSenha(Usuario usuario, String token) {
         enviar(usuario.getEmail(), "Alteracao de senha do Curso Valido",

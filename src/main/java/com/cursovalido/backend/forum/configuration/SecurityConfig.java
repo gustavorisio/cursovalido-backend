@@ -72,8 +72,6 @@ public class SecurityConfig {
                                                                 "/api/autenticacao/login",
                                                                 "/api/autenticacao/confirmar-2fa",
                                                                 "/api/autenticacao/reenviar-2fa",
-                                                                "/api/autenticacao/confirmar-email",
-                                                                "/api/autenticacao/reenviar-confirmacao",
                                                                 "/api/autenticacao/solicitar-alteracao-senha",
                                                                 "/api/autenticacao/alterar-senha",
                                                                 "/api/convites/consultar", "/api/convites/confirmar-email",

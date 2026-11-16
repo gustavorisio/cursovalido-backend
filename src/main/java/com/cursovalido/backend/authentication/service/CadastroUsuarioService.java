@@ -6,7 +6,6 @@ import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.cadastro.CadastroValidation;
 import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
-import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,6 @@ public class CadastroUsuarioService {
     private final UsuarioRepository repositorio;
     private final PasswordEncoder codificadorSenha;
     private final LogAuditoriaService auditoria;
-    private final UsuarioForumService usuariosForum;
     private final PoliticaService politicas;
     private final TokenEmailService tokensEmail;
     private final EmailService emails;
@@ -31,7 +29,7 @@ public class CadastroUsuarioService {
     private final SecureRandom geradorRa = new SecureRandom();
 
     @Transactional
-    // Cria uma conta de aluno e envia a confirmacao de e-mail.
+    // Cria uma conta de aluno e envia o primeiro codigo de acesso.
     public Usuario cadastrar(CadastroUsuarioRequest requisicao, String enderecoIp) {
         validacaoEmail.validar(requisicao.email());
         CadastroValidation.validar(requisicao, enderecoIp, politicas, repositorio, auditoria);
@@ -47,32 +45,11 @@ public class CadastroUsuarioService {
         usuario.setDataHoraAceite(LocalDateTime.now());
         usuario.setVersaoTermos(requisicao.versaoTermos());
         usuario.setPerfil(Perfil.ALUNO);
-        usuario.setEmailConfirmado(false);
         Usuario salvo = repositorio.save(usuario);
-        String token = tokensEmail.criarConfirmacao(salvo);
-        emails.enviarConfirmacao(salvo, token);
+        String codigo = tokensEmail.criarCodigo2fa(salvo);
+        emails.enviarCodigo2fa(salvo, codigo);
         auditoria.registrar(salvo.getId(), "CADASTRO_USUARIO", "Cadastro realizado", enderecoIp);
         return salvo;
-    }
-
-    @Transactional
-    // Confirma o e-mail e sincroniza o usuario com o forum.
-    public void confirmarEmail(String token) {
-        var registro = tokensEmail.validar(token, tokensEmail.finalidadeConfirmacao());
-        Usuario usuario = registro.getUsuario();
-        usuario.setEmailConfirmado(true);
-        repositorio.save(usuario);
-        usuariosForum.sincronizar(usuario);
-        auditoria.registrar(usuario.getId(), "CONFIRMACAO_EMAIL", "E-mail confirmado", null);
-    }
-
-    // Reenvia o e-mail de confirmacao quando ainda for necessario.
-    public void reenviarConfirmacao(String email) {
-        repositorio.findByEmail(email).filter(usuario -> !usuario.isEmailConfirmado()).ifPresent(usuario -> {
-            CadastroValidation.validarReenvio(tokensEmail.excedeuLimiteConfirmacao(usuario));
-            String token = tokensEmail.criarNovaConfirmacao(usuario);
-            emails.enviarConfirmacao(usuario, token);
-        });
     }
 
     private String gerarRa() {

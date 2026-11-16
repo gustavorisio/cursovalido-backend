@@ -2,7 +2,6 @@ package com.cursovalido.backend.authentication.validation.cadastro;
 
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
-import com.cursovalido.backend.authentication.exception.LimiteReenvioException;
 import com.cursovalido.backend.authentication.exception.MenorDeIdadeException;
 import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
@@ -27,9 +26,5 @@ public final class CadastroValidation {
             throw new IllegalArgumentException("A idade maxima permitida e 90 anos.");
         if (repositorio.existsByEmail(requisicao.email()))
             throw new CadastroDuplicadoException("E-mail");
-    }
-    public static void validarReenvio(boolean limiteExcedido) {
-        if (limiteExcedido)
-            throw new LimiteReenvioException();
     }
 }
