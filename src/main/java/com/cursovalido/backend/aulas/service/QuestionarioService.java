@@ -40,7 +40,8 @@ public class QuestionarioService {
         if (idModulo == null && dados.perguntas().size() > LIMITE_PERGUNTAS_AVALIACAO) {
             throw erro(HttpStatus.BAD_REQUEST, "A avaliação do curso pode ter no máximo 10 perguntas.");
         }
-        cursos.buscarParaMatricula(idCurso).orElseThrow();
+        cursos.buscarParaMatricula(idCurso)
+                .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Curso nao encontrado"));
         for (var pergunta : dados.perguntas()) {
             if (pergunta.alternativaCorreta() >= pergunta.alternativas().size()) {
                 throw erro(HttpStatus.BAD_REQUEST, "A alternativa correta nao existe nesta pergunta");
@@ -83,7 +84,8 @@ public class QuestionarioService {
     @Transactional
     public ResultadoQuestionarioResponse responder(Long idCurso, Long idModulo, RespostasQuestionarioRequest dados, Long idAluno) {
         verificarAluno(idCurso, idModulo, idAluno);
-        cursos.buscarParaMatricula(idCurso).orElseThrow();
+        cursos.buscarParaMatricula(idCurso)
+                .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Curso nao encontrado"));
         verificarAluno(idCurso, idModulo, idAluno);
         var questionario = questionarios.findByIdCursoAndIdModulo(idCurso, idModulo)
                 .filter(this::disponivel).orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Questionario indisponivel"));

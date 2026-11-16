@@ -25,13 +25,13 @@ public class RoadmapService {
 
     public PaginaCaminhosResponse consultar() {
         return new PaginaCaminhosResponse(questionarios.findByAtivoTrueAndPublicadoTrueOrderByIdDesc().stream().map(this::resumo).toList(),
-                secoes.findByPublicadoTrueOrderByOrdemAscIdAsc());
+                secoes.findByPublicadoTrueOrderByOrdemAscIdAsc().stream().map(SecaoCaminhosResponse::de).toList());
     }
 
     public PaginaCaminhosResponse consultarAdministracao(Long idUsuario) {
         var secoesAdministracao = listarSecoesAdministracao(idUsuario);
         return new PaginaCaminhosResponse(questionarios.findByAtivoTrueOrderByIdDesc().stream().map(this::resumo).toList(),
-                secoesAdministracao);
+                secoesAdministracao.stream().map(SecaoCaminhosResponse::de).toList());
     }
 
     public List<SecaoCaminhos> listarSecoesAdministracao(Long idAdministrador) {
@@ -155,7 +155,11 @@ public class RoadmapService {
         if (!questionario.isPublicado()) throw erro(HttpStatus.NOT_FOUND, "Questionario nao publicado");
         var resposta = respostas.findByIdAlunoAndIdQuestionario(idAluno, id).orElse(null);
         if (resposta == null || resposta.getVersao() != questionario.getVersao()) return null;
-        var resultado = questionario.getResultados().stream().filter(r -> r.getChave().equals(resposta.getResultado())).findFirst().orElseThrow();
+        var resultado = questionario.getResultados().stream()
+                .filter(item -> item.getChave().equals(resposta.getResultado())).findFirst().orElse(null);
+        if (resultado == null) {
+            return null;
+        }
         return new ResultadoCaminhosResponse(resposta.getVersao(), resposta.getRespostas().stream()
                 .map(e -> new RespostasCaminhosRequest.Escolha(e.getPergunta(), e.getOpcao())).toList(), converterResultado(resultado), resposta.getAtualizadoEm());
     }
@@ -173,7 +177,9 @@ public class RoadmapService {
             var opcao = pergunta.getOpcoes().get(escolha.opcao());
             if (opcao.getResultado() != null) {
                 if (i != escolhas.size() - 1) throw erro(HttpStatus.BAD_REQUEST, "Existem respostas depois do resultado final");
-                return questionario.getResultados().stream().filter(r -> r.getChave().equals(opcao.getResultado())).findFirst().orElseThrow();
+                return questionario.getResultados().stream()
+                        .filter(item -> item.getChave().equals(opcao.getResultado())).findFirst()
+                        .orElseThrow(() -> new IllegalStateException("Resultado configurado nao encontrado no questionario"));
             }
             atual = opcao.getProximaPergunta();
         }
