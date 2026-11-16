@@ -1,0 +1,271 @@
+diff --git a/src/servicos/api.js b/src/servicos/api.js
+index 6b4d21d..7bb33a4 100644
+--- a/src/servicos/api.js
++++ b/src/servicos/api.js
+@@ -118,10 +118,9 @@ export async function requisitar(caminho, opcoes = {}) {
+       globalThis.dispatchEvent?.(new CustomEvent('curso-valido-restricoes-alteradas'));
+       throw new ErroApi(resposta.status, formatarMensagem(dados) ?? 'Há uma restrição ativa na sua conta.', dados);
+     }
+-    if (resposta.status === 403 && !semAutenticacao && dados?.codigo === 'TERMOS_NAO_ACEITOS') {
+-      globalThis.dispatchEvent?.(new CustomEvent('curso-valido-termos-pendentes', {
+-        detail: { token: dados?.token ?? dados?.jwt ?? dados?.accessToken, tokenOrigem: token }
+-      }));
++    if (resposta.status === 403 && !semAutenticacao && tokenAutenticacao === undefined
++        && dados?.codigo === 'TERMOS_REAUTENTICACAO' && obterTokenSessao() === token) {
++      globalThis.dispatchEvent?.(new CustomEvent('curso-valido-termos-atualizados'));
+     }
+     if (resposta.status === 401 && !semAutenticacao) {
+       globalThis.dispatchEvent?.(new CustomEvent('curso-valido-sessao-expirada', { detail: { token: token } }));
+diff --git a/src/App.jsx b/src/App.jsx
+index 26e2ec5..a021522 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -98,10 +98,10 @@ function RedirecionarTermosPendentes() {
+ 
+   useEffect(() => {
+     function redirecionar() {
+-      navegar('/termos-aceite?reativacao=true', { replace: true });
++      navegar('/termos-aceite?atualizacao=true', { replace: true });
+     }
+-    globalThis.addEventListener?.('curso-valido-termos-pendentes', redirecionar);
+-    return () => globalThis.removeEventListener?.('curso-valido-termos-pendentes', redirecionar);
++    globalThis.addEventListener?.('curso-valido-termos-atualizados', redirecionar);
++    return () => globalThis.removeEventListener?.('curso-valido-termos-atualizados', redirecionar);
+   }, [navegar]);
+ 
+   return null;
+diff --git a/src/servicos/servicoAutenticacao.js b/src/servicos/servicoAutenticacao.js
+index affe5ab..85673e5 100644
+--- a/src/servicos/servicoAutenticacao.js
++++ b/src/servicos/servicoAutenticacao.js
+@@ -106,6 +106,14 @@ export function revogarTermos() {
+   return requisitar('/autenticacao/revogar-termos', { method: 'POST' });
+ }
+ 
++export function decidirTermos(token, aceitou) {
++  return requisitar('/autenticacao/decidir-termos', {
++    method: 'POST',
++    tokenAutenticacao: token,
++    body: JSON.stringify({ aceitou })
++  });
++}
++
+ export function aceitarTermosNovamente(token, versaoTermos, responsabilidade = {}) {
+   return requisitar('/autenticacao/aceitar-termos-novamente', {
+     method: 'POST',
+diff --git a/src/contextos/AutenticacaoContexto.jsx b/src/contextos/AutenticacaoContexto.jsx
+index 83dc4e1..cd3ae31 100644
+--- a/src/contextos/AutenticacaoContexto.jsx
++++ b/src/contextos/AutenticacaoContexto.jsx
+@@ -1,6 +1,6 @@
+ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+ import { requisitar } from '../servicos/api';
+-import { confirmarCodigo2fa } from '../servicos/servicoAutenticacao';
++import { aceitarTermosNovamente, confirmarCodigo2fa, decidirTermos } from '../servicos/servicoAutenticacao';
+ import { CHAVE_SESSAO, controleSessao, dadosDoToken, tokenValido } from '../servicos/sessaoNavegador';
+ import { AutenticacaoContexto } from './contextoBaseAutenticacao';
+ 
+@@ -45,16 +45,18 @@ export function AutenticacaoProvedor({ children }) {
+   const geracao = useRef(0);
+   const emailPendente = useRef('');
+ 
+-  const sair = useCallback(() => {
++  const encerrarSessaoLocal = useCallback(() => {
+     geracao.current += 1;
+     emailPendente.current = '';
+     const anterior = controleSessao.encerrar();
+     setSessao(null);
+     sessionStorage.removeItem(CHAVE_TOKEN_TERMOS);
+     const legado = limparArmazenamentoLegado();
+-    return revogarToken(anterior?.token ?? legado);
++    return anterior?.token ?? legado;
+   }, []);
+ 
++  const sair = useCallback(() => revogarToken(encerrarSessaoLocal()), [encerrarSessaoLocal]);
++
+   useEffect(() => {
+     const legado = limparArmazenamentoLegado();
+     revogarToken(legado);
+@@ -64,12 +66,6 @@ export function AutenticacaoProvedor({ children }) {
+       sair();
+     }
+ 
+-    function guardarTokenDeTermos(evento) {
+-      if (evento.detail?.tokenOrigem !== controleSessao.obter()?.token) return;
+-      sair();
+-      if (evento.detail?.token) sessionStorage.setItem(CHAVE_TOKEN_TERMOS, evento.detail.token);
+-    }
+-
+     function sincronizarAbas(evento) {
+       if (evento.key !== CHAVE_SESSAO && evento.key !== null) return;
+       geracao.current += 1;
+@@ -83,7 +79,6 @@ export function AutenticacaoProvedor({ children }) {
+     }
+ 
+     globalThis.addEventListener('curso-valido-sessao-expirada', encerrarSessao);
+-    globalThis.addEventListener('curso-valido-termos-pendentes', guardarTokenDeTermos);
+     window.addEventListener('storage', sincronizarAbas);
+     window.addEventListener('pageshow', conferirAoVoltar);
+     document.addEventListener('visibilitychange', conferirAoVoltar);
+@@ -91,7 +86,6 @@ export function AutenticacaoProvedor({ children }) {
+       geracao.current += 1;
+       emailPendente.current = '';
+       globalThis.removeEventListener('curso-valido-sessao-expirada', encerrarSessao);
+-      globalThis.removeEventListener('curso-valido-termos-pendentes', guardarTokenDeTermos);
+       window.removeEventListener('storage', sincronizarAbas);
+       window.removeEventListener('pageshow', conferirAoVoltar);
+       document.removeEventListener('visibilitychange', conferirAoVoltar);
+@@ -145,13 +139,28 @@ export function AutenticacaoProvedor({ children }) {
+     return guardarResposta(resposta, tentativa);
+   }, [guardarResposta]);
+ 
++  const confirmarAceiteTermos = useCallback(async (token, versao, responsabilidade) => {
++    const tentativa = geracao.current;
++    const resposta = await aceitarTermosNovamente(token, versao, responsabilidade);
++    return guardarResposta(resposta, tentativa);
++  }, [guardarResposta]);
++
++  const encerrarPorDecisaoTermos = useCallback(async (token, aceitou) => {
++    const tentativa = geracao.current;
++    await decidirTermos(token, aceitou);
++    if (geracao.current !== tentativa) throw new Error('A sessão mudou. Abra a tela de termos novamente.');
++    encerrarSessaoLocal();
++  }, [encerrarSessaoLocal]);
++
+   const valor = useMemo(() => ({
+     sessao,
+     autenticado: sessao ? controleSessao.obter()?.token === sessao.token : false,
+     autenticarUsuario,
+     validarCodigo2fa,
++    confirmarAceiteTermos,
++    encerrarPorDecisaoTermos,
+     sair,
+-  }), [autenticarUsuario, sair, sessao, validarCodigo2fa]);
++  }), [autenticarUsuario, confirmarAceiteTermos, encerrarPorDecisaoTermos, sair, sessao, validarCodigo2fa]);
+ 
+   return <AutenticacaoContexto.Provider value={valor}>{children}</AutenticacaoContexto.Provider>;
+ }
+diff --git a/src/paginas/TermosDeUso.jsx b/src/paginas/TermosDeUso.jsx
+index 86b9576..ae11426 100644
+--- a/src/paginas/TermosDeUso.jsx
++++ b/src/paginas/TermosDeUso.jsx
+@@ -1,9 +1,9 @@
+ import { dadosDoToken } from '../servicos/sessaoNavegador';
+ import AceiteDocumentos from '../componentes/comuns/AceiteDocumentos';
+-import { useEffect, useState } from 'react';
++import { useEffect, useRef, useState } from 'react';
+ import { useLocation, useNavigate } from 'react-router-dom';
+ import DocumentoLegal from '../componentes/comuns/DocumentoLegal';
+-import { aceitarTermosNovamente, buscarPoliticaAtiva } from '../servicos/servicoAutenticacao';
++import { buscarPoliticaAtiva } from '../servicos/servicoAutenticacao';
+ import { useAutenticacao } from '../contextos/useAutenticacao';
+ 
+ export default function TermosDeUso() {
+@@ -16,15 +16,17 @@ export default function TermosDeUso() {
+   const [responsabilidade, setResponsabilidade] = useState({});
+   const [aceito, setAceito] = useState(false);
+   const [erro, setErro] = useState('');
+-  const [mensagem, setMensagem] = useState('');
++  const enviando = useRef(false);
+   const [carregando, setCarregando] = useState(false);
+   const [carregandoMetadados, setCarregandoMetadados] = useState(true);
+   const [revisaoDocumentos, setRevisaoDocumentos] = useState(0);
+   const navegar = useNavigate();
+   const localizacao = useLocation();
+-  const { autenticado, sair } = useAutenticacao();
++  const { autenticado, sessao, sair, confirmarAceiteTermos, encerrarPorDecisaoTermos } = useAutenticacao();
++  const atualizacao = autenticado && new URLSearchParams(localizacao.search).get('atualizacao') === 'true';
+ 
+   function voltar() {
++    if (enviando.current) return;
+     const retorno = localizacao.state?.retornoDocumentos;
+     navegar(retorno?.startsWith('/') && !retorno.startsWith('//') && !/termos|politica-privacidade/.test(retorno) ? retorno : autenticado ? '/cursos' : '/', { replace: true });
+   }
+@@ -73,37 +75,65 @@ export default function TermosDeUso() {
+     return () => { ativo = false; };
+   }, [navegar]);
+ 
+-  async function aceitar() {
+-    if (!aceito || !aceitePendente || !versao || !perfilValido) return;
+-    if (perfil !== 'ALUNO' && !responsabilidade.aceitouResponsabilidade) return;
+-    setCarregando(true); setErro('');
++  async function decidir(confirmou) {
++    const token = atualizacao ? sessao?.token : aceitePendente;
++    if (enviando.current || !token) return;
++    if (confirmou && (!versao || carregandoMetadados)) return;
++    if (confirmou && !atualizacao && (!aceito || !perfilValido ||
++        (perfil !== 'ALUNO' && !responsabilidade.aceitouResponsabilidade))) return;
++
++    enviando.current = true;
++    setCarregando(true);
++    setErro('');
+     try {
+-      await aceitarTermosNovamente(aceitePendente, versao, responsabilidade);
+-      sessionStorage.removeItem('curso-valido-token-termos');
++      if (!atualizacao && confirmou) {
++        await confirmarAceiteTermos(token, versao, responsabilidade);
++        navegar('/cursos', { replace: true });
++        return;
++      }
++
++      await encerrarPorDecisaoTermos(token, confirmou);
+       setAceitePendente('');
+-      sair();
+-      setMensagem('Termos aceitos novamente. Faça login para continuar.');
+-      window.setTimeout(() => navegar('/login', {
++      navegar('/login', {
+         replace: true,
+-        state: { mensagem: 'Termos aceitos novamente. Faça login para continuar.' }
+-      }), 1200);
++        state: { mensagem: confirmou ? 'Entre novamente para confirmar o aceite dos novos termos.' :
++          'Você recusou os termos. Entre novamente para revisar sua decisão.' }
++      });
+     } catch (falha) {
+-      if (falha.status === 400) {
++      if (falha.status === 400 && !atualizacao && confirmou) {
+         setErro('A versão atual dos documentos não está disponível. Busque novamente os documentos.');
+-      } else if (falha.status === 401 || falha.status === 403) {
+-        sessionStorage.removeItem('curso-valido-token-termos');
++      } else if (falha.status === 401 || (falha.status === 403 && !atualizacao)) {
+         sair();
+-        navegar('/login', { replace: true, state: { mensagem: 'Não foi possível validar o aceite. Faça login novamente.' } });
+-      } else if (falha.status >= 500) {
+-        setErro('O serviço está indisponível. Tente novamente mais tarde.');
++        setAceitePendente('');
++        navegar('/login', { replace: true, state: { mensagem: 'Não foi possível validar a decisão. Faça login novamente.' } });
+       } else {
+-        setErro(falha.message);
++        setErro(falha.message || 'Não foi possível enviar sua decisão. Tente novamente.');
+       }
+-    } finally { setCarregando(false); }
++    } finally {
++      enviando.current = false;
++      setCarregando(false);
++    }
+   }
+ 
+-  return <DocumentoLegal tipo="termos" versao={versao} dataPublicacao={dataPublicacao} conteudo={conteudo} exibirConteudo={!aceitePendente} carregando={carregandoMetadados} erro={erro} onVoltar={voltar} onRecarregar={carregarDocumento}>
+-    {mensagem && <div className="mensagem-sucesso" role="status">{mensagem}</div>}
+-    {aceitePendente && versao && <section className="mensagem-cadastro-concluido"><h2>Aceite necessário</h2>{!perfilValido && <p role="alert">Não foi possível identificar seu perfil. Faça login novamente.</p>}<p>É necessário aceitar os documentos atuais para acessar a conta.</p><AceiteDocumentos key={versao + perfil + revisaoDocumentos} perfil={perfil} onResponsabilidade={setResponsabilidade} versaoTermos={versao} aceito={aceito} onAlterar={setAceito} desabilitado={carregando || carregandoMetadados} /><button className="botao-destaque" type="button" disabled={!aceito || !perfilValido || carregando || carregandoMetadados} onClick={aceitar}>{carregando ? 'Enviando...' : 'Aceitar termos e voltar ao login'}</button></section>}
++  return <DocumentoLegal tipo="termos" versao={versao} dataPublicacao={dataPublicacao} conteudo={conteudo}
++    exibirConteudo={!aceitePendente || atualizacao} carregando={carregandoMetadados} erro={erro}
++    onVoltar={voltar} onRecarregar={carregarDocumento}>
++    {atualizacao && <section className="mensagem-cadastro-concluido">
++      <h2>Novos termos de uso</h2>
++      <p>Leia a versão atual. Sua decisão encerra a sessão.</p>
++      <button className="botao-destaque" type="button" disabled={!versao || carregando || carregandoMetadados} onClick={() => decidir(true)}>Aceitar</button>
++      <button className="btn btn-secondary" type="button" disabled={carregando} onClick={() => decidir(false)}>Recusar</button>
++    </section>}
++    {!atualizacao && aceitePendente && <section className="mensagem-cadastro-concluido">
++      <h2>Aceite necessário</h2>
++      {!perfilValido && <p role="alert">Não foi possível identificar seu perfil. Faça login novamente.</p>}
++      <p>É necessário aceitar os documentos atuais para acessar a conta.</p>
++      {versao && <AceiteDocumentos key={versao + perfil + revisaoDocumentos} perfil={perfil}
++        onResponsabilidade={setResponsabilidade} versaoTermos={versao} aceito={aceito}
++        onAlterar={setAceito} desabilitado={carregando || carregandoMetadados} />}
++      <button className="botao-destaque" type="button" disabled={!versao || !aceito || !perfilValido || carregando || carregandoMetadados}
++        onClick={() => decidir(true)}>{carregando ? 'Enviando...' : 'Aceitar termos e continuar'}</button>
++      <button className="btn btn-secondary" type="button" disabled={carregando} onClick={() => decidir(false)}>Recusar</button>
++    </section>}
+   </DocumentoLegal>;
+ }

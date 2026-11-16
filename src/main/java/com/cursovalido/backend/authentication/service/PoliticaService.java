@@ -30,8 +30,7 @@ public class PoliticaService {
 
     // Verifica se uma versao de politica esta ativa.
     public boolean versaoAtiva(String versao) {
-        return repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().stream()
-                .anyMatch(politica -> politica.getVersao().equals(versao));
+        return repositorio.existsByAtivaTrueAndVersao(versao);
     }
 
     @Transactional

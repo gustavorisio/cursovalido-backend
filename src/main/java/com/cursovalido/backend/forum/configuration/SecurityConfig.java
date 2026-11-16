@@ -120,6 +120,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST,
                                                                 "/api/autenticacao/aceitar-termos-novamente")
                                                 .hasAuthority("TERMOS_PENDENTES")
+                                                .requestMatchers(HttpMethod.POST, "/api/autenticacao/decidir-termos")
+                                                .hasAnyAuthority("TERMOS_REAUTENTICACAO", "TERMOS_PENDENTES")
                                                 .requestMatchers(HttpMethod.POST, "/api/autenticacao/logout")
                                                 .authenticated()
                                                 // Operacoes da propria conta, para os tres perfis.
@@ -211,10 +213,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, "/api/noticias/*")
                                                 .hasRole("ADMINISTRADOR")
                                                 // Forum: autoria e moderacao sao verificadas pelos servicos.
-                                                .requestMatchers(HttpMethod.GET, "/api/forum/topicos",
-                                                                "/api/forum/topicos/*/comentarios")
-                                                .permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/forum/users", "/api/forum/topicos/meus")
+                                                .requestMatchers(HttpMethod.GET, "/api/forum/topicos", "/api/forum/topicos/*/comentarios",
+                                                                "/api/forum/topicos/meus", "/api/forum/users")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/forum/topicos",
                                                                 "/api/forum/topicos/*/comentarios")

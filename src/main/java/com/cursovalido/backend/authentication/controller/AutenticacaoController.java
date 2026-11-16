@@ -7,6 +7,7 @@ import com.cursovalido.backend.authentication.dto.AutenticacaoResponse;
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.dto.Codigo2faRequest;
 import com.cursovalido.backend.authentication.dto.DadosPessoaisResponse;
+import com.cursovalido.backend.authentication.dto.DecisaoTermosRequest;
 import com.cursovalido.backend.authentication.dto.EmailRequest;
 import com.cursovalido.backend.authentication.dto.LoginRequest;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
@@ -110,14 +111,22 @@ public class AutenticacaoController {
         termosUsuarios.revogarTermos(usuario.getId());
     }
 
-    @PostMapping("/aceitar-termos-novamente")
+    @PostMapping("/decidir-termos")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void aceitarTermosNovamente(@AuthenticationPrincipal UsuarioAutenticado usuario,
+    public void decidirTermos(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestHeader("Authorization") String autorizacao,
+            @Valid @RequestBody DecisaoTermosRequest requisicao, HttpServletRequest request) {
+        termosUsuarios.encerrarPorDecisao(usuario.getId(), autorizacao.substring(7),
+                requisicao.aceitou(), request.getRemoteAddr());
+    }
+
+    @PostMapping("/aceitar-termos-novamente")
+    public ResponseEntity<AutenticacaoResponse> aceitarTermosNovamente(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @RequestHeader("Authorization") String autorizacao,
             @Valid @RequestBody AceiteTermosRequest requisicao, HttpServletRequest request) {
-        termosUsuarios.aceitarTermosNovamente(usuario.getId(), requisicao.versaoTermos(),
-                requisicao.aceitouResponsabilidade(), requisicao.versaoResponsabilidade(), request.getRemoteAddr());
-        tokens.encerrar(autorizacao.substring(7));
+        var sessao = termosUsuarios.confirmarAceite(usuario.getId(), autorizacao.substring(7),
+                requisicao, request.getRemoteAddr());
+        return ResponseEntity.ok().header("Cache-Control", "no-store").body(sessao);
     }
 
     @PostMapping("/conta/solicitar-exclusao")

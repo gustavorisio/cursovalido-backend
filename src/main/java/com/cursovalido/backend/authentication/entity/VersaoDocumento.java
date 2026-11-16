@@ -22,6 +22,10 @@ public class VersaoDocumento {
 
     public String incrementar() {
         numero = Math.incrementExact(numero);
+        if ("TERMOS".equals(tipo)) {
+            long decimos = Math.addExact(10, Math.multiplyExact(numero - 1, 2));
+            return "v" + decimos / 10 + "." + decimos % 10;
+        }
         return numero + ".0";
     }
 }

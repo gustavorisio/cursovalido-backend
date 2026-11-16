@@ -26,6 +26,7 @@ public class CadastroUsuarioService {
     private final TokenEmailService tokensEmail;
     private final EmailService emails;
     private final ValidacaoEmailService validacaoEmail;
+    private final LimiteCadastroService limiteCadastro;
     private final SecureRandom geradorRa = new SecureRandom();
 
     @Transactional
@@ -33,6 +34,7 @@ public class CadastroUsuarioService {
     public Usuario cadastrar(CadastroUsuarioRequest requisicao, String enderecoIp) {
         validacaoEmail.validar(requisicao.email());
         CadastroValidation.validar(requisicao, enderecoIp, politicas, repositorio, auditoria);
+        limiteCadastro.reservar(enderecoIp);
 
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(requisicao.nomeCompleto());
