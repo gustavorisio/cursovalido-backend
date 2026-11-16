@@ -9,6 +9,7 @@ import com.cursovalido.backend.forum.entity.*;
 import com.cursovalido.backend.forum.exception.*;
 import com.cursovalido.backend.forum.repository.ComentarioRepository;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,12 +74,12 @@ class ComentarioServiceTest {
         when(usuarios.buscarAtivo(7L)).thenReturn(autor);
         when(topicos.buscarAtivo(10L)).thenReturn(topico);
         when(repositorio.save(comentario)).thenReturn(comentario);
-        var antes = LocalDateTime.now();
+        var antes = LocalDateTime.now(ZoneOffset.UTC);
         assertThat(servico.criar(10L, comentario, 7L)).isSameAs(comentario);
         assertThat(comentario.getUsuarioAutor()).isSameAs(autor);
         assertThat(comentario.getIdAutor()).isEqualTo(7L);
         assertThat(comentario.getTopico()).isSameAs(topico);
-        assertThat(comentario.getCriadoEm()).isBetween(antes, LocalDateTime.now());
+        assertThat(comentario.getCriadoEm()).isBetween(antes, LocalDateTime.now(ZoneOffset.UTC));
         assertThat(comentario.isAtivo()).isTrue();
         verify(auditoria).registrar(7L, "CADASTRO_COMENTARIO", "Comentario 20", null);
     }

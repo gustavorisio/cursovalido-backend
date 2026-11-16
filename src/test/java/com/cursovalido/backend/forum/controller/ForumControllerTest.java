@@ -47,7 +47,7 @@ class ForumControllerTest {
         topico.setDescricao("Duvida");
         topico.setIdAutor(7L);
         topico.setUsuarioAutor(autor);
-        topico.setCriadoEm(LocalDateTime.of(2026, 1, 1, 12, 0));
+        topico.setCriadoEm(LocalDateTime.of(2026, 11, 16, 1, 27));
         comentario = new Comentario();
         comentario.setId(20L);
         comentario.setConteudo("Resposta");
@@ -61,7 +61,9 @@ class ForumControllerTest {
         var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "ALUNO", 7L, topico.getCriadoEm(), 2, true,
                 false);
         when(topicos.listarRecentes(1, 3, "java", 7L)).thenReturn(List.of(resumo));
-        assertThat(controlador.listarTopicosRecentes(principal, 1, 3, "java")).containsExactly(resumo);
+        assertThat(controlador.listarTopicosRecentes(principal, 1, 3, "java")).containsExactly(
+                new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "ALUNO", 7L,
+                        LocalDateTime.of(2026, 11, 15, 22, 27), 2, true, false));
     }
 
     @Test
@@ -73,7 +75,8 @@ class ForumControllerTest {
         assertThat(captor.getValue().getTitulo()).isEqualTo("Java");
         assertThat(captor.getValue().getDescricao()).isEqualTo("Duvida");
         assertThat(resposta).isEqualTo(
-                new TopicoResponse(10L, "Java", "Duvida", "Autor", "ALUNO", 7L, topico.getCriadoEm(), 0, true, false));
+                new TopicoResponse(10L, "Java", "Duvida", "Autor", "ALUNO", 7L,
+                        LocalDateTime.of(2026, 11, 15, 22, 27), 0, true, false));
     }
 
     @Test
@@ -109,7 +112,7 @@ class ForumControllerTest {
     void listarComentarios_comTopico_deveConverterRespostaSemExporEntidades() {
         when(comentarios.listarPorTopico(10L, 7L)).thenReturn(List.of(comentario));
         assertThat(controlador.listarComentarios(principal, 10L)).containsExactly(new ComentarioResponse(
-                20L, "Resposta", "Autor", "ALUNO", 7L, comentario.getCriadoEm(), true));
+                20L, "Resposta", "Autor", "ALUNO", 7L, LocalDateTime.of(2026, 11, 15, 22, 27), true));
     }
 
     @Test

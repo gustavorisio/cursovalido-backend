@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
@@ -61,7 +62,7 @@ public class TopicoService {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         topico.setIdAutor(usuario.getId());
         topico.setUsuarioAutor(usuario);
-        topico.setCriadoEm(LocalDateTime.now());
+        topico.setCriadoEm(LocalDateTime.now(ZoneOffset.UTC));
         topico.setAtivo(true);
         topico.setFechado(false);
         Topico topicoSalvo = repositorioTopicos.save(topico);

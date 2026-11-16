@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
@@ -50,7 +51,7 @@ public class ComentarioService {
         comentario.setIdAutor(usuario.getId());
         comentario.setUsuarioAutor(usuario);
         comentario.setTopico(topico);
-        comentario.setCriadoEm(LocalDateTime.now());
+        comentario.setCriadoEm(LocalDateTime.now(ZoneOffset.UTC));
         comentario.setAtivo(true);
 
         Comentario comentarioSalvo = repositorioComentarios.save(comentario);

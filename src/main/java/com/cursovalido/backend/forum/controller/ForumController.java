@@ -22,12 +22,17 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/forum")
 @RequiredArgsConstructor
 public class ForumController {
+    private static final ZoneId BRASILIA = ZoneId.of("America/Sao_Paulo");
+
     private final TopicoService servicoTopicos;
     private final ComentarioService servicoComentarios;
     private final UsuarioForumService servicoUsuarios;
@@ -38,7 +43,9 @@ public class ForumController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "") String busca) {
-        return servicoTopicos.listarRecentes(page, size, busca, usuario == null ? null : usuario.getId());
+        return servicoTopicos.listarRecentes(page, size, busca, usuario == null ? null : usuario.getId()).stream()
+                .map(this::converter)
+                .toList();
     }
 
     @GetMapping("/topicos/meus")
@@ -47,7 +54,7 @@ public class ForumController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "") String busca) {
-        return servicoTopicos.listarMeus(page, size, busca, usuario.getId());
+        return servicoTopicos.listarMeus(page, size, busca, usuario.getId()).map(this::converter);
     }
 
     @PostMapping("/topicos")
@@ -134,16 +141,28 @@ public class ForumController {
         return new UsuariosForumResponse(usuarios);
     }
 
+    private TopicoResumoDTO converter(TopicoResumoDTO topico) {
+        return new TopicoResumoDTO(topico.id(), topico.titulo(), topico.descricao(), topico.nomeAutor(),
+                topico.papelAutor(), topico.idAutor(), horarioDeBrasilia(topico.criadoEm()), topico.quantidadeRespostas(),
+                topico.ativo(), topico.fechado());
+    }
+
     private TopicoResponse converter(Topico topico) {
         return new TopicoResponse(topico.getId(), topico.getTitulo(), topico.getDescricao(), topico.getNomeAutor(),
-                topico.getPapelAutor(), topico.getIdAutor(), topico.getCriadoEm(), topico.getQuantidadeRespostas(),
-                topico.isAtivo(), topico.isFechado());
+                topico.getPapelAutor(), topico.getIdAutor(), horarioDeBrasilia(topico.getCriadoEm()),
+                topico.getQuantidadeRespostas(), topico.isAtivo(), topico.isFechado());
     }
 
     private ComentarioResponse converter(Comentario comentario) {
         return new ComentarioResponse(comentario.getId(),
                 comentario.isAtivo() ? comentario.getConteudo() : "Esta mensagem foi excluída.", comentario.getNomeAutor(),
-                comentario.getPapelAutor(), comentario.getIdAutor(), comentario.getCriadoEm(), comentario.isAtivo());
+                comentario.getPapelAutor(), comentario.getIdAutor(), horarioDeBrasilia(comentario.getCriadoEm()),
+                comentario.isAtivo());
+    }
+
+    // As colunas created_at do fórum armazenam UTC sem informação de fuso.
+    private static LocalDateTime horarioDeBrasilia(LocalDateTime dataUtc) {
+        return dataUtc.atOffset(ZoneOffset.UTC).atZoneSameInstant(BRASILIA).toLocalDateTime();
     }
 
     private UsuarioForumResponse converter(UsuarioForum usuario, boolean administrador) {
