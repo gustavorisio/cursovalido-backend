@@ -88,12 +88,6 @@ public class ForumController {
         servicoTopicos.fechar(id, usuario.getId());
     }
 
-    @DeleteMapping("/topicos/{id}")
-    public void apagarTopico(@AuthenticationPrincipal UsuarioAutenticado usuario,
-            @PathVariable Long id) {
-        servicoTopicos.apagar(id, usuario.getId());
-    }
-
     @GetMapping("/topicos/{idTopico}/comentarios")
     public List<ComentarioResponse> listarComentarios(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @PathVariable Long idTopico) {

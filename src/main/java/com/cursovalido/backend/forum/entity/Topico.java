@@ -8,11 +8,13 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
+@DynamicUpdate
 @Table(name = "tb_topics")
 public class Topico {
 

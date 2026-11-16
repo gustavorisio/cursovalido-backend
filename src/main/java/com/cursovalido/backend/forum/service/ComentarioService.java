@@ -40,6 +40,7 @@ public class ComentarioService {
     }
 
     // Cria um comentario em um topico aberto.
+    @Transactional
     public Comentario criar(Long idTopico, Comentario comentario, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = servicoTopicos.buscarAtivo(idTopico);
@@ -81,6 +82,7 @@ public class ComentarioService {
     }
 
     // Desativa um comentario pelo autor ou administrador.
+    @Transactional
     public void apagar(Long idComentario, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Comentario comentario = buscar(idComentario);
@@ -97,6 +99,7 @@ public class ComentarioService {
     }
 
     // Confere o topico e desativa o comentario informado.
+    @Transactional
     public void apagarDoTopico(Long idTopico, Long idComentario, Long idUsuario) {
         Comentario comentario = buscar(idComentario);
         if (comentario.getTopico() == null || !idTopico.equals(comentario.getTopico().getId())) {

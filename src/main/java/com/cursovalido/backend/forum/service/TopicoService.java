@@ -9,6 +9,8 @@ import com.cursovalido.backend.forum.repository.TopicoRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
+import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +39,7 @@ public class TopicoService {
     // Lista os topicos e registra a consulta quando houver usuario.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca, Long idUsuario) {
         if (pagina < 0 || tamanho < 1 || tamanho > 100) {
-            throw new com.cursovalido.backend.forum.exception.RequisicaoInvalidaException(
+            throw new RequisicaoInvalidaException(
                     "Pagina deve ser maior ou igual a zero e tamanho deve estar entre 1 e 100");
         }
         String termo = busca == null ? "" : busca.trim();
@@ -46,10 +48,10 @@ public class TopicoService {
     }
 
     @Transactional
-    public org.springframework.data.domain.Page<TopicoResumoDTO> listarMeus(int pagina, int tamanho, String busca, Long idUsuario) {
+    public Page<TopicoResumoDTO> listarMeus(int pagina, int tamanho, String busca, Long idUsuario) {
         servicoUsuarios.buscarAtivo(idUsuario);
         if (pagina < 0 || tamanho < 1 || tamanho > 100) {
-            throw new com.cursovalido.backend.forum.exception.RequisicaoInvalidaException(
+            throw new RequisicaoInvalidaException(
                     "Pagina deve ser maior ou igual a zero e tamanho deve estar entre 1 e 100");
         }
         String termo = busca == null ? "" : busca.trim();
@@ -58,6 +60,7 @@ public class TopicoService {
     }
 
     // Cria um novo topico para o usuario informado.
+    @Transactional
     public Topico criar(Topico topico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         topico.setIdAutor(usuario.getId());
@@ -85,6 +88,7 @@ public class TopicoService {
     }
 
     // Arquiva um topico sem apagar seus dados.
+    @Transactional
     public void arquivar(Long idTopico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);
@@ -94,17 +98,8 @@ public class TopicoService {
         registrar(idUsuario, "ARQUIVAMENTO_TOPICO", "Topico " + idTopico);
     }
 
-    // Apaga logicamente um topico como administrador.
-    public void apagar(Long idTopico, Long idUsuario) {
-        UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
-        verificarAdministrador(usuario);
-        Topico topico = buscarAtivo(idTopico);
-        topico.setAtivo(false);
-        repositorioTopicos.save(topico);
-        registrar(idUsuario, "EXCLUSAO_TOPICO", "Topico " + idTopico);
-    }
-
     // Fecha um topico para novos comentarios.
+    @Transactional
     public void fechar(Long idTopico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);
@@ -134,12 +129,6 @@ public class TopicoService {
     private void verificarAutoria(Topico topico, UsuarioForum usuario) {
         if (topico.getIdAutor() == null || !topico.getIdAutor().equals(usuario.getId())) {
             throw AcessoNegadoException.autorEditarTopico();
-        }
-    }
-
-    private void verificarAdministrador(UsuarioForum usuario) {
-        if (!servicoUsuarios.ehAdministrador(usuario)) {
-            throw AcessoNegadoException.administradorApagarTopico();
         }
     }
 
