@@ -51,4 +51,3 @@ class ValidacaoCaminhosTest {
         return new CaminhosRequest("Trilha", "", true, 1, "inicio", List.of(perguntas), List.of(resultado));
     }
 }
-

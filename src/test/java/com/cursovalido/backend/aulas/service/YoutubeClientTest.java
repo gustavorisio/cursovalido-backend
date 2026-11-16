@@ -104,11 +104,13 @@ class YoutubeClientTest {
     @Test
     void rejeitarVideoDeOutroCanal() {
         servidor.expect(requestTo(URL)).andRespond(withSuccess(
-                video(true, "public", "processed").replace(CANAL, "UCzyxwvutsrqponmlkjihgfe"), MediaType.APPLICATION_JSON));
-        assertThatThrownBy(() -> cliente.validarVideo(ID)).isInstanceOfSatisfying(ResponseStatusException.class, erro -> {
-            assertThat(erro.getStatusCode().value()).isEqualTo(400);
-            assertThat(erro.getReason()).contains("canal autorizado");
-        });
+                video(true, "public", "processed").replace(CANAL, "UCzyxwvutsrqponmlkjihgfe"),
+                MediaType.APPLICATION_JSON));
+        assertThatThrownBy(() -> cliente.validarVideo(ID)).isInstanceOfSatisfying(ResponseStatusException.class,
+                erro -> {
+                    assertThat(erro.getStatusCode().value()).isEqualTo(400);
+                    assertThat(erro.getReason()).contains("canal autorizado");
+                });
         servidor.verify();
     }
 
@@ -135,6 +137,7 @@ class YoutubeClientTest {
         return """
                 {"etag":"ignorar","items":[{"id":"M7lc1UVf-VE","snippet":{"title":"Extra","channelId":"UCabcdefghijklmnopqrstuv"},
                 "status":{"embeddable":%s,"privacyStatus":"%s","uploadStatus":"%s"}}]}
-                """.formatted(incorporavel, privacidade, processamento);
+                """
+                .formatted(incorporavel, privacidade, processamento);
     }
 }

@@ -30,7 +30,8 @@ class DocumentoVersoesMigracaoTest {
                 long numero = resultado.getLong(1);
                 assertEquals(35, numero);
                 assertEquals("v8.0",
-                        new com.cursovalido.backend.authentication.entity.VersaoDocumento("TERMOS", numero).incrementar());
+                        new com.cursovalido.backend.authentication.entity.VersaoDocumento("TERMOS", numero)
+                                .incrementar());
             }
             try (var resultado = sql.executeQuery("SELECT conteudo FROM tb_politicas WHERE versao='7.9'")) {
                 assertTrue(resultado.next());

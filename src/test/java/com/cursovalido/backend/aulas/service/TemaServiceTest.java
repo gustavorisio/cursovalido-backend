@@ -80,4 +80,3 @@ class TemaServiceTest {
         when(usuarios.findById(1L)).thenReturn(Optional.of(professor));
     }
 }
-

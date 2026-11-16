@@ -56,12 +56,14 @@ public class SecurityConfig {
                                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(
                                                 SessionCreationPolicy.STATELESS))
                                 .exceptionHandling(excecoes -> excecoes
-                                                .authenticationEntryPoint((request, response, exception) ->
-                                                                RespostaErroHttp.escrever(response, 401,
-                                                                                "Entre na sua conta para continuar.", "AUTENTICACAO_NECESSARIA"))
-                                                .accessDeniedHandler((request, response, exception) ->
-                                                                RespostaErroHttp.escrever(response, 403,
-                                                                                "Você não tem permissão para fazer isso.", "ACESSO_NEGADO")))
+                                                .authenticationEntryPoint((request, response,
+                                                                exception) -> RespostaErroHttp.escrever(response, 401,
+                                                                                "Entre na sua conta para continuar.",
+                                                                                "AUTENTICACAO_NECESSARIA"))
+                                                .accessDeniedHandler((request, response, exception) -> RespostaErroHttp
+                                                                .escrever(response, 403,
+                                                                                "Você não tem permissão para fazer isso.",
+                                                                                "ACESSO_NEGADO")))
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -77,11 +79,13 @@ public class SecurityConfig {
                                                                 "/api/autenticacao/reenviar-2fa",
                                                                 "/api/autenticacao/solicitar-alteracao-senha",
                                                                 "/api/autenticacao/alterar-senha",
-                                                                "/api/convites/consultar", "/api/convites/confirmar-email",
+                                                                "/api/convites/consultar",
+                                                                "/api/convites/confirmar-email",
                                                                 "/api/convites/completar-cadastro")
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/politicas/ativas",
-                                                                "/api/politicas/privacidade/ativa", "/api/politicas/responsabilidade/*",
+                                                                "/api/politicas/privacidade/ativa",
+                                                                "/api/politicas/responsabilidade/*",
                                                                 "/politica-privacidade.html", "/termos-aceite.html")
                                                 .permitAll()
                                                 // Administracao; os servicos exigem o principal nas operacoes
@@ -138,28 +142,61 @@ public class SecurityConfig {
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos", "/api/catalogo/temas").permitAll()
-                                                .requestMatchers(HttpMethod.POST, "/api/temas").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.PUT, "/api/temas/*").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.DELETE, "/api/temas/*").hasAnyRole("PROFESSOR", "ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/cursos/*").hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.DELETE, "/api/administracao/cursos/*").hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos",
+                                                                "/api/catalogo/temas")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/temas")
+                                                .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/temas/*")
+                                                .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/temas/*")
+                                                .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/cursos/*")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.DELETE, "/api/administracao/cursos/*")
+                                                .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/administracao/aulas/*",
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
                                                 .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.GET, "/api/catalogo/roadmap").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/roadmap/questionarios/*").permitAll()
-                                                .requestMatchers(HttpMethod.POST, "/api/catalogo/roadmap/questionarios/*/resultado").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/api/aluno/roadmap/questionarios/*/resultado").hasRole("ALUNO")
-                                                .requestMatchers(HttpMethod.POST, "/api/aluno/roadmap/questionarios/*/resultado").hasRole("ALUNO")
-                                                .requestMatchers("/api/administracao/caminhos", "/api/administracao/caminhos/**").hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/diagnostico", "/api/aluno/cursos/*/modulos/*/questionario", "/api/aluno/cursos/*/plano").hasRole("ALUNO")
-                                                .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/diagnostico/respostas", "/api/aluno/cursos/*/modulos/*/questionario/respostas").hasRole("ALUNO")
-                                                .requestMatchers(HttpMethod.GET, "/api/professor/cursos/*/diagnostico", "/api/professor/cursos/*/modulos/*/questionario").hasRole("PROFESSOR")
-                                                .requestMatchers(HttpMethod.PUT, "/api/professor/cursos/*/diagnostico", "/api/professor/cursos/*/modulos/*/questionario").hasRole("PROFESSOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/administracao/cursos/*/diagnostico", "/api/administracao/cursos/*/modulos/*/questionario").hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/cursos/*/diagnostico", "/api/administracao/cursos/*/modulos/*/questionario").hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/catalogo/roadmap/questionarios/*")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST,
+                                                                "/api/catalogo/roadmap/questionarios/*/resultado")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/aluno/roadmap/questionarios/*/resultado")
+                                                .hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.POST,
+                                                                "/api/aluno/roadmap/questionarios/*/resultado")
+                                                .hasRole("ALUNO")
+                                                .requestMatchers("/api/administracao/caminhos",
+                                                                "/api/administracao/caminhos/**")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/diagnostico",
+                                                                "/api/aluno/cursos/*/modulos/*/questionario",
+                                                                "/api/aluno/cursos/*/plano")
+                                                .hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.POST,
+                                                                "/api/aluno/cursos/*/diagnostico/respostas",
+                                                                "/api/aluno/cursos/*/modulos/*/questionario/respostas")
+                                                .hasRole("ALUNO")
+                                                .requestMatchers(HttpMethod.GET, "/api/professor/cursos/*/diagnostico",
+                                                                "/api/professor/cursos/*/modulos/*/questionario")
+                                                .hasRole("PROFESSOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/professor/cursos/*/diagnostico",
+                                                                "/api/professor/cursos/*/modulos/*/questionario")
+                                                .hasRole("PROFESSOR")
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/administracao/cursos/*/diagnostico",
+                                                                "/api/administracao/cursos/*/modulos/*/questionario")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT,
+                                                                "/api/administracao/cursos/*/diagnostico",
+                                                                "/api/administracao/cursos/*/modulos/*/questionario")
+                                                .hasRole("ADMINISTRADOR")
                                                 // Comunicados: gestao administrativa e leitura por conta.
                                                 .requestMatchers(HttpMethod.PUT, "/api/administracao/comunicados/*")
                                                 .hasRole("ADMINISTRADOR")
@@ -169,7 +206,8 @@ public class SecurityConfig {
                                                 .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/administracao/comunicados")
                                                 .hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/notificacoes", "/api/notificacoes/nao-lidas",
+                                                .requestMatchers(HttpMethod.GET, "/api/notificacoes",
+                                                                "/api/notificacoes/nao-lidas",
                                                                 "/api/aluno/notificacoes",
                                                                 "/api/aluno/notificacoes/nao-lidas")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
@@ -216,7 +254,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, "/api/noticias/*")
                                                 .hasRole("ADMINISTRADOR")
                                                 // Forum: autoria e moderacao sao verificadas pelos servicos.
-                                                .requestMatchers(HttpMethod.GET, "/api/forum/topicos", "/api/forum/topicos/*/comentarios",
+                                                .requestMatchers(HttpMethod.GET, "/api/forum/topicos",
+                                                                "/api/forum/topicos/*/comentarios",
                                                                 "/api/forum/topicos/meus", "/api/forum/users")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/forum/topicos",

@@ -16,10 +16,12 @@ public class LimiteCadastroService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void reservar(String enderecoIp) {
-        if (enderecoIp == null || enderecoIp.isBlank()) return;
+        if (enderecoIp == null || enderecoIp.isBlank())
+            return;
         for (int vaga = 1; vaga <= MAXIMO; vaga++) {
             if (jdbc.update("INSERT INTO tb_cadastro_vagas (chave) VALUES (?) ON CONFLICT DO NOTHING",
-                    enderecoIp + ":" + vaga) == 1) return;
+                    enderecoIp + ":" + vaga) == 1)
+                return;
         }
         throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                 "Limite de dois cadastros por endereço IP atingido. Se precisar de ajuda, procure o Suporte.");

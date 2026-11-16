@@ -33,7 +33,8 @@ class YoutubeClientHttpTest {
             byte[] corpo = """
                     {"items":[{"id":"M7lc1UVf-VE","snippet":{"channelId":"UCabcdefghijklmnopqrstuv"},"status":{"embeddable":true,
                     "privacyStatus":"public","uploadStatus":"processed"}}]}
-                    """.getBytes(StandardCharsets.UTF_8);
+                    """
+                    .getBytes(StandardCharsets.UTF_8);
             troca.getResponseHeaders().set("Content-Type", "application/json");
             troca.sendResponseHeaders(200, corpo.length);
             try (var saida = troca.getResponseBody()) {

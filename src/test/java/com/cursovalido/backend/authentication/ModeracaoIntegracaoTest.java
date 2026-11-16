@@ -150,7 +150,8 @@ class ModeracaoIntegracaoTest {
 
         @BeforeEach
         void preparar() {
-                jdbcExclusao.update("INSERT INTO tb_versoes_documentos (tipo, numero) VALUES ('TERMOS', 0), ('PRIVACIDADE', 0)");
+                jdbcExclusao.update(
+                                "INSERT INTO tb_versoes_documentos (tipo, numero) VALUES ('TERMOS', 0), ('PRIVACIDADE', 0)");
                 politicas.saveAndFlush(new Politica("Termos iniciais", "base-teste", "Texto inicial"));
                 principal = criar("principal@example.com", Perfil.ADMINISTRADOR);
                 var registro = inicializacao.findById(1L).orElseThrow();
@@ -386,7 +387,8 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(content().string(org.hamcrest.Matchers
                                                 .containsString("Texto definido pelo administrador")));
                 mvc.perform(get("/api/administracao/permissoes").header("Authorization", "Bearer " + token))
-                                .andExpect(status().isForbidden()).andExpect(jsonPath("$.codigo").value("TERMOS_REAUTENTICACAO"));
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.codigo").value("TERMOS_REAUTENTICACAO"));
         }
 
         @Test
@@ -536,7 +538,8 @@ class ModeracaoIntegracaoTest {
                 usuario.setAceitouTermosLgpd(true);
                 usuario.setVersaoTermos("base-teste");
                 usuarios.saveAndFlush(usuario);
-                if (perfil != Perfil.ALUNO) responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
+                if (perfil != Perfil.ALUNO)
+                        responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
                 return usuario;
         }
 

@@ -9,9 +9,12 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "tb_caminhos_perguntas")
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class PerguntaCaminhos {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "questionario_id", nullable = false)

@@ -9,10 +9,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "tb_caminhos_respostas_aluno", uniqueConstraints = @UniqueConstraint(columnNames = {"aluno_id", "questionario_id"}))
-@Getter @Setter @NoArgsConstructor
+@Table(name = "tb_caminhos_respostas_aluno", uniqueConstraints = @UniqueConstraint(columnNames = { "aluno_id",
+        "questionario_id" }))
+@Getter
+@Setter
+@NoArgsConstructor
 public class RespostaAlunoCaminhos {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(name = "aluno_id", nullable = false)
     private Long idAluno;

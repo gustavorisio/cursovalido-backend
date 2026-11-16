@@ -43,7 +43,8 @@ public final class AutenticacaoValidation {
             throw new CredenciaisInvalidasException();
     }
 
-    public static void validarAceite(Usuario usuario, PoliticaService politicas, ResponsabilidadeService responsabilidade,
+    public static void validarAceite(Usuario usuario, PoliticaService politicas,
+            ResponsabilidadeService responsabilidade,
             PrivacidadeService privacidade, TokenJwtService tokens) {
         if (!aceiteAtualizado(usuario, politicas, responsabilidade, privacidade))
             throw new TermosNaoAceitosException(tokens.gerarTermos(usuario));

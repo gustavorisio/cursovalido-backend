@@ -1,13 +1,17 @@
 package com.cursovalido.backend.authentication.controller;
 
 import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
+import com.cursovalido.backend.authentication.dto.SuspensaoResponse;
 import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
 import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.entity.SuspensaoUsuario;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.ContaUsuarioService;
 import com.cursovalido.backend.authentication.service.ModeracaoUsuarioService;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -42,6 +46,13 @@ class ModeracaoControllerTest {
     }
 
     @Test
+    void deveExcluirUsuarioEmNomeDoAdministradorAutenticado() {
+        controller.excluir(2L, administrador);
+
+        verify(contas).excluirPelaAdministracao(2L, 1L);
+    }
+
+    @Test
     void deveAplicarSuspensaoEmNomeDoAdministradorAutenticado() {
         var dados = new SuspensaoRequest(EscopoSuspensao.FORUM, "Ofensa", null);
 
@@ -55,6 +66,31 @@ class ModeracaoControllerTest {
         controller.revogar(2L, 5L, administrador);
 
         verify(moderacao).revogar(2L, 5L, 1L);
+    }
+
+    @Test
+    void deveRetornarRestricoesVigentesDoUsuarioAutenticado() {
+        var criadaEm = Instant.parse("2026-01-01T12:00:00Z");
+        var expiraEm = Instant.parse("2026-01-02T12:00:00Z");
+        var suspensao = new SuspensaoUsuario();
+        suspensao.setId(5L);
+        suspensao.setEscopo(EscopoSuspensao.FORUM);
+        suspensao.setMotivo("Ofensa");
+        suspensao.setCriadaEm(criadaEm);
+        suspensao.setExpiraEm(expiraEm);
+        when(moderacao.vigentes(1L)).thenReturn(List.of(suspensao));
+
+        var restricoes = controller.minhasRestricoes(administrador);
+
+        assertEquals(List.of(new SuspensaoResponse(5L, EscopoSuspensao.FORUM, "Ofensa", criadaEm, expiraEm)),
+                restricoes);
+    }
+
+    @Test
+    void deveRetornarListaVaziaQuandoUsuarioNaoTiverRestricoesVigentes() {
+        when(moderacao.vigentes(1L)).thenReturn(List.of());
+
+        assertEquals(List.of(), controller.minhasRestricoes(administrador));
     }
 
     private Usuario conta(Long id, Perfil perfil) {

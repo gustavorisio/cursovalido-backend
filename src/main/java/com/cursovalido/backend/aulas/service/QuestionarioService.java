@@ -47,8 +47,10 @@ public class QuestionarioService {
                 throw erro(HttpStatus.BAD_REQUEST, "A alternativa correta nao existe nesta pergunta");
             }
         }
-        Questionario questionario = questionarios.findByIdCursoAndIdModulo(idCurso, idModulo).orElseGet(Questionario::new);
-        if (questionario.getId() != null) questionario.setVersao(questionario.getVersao() + 1);
+        Questionario questionario = questionarios.findByIdCursoAndIdModulo(idCurso, idModulo)
+                .orElseGet(Questionario::new);
+        if (questionario.getId() != null)
+            questionario.setVersao(questionario.getVersao() + 1);
         questionario.setIdCurso(idCurso);
         questionario.setIdModulo(idModulo);
         questionario.setTitulo(dados.titulo().trim());
@@ -74,29 +76,38 @@ public class QuestionarioService {
         verificarAluno(idCurso, idModulo, idAluno);
         var questionario = questionarios.findByIdCursoAndIdModulo(idCurso, idModulo)
                 .filter(this::disponivel).orElse(null);
-        if (questionario == null) return null;
+        if (questionario == null)
+            return null;
         var tentativa = ultima(questionario, idAluno);
         return new QuestionarioAlunoResponse(questionario.getId(), questionario.getTitulo(), questionario.getVersao(),
-                questionario.getPerguntas().stream().map(p -> new QuestionarioAlunoResponse.Pergunta(p.getEnunciado(), List.copyOf(p.getAlternativas()))).toList(),
+                questionario.getPerguntas().stream()
+                        .map(p -> new QuestionarioAlunoResponse.Pergunta(p.getEnunciado(),
+                                List.copyOf(p.getAlternativas())))
+                        .toList(),
                 tentativa == null ? null : resultado(questionario, tentativa));
     }
 
     @Transactional
-    public ResultadoQuestionarioResponse responder(Long idCurso, Long idModulo, RespostasQuestionarioRequest dados, Long idAluno) {
+    public ResultadoQuestionarioResponse responder(Long idCurso, Long idModulo, RespostasQuestionarioRequest dados,
+            Long idAluno) {
         verificarAluno(idCurso, idModulo, idAluno);
         cursos.buscarParaMatricula(idCurso)
                 .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Curso nao encontrado"));
         verificarAluno(idCurso, idModulo, idAluno);
         var questionario = questionarios.findByIdCursoAndIdModulo(idCurso, idModulo)
                 .filter(this::disponivel).orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Questionario indisponivel"));
-        if (dados.versao() != questionario.getVersao()) throw erro(HttpStatus.CONFLICT, "O questionario foi atualizado. Recarregue antes de responder");
-        if (dados.respostas().size() != questionario.getPerguntas().size()) throw erro(HttpStatus.BAD_REQUEST, "Responda todas as perguntas");
+        if (dados.versao() != questionario.getVersao())
+            throw erro(HttpStatus.CONFLICT, "O questionario foi atualizado. Recarregue antes de responder");
+        if (dados.respostas().size() != questionario.getPerguntas().size())
+            throw erro(HttpStatus.BAD_REQUEST, "Responda todas as perguntas");
         int acertos = 0;
         for (int i = 0; i < dados.respostas().size(); i++) {
             Questao pergunta = questionario.getPerguntas().get(i);
             int resposta = dados.respostas().get(i);
-            if (resposta < 0 || resposta >= pergunta.getAlternativas().size()) throw erro(HttpStatus.BAD_REQUEST, "Alternativa invalida");
-            if (resposta == pergunta.getAlternativaCorreta()) acertos++;
+            if (resposta < 0 || resposta >= pergunta.getAlternativas().size())
+                throw erro(HttpStatus.BAD_REQUEST, "Alternativa invalida");
+            if (resposta == pergunta.getAlternativaCorreta())
+                acertos++;
         }
         TentativaQuestionario tentativa = new TentativaQuestionario();
         tentativa.setIdAluno(idAluno);
@@ -117,7 +128,9 @@ public class QuestionarioService {
         modulos.findByIdCursoAndAtivoTrueOrderByOrdemAscIdAsc(idCurso).forEach(m -> modulosAtivos.add(m.getId()));
         List<PlanoEstudoResponse.Avaliacao> avaliacoes = new ArrayList<>();
         for (var questionario : questionarios.findByIdCursoAndPublicadoTrueOrderByIdAsc(idCurso)) {
-            if (!disponivel(questionario) || (questionario.getIdModulo() != null && !modulosAtivos.contains(questionario.getIdModulo()))) continue;
+            if (!disponivel(questionario)
+                    || (questionario.getIdModulo() != null && !modulosAtivos.contains(questionario.getIdModulo())))
+                continue;
             var tentativa = ultima(questionario, idAluno);
             avaliacoes.add(new PlanoEstudoResponse.Avaliacao(questionario.getIdModulo(), questionario.getTitulo(),
                     tentativa == null ? null : percentual(tentativa), questionario.getVersao()));
@@ -126,9 +139,12 @@ public class QuestionarioService {
     }
 
     private void verificarGestor(Long idCurso, Long idModulo, Long idUsuario) {
-        var usuario = usuarios.findById(idUsuario).orElseThrow(() -> erro(HttpStatus.FORBIDDEN, "Usuario nao encontrado"));
-        if (usuario.getPerfil() == Perfil.ADMINISTRADOR) administracao.buscarCurso(idCurso, idUsuario);
-        else gestaoCursos.buscarAtivo(idCurso, idUsuario);
+        var usuario = usuarios.findById(idUsuario)
+                .orElseThrow(() -> erro(HttpStatus.FORBIDDEN, "Usuario nao encontrado"));
+        if (usuario.getPerfil() == Perfil.ADMINISTRADOR)
+            administracao.buscarCurso(idCurso, idUsuario);
+        else
+            gestaoCursos.buscarAtivo(idCurso, idUsuario);
         verificarModulo(idCurso, idModulo);
     }
 
@@ -138,9 +154,12 @@ public class QuestionarioService {
     }
 
     private void verificarModulo(Long idCurso, Long idModulo) {
-        if (idModulo == null) return;
-        Modulo modulo = modulos.findById(idModulo).orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Modulo nao encontrado"));
-        if (!modulo.isAtivo() || !idCurso.equals(modulo.getIdCurso())) throw erro(HttpStatus.NOT_FOUND, "Modulo nao pertence ao curso");
+        if (idModulo == null)
+            return;
+        Modulo modulo = modulos.findById(idModulo)
+                .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Modulo nao encontrado"));
+        if (!modulo.isAtivo() || !idCurso.equals(modulo.getIdCurso()))
+            throw erro(HttpStatus.NOT_FOUND, "Modulo nao pertence ao curso");
     }
 
     private boolean disponivel(Questionario questionario) {
@@ -148,14 +167,16 @@ public class QuestionarioService {
     }
 
     private TentativaQuestionario ultima(Questionario q, Long idAluno) {
-        return tentativas.findFirstByIdAlunoAndIdQuestionarioAndVersaoOrderByIdDesc(idAluno, q.getId(), q.getVersao()).orElse(null);
+        return tentativas.findFirstByIdAlunoAndIdQuestionarioAndVersaoOrderByIdDesc(idAluno, q.getId(), q.getVersao())
+                .orElse(null);
     }
 
     private ResultadoQuestionarioResponse resultado(Questionario q, TentativaQuestionario tentativa) {
         List<ResultadoQuestionarioResponse.Correcao> correcoes = new ArrayList<>();
         for (int i = 0; i < q.getPerguntas().size(); i++) {
             var p = q.getPerguntas().get(i);
-            correcoes.add(new ResultadoQuestionarioResponse.Correcao(i, tentativa.getRespostas().get(i) == p.getAlternativaCorreta(),
+            correcoes.add(new ResultadoQuestionarioResponse.Correcao(i,
+                    tentativa.getRespostas().get(i) == p.getAlternativaCorreta(),
                     p.getAlternativaCorreta(), p.getExplicacao()));
         }
         return new ResultadoQuestionarioResponse(tentativa.getAcertos(), tentativa.getTotal(), percentual(tentativa),
@@ -167,9 +188,12 @@ public class QuestionarioService {
     }
 
     private QuestionarioGestaoResponse gestao(Questionario q) {
-        return new QuestionarioGestaoResponse(q.getId(), q.getTitulo(), q.isPublicado(), q.getVersao(), q.getPerguntas().stream()
-                .map(p -> new QuestionarioRequest.Pergunta(p.getEnunciado(), List.copyOf(p.getAlternativas()), p.getAlternativaCorreta(), p.getExplicacao(),
-                        null)).toList());
+        return new QuestionarioGestaoResponse(q.getId(), q.getTitulo(), q.isPublicado(), q.getVersao(),
+                q.getPerguntas().stream()
+                        .map(p -> new QuestionarioRequest.Pergunta(p.getEnunciado(), List.copyOf(p.getAlternativas()),
+                                p.getAlternativaCorreta(), p.getExplicacao(),
+                                null))
+                        .toList());
     }
 
     private ResponseStatusException erro(HttpStatus status, String mensagem) {

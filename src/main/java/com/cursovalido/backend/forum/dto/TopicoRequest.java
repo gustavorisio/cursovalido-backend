@@ -4,6 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record TopicoRequest(
-        @NotBlank @Size(max = 80, message = "O titulo deve ter no maximo 80 caracteres") String titulo,
-        @NotBlank @Size(max = 5000) String descricao) {
+                @NotBlank @Size(max = 80, message = "O titulo deve ter no maximo 80 caracteres") String titulo,
+                @NotBlank @Size(max = 5000) String descricao) {
 }

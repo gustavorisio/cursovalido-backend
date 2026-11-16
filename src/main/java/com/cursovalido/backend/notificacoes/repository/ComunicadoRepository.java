@@ -37,8 +37,8 @@ public class ComunicadoRepository {
                 LEFT JOIN tb_comunicados_leituras l ON l.comunicado_id = c.id AND l.usuario_id = ?
                 ORDER BY c.criado_em DESC, c.id DESC LIMIT ? OFFSET ?
                 """, (rs, linha) -> new ComunicadoResponse(rs.getLong("id"), rs.getString("titulo"),
-                        rs.getString("conteudo"), rs.getTimestamp("criado_em").toLocalDateTime(),
-                        rs.getBoolean("lida")), usuario, tamanho, (long) pagina * tamanho);
+                rs.getString("conteudo"), rs.getTimestamp("criado_em").toLocalDateTime(),
+                rs.getBoolean("lida")), usuario, tamanho, (long) pagina * tamanho);
     }
 
     public java.util.Optional<ComunicadoResponse> editar(Long id, String titulo, String conteudo) {
@@ -46,7 +46,7 @@ public class ComunicadoRepository {
                 UPDATE tb_comunicados SET titulo = ?, conteudo = ? WHERE id = ?
                 RETURNING id, titulo, conteudo, criado_em
                 """, (rs, linha) -> new ComunicadoResponse(rs.getLong("id"), rs.getString("titulo"),
-                        rs.getString("conteudo"), rs.getTimestamp("criado_em").toLocalDateTime(), false),
+                rs.getString("conteudo"), rs.getTimestamp("criado_em").toLocalDateTime(), false),
                 titulo, conteudo, id).stream().findFirst();
     }
 

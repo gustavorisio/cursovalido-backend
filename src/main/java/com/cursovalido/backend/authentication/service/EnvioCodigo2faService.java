@@ -25,8 +25,10 @@ public class EnvioCodigo2faService {
         var ultimo = tokensEmail.ultimoCodigo2fa(usuario).orElse(null);
         LocalDateTime agora = LocalDateTime.now();
         if (reenvio) {
-            if (ultimo == null || ultimo.isUtilizado()) return;
-            if (ultimo.getCriadoEm().plusSeconds(60).isAfter(agora)) throw new LimiteReenvioException();
+            if (ultimo == null || ultimo.isUtilizado())
+                return;
+            if (ultimo.getCriadoEm().plusSeconds(60).isAfter(agora))
+                throw new LimiteReenvioException();
         } else if (ultimo != null && !ultimo.isUtilizado() && ultimo.getExpiraEm().isAfter(agora)) {
             return;
         }

@@ -12,7 +12,8 @@ import static org.mockito.Mockito.*;
 class ResponsabilidadeServiceTest {
 
     private final AceiteResponsabilidadeRepository aceites = mock(AceiteResponsabilidadeRepository.class);
-    private final ResponsabilidadeService service = new ResponsabilidadeService(aceites, mock(LogAuditoriaService.class));
+    private final ResponsabilidadeService service = new ResponsabilidadeService(aceites,
+            mock(LogAuditoriaService.class));
 
     @Test
     void deveRegistrarAceiteDaVersaoVigenteParaProfessor() {
@@ -52,4 +53,3 @@ class ResponsabilidadeServiceTest {
         verifyNoInteractions(aceites);
     }
 }
-

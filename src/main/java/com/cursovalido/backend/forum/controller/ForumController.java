@@ -137,7 +137,8 @@ public class ForumController {
 
     private TopicoResumoDTO converter(TopicoResumoDTO topico) {
         return new TopicoResumoDTO(topico.id(), topico.titulo(), topico.descricao(), topico.nomeAutor(),
-                topico.papelAutor(), topico.idAutor(), horarioDeBrasilia(topico.criadoEm()), topico.quantidadeRespostas(),
+                topico.papelAutor(), topico.idAutor(), horarioDeBrasilia(topico.criadoEm()),
+                topico.quantidadeRespostas(),
                 topico.ativo(), topico.fechado());
     }
 
@@ -149,7 +150,8 @@ public class ForumController {
 
     private ComentarioResponse converter(Comentario comentario) {
         return new ComentarioResponse(comentario.getId(),
-                comentario.isAtivo() ? comentario.getConteudo() : "Esta mensagem foi excluída.", comentario.getNomeAutor(),
+                comentario.isAtivo() ? comentario.getConteudo() : "Esta mensagem foi excluída.",
+                comentario.getNomeAutor(),
                 comentario.getPapelAutor(), comentario.getIdAutor(), horarioDeBrasilia(comentario.getCriadoEm()),
                 comentario.isAtivo());
     }
@@ -161,7 +163,8 @@ public class ForumController {
 
     private UsuarioForumResponse converter(UsuarioForum usuario, boolean administrador) {
         return new UsuarioForumResponse(usuario.getId(), usuario.getNome(),
-                VisibilidadeEmail.paraListagem(usuario.getEmail(), usuario.getPerfil(), administrador), usuario.getPerfil());
+                VisibilidadeEmail.paraListagem(usuario.getEmail(), usuario.getPerfil(), administrador),
+                usuario.getPerfil());
     }
 
 }

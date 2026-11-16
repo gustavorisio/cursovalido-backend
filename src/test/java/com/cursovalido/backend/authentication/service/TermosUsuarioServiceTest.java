@@ -85,4 +85,3 @@ class TermosUsuarioServiceTest {
         return usuario;
     }
 }
-

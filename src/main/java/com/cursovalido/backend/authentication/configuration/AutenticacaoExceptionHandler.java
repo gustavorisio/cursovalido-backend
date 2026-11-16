@@ -37,7 +37,8 @@ public class AutenticacaoExceptionHandler {
     @ExceptionHandler(CadastroDuplicadoException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public Codigo2faErroResponse cadastroDuplicado(CadastroDuplicadoException excecao) {
-        return new Codigo2faErroResponse("Este e-mail já está cadastrado. Entre na sua conta ou recupere sua senha.", "EMAIL_JA_CADASTRADO");
+        return new Codigo2faErroResponse("Este e-mail já está cadastrado. Entre na sua conta ou recupere sua senha.",
+                "EMAIL_JA_CADASTRADO");
     }
 
     @ExceptionHandler(TermosNaoDisponiveisException.class)
@@ -49,13 +50,16 @@ public class AutenticacaoExceptionHandler {
     @ExceptionHandler(PendenteAprovacaoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Codigo2faErroResponse cadastroPendente(PendenteAprovacaoException excecao) {
-        return new Codigo2faErroResponse("Seu cadastro está aguardando aprovação. Aguarde a liberação do administrador.", "PENDENTE_APROVACAO");
+        return new Codigo2faErroResponse(
+                "Seu cadastro está aguardando aprovação. Aguarde a liberação do administrador.", "PENDENTE_APROVACAO");
     }
 
     @ExceptionHandler(AcessoRejeitadoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Codigo2faErroResponse cadastroRejeitado(AcessoRejeitadoException excecao) {
-        return new Codigo2faErroResponse("Seu cadastro não foi aprovado. Entre em contato pelo Suporte para pedir uma revisão.", "ACESSO_REJEITADO");
+        return new Codigo2faErroResponse(
+                "Seu cadastro não foi aprovado. Entre em contato pelo Suporte para pedir uma revisão.",
+                "ACESSO_REJEITADO");
     }
 
     @ExceptionHandler(com.cursovalido.backend.authentication.suporte.LimiteSuporteException.class)
@@ -83,7 +87,8 @@ public class AutenticacaoExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Codigo2faErroResponse> operacaoRecusada(ResponseStatusException excecao) {
-        if (excecao.getStatusCode().is5xxServerError()) return falhaInterna(excecao, excecao.getStatusCode());
+        if (excecao.getStatusCode().is5xxServerError())
+            return falhaInterna(excecao, excecao.getStatusCode());
         String motivo = excecao.getReason() == null ? "Operacao recusada" : excecao.getReason();
         return ResponseEntity.status(excecao.getStatusCode()).headers(excecao.getHeaders())
                 .body(new Codigo2faErroResponse(motivo, "OPERACAO_RECUSADA"));
@@ -108,14 +113,16 @@ public class AutenticacaoExceptionHandler {
         Map<String, String> campos = new LinkedHashMap<>();
         for (var erro : excecao.getBindingResult().getFieldErrors())
             campos.put(erro.getField(), erro.getDefaultMessage());
-        return Map.of("erro", "Confira os campos indicados e tente novamente.", "codigo", "CAMPOS_INVALIDOS", "campos", campos);
+        return Map.of("erro", "Confira os campos indicados e tente novamente.", "codigo", "CAMPOS_INVALIDOS", "campos",
+                campos);
     }
 
     @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> parametroInvalido(
             org.springframework.web.method.annotation.MethodArgumentTypeMismatchException excecao) {
-        return Map.of("erro", "Não foi possível abrir esta página. Confira os dados e tente novamente.", "codigo", "PARAMETRO_INVALIDO",
+        return Map.of("erro", "Não foi possível abrir esta página. Confira os dados e tente novamente.", "codigo",
+                "PARAMETRO_INVALIDO",
                 "campos", Map.of(excecao.getName(), "Confira o valor informado."));
     }
 
@@ -123,7 +130,8 @@ public class AutenticacaoExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> parametroAusente(
             org.springframework.web.bind.MissingServletRequestParameterException excecao) {
-        return Map.of("erro", "Faltam informações para continuar. Volte à página anterior e tente novamente.", "codigo", "PARAMETRO_INVALIDO",
+        return Map.of("erro", "Faltam informações para continuar. Volte à página anterior e tente novamente.", "codigo",
+                "PARAMETRO_INVALIDO",
                 "campos", Map.of(excecao.getParameterName(), "Preencha este campo."));
     }
 
@@ -163,7 +171,8 @@ public class AutenticacaoExceptionHandler {
         if (excecao instanceof ErrorResponse erro && !erro.getStatusCode().is5xxServerError()) {
             return ResponseEntity.status(erro.getStatusCode()).headers(erro.getHeaders())
                     .cacheControl(org.springframework.http.CacheControl.noStore())
-                    .body(new Codigo2faErroResponse("Requisicao nao permitida ou recurso indisponivel", "REQUISICAO_RECUSADA"));
+                    .body(new Codigo2faErroResponse("Requisicao nao permitida ou recurso indisponivel",
+                            "REQUISICAO_RECUSADA"));
         }
         var status = excecao instanceof ErrorResponse erro ? erro.getStatusCode() : HttpStatus.INTERNAL_SERVER_ERROR;
         return falhaInterna(excecao, status);
@@ -174,6 +183,7 @@ public class AutenticacaoExceptionHandler {
         log.error("Falha interna ao atender requisicao", excecao);
         return ResponseEntity.status(status)
                 .cacheControl(org.springframework.http.CacheControl.noStore())
-                .body(new Codigo2faErroResponse("Nao foi possivel concluir a operacao. Tente novamente mais tarde.", "ERRO_INTERNO"));
+                .body(new Codigo2faErroResponse("Nao foi possivel concluir a operacao. Tente novamente mais tarde.",
+                        "ERRO_INTERNO"));
     }
 }

@@ -47,7 +47,8 @@ public class ResponsabilidadeService {
     @Transactional
     public void registrar(Usuario usuario, Boolean aceitou, String versao, String ip) {
         validar(usuario.getPerfil(), aceitou, versao, ip);
-        if (usuario.getPerfil() == Perfil.ALUNO) return;
+        if (usuario.getPerfil() == Perfil.ALUNO)
+            return;
         aceites.save(new AceiteResponsabilidade(usuario.getId(), usuario.getPerfil(), versao, ip));
         auditoria.registrar(usuario.getId(), "ACEITE_RESPONSABILIDADE",
                 "Perfil " + usuario.getPerfil() + "; termo_version=" + versao, ip);
