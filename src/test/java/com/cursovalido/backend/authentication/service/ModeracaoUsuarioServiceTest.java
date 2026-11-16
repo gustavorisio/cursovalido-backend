@@ -6,6 +6,7 @@ import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import java.util.List;
 import java.util.Optional;
 import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
+import com.cursovalido.backend.authentication.dto.UsuarioAdministracaoResposta;
 import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
 import com.cursovalido.backend.authentication.entity.SuspensaoUsuario;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
@@ -14,6 +15,7 @@ import com.cursovalido.backend.authentication.validation.administracao.Privilegi
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,8 +27,37 @@ class ModeracaoUsuarioServiceTest {
     private final IdentidadeExcluidaService identidades = mock(IdentidadeExcluidaService.class);
     private final SessaoRepository sessoes = mock(SessaoRepository.class);
     private final TokenEmailService tokens = mock(TokenEmailService.class);
+    private final PrivilegiosAdministrativosService privilegios = mock(PrivilegiosAdministrativosService.class);
     private final ModeracaoUsuarioService service = new ModeracaoUsuarioService(usuarios, identidades, suspensoes,
-            mock(PrivilegiosAdministrativosService.class), mock(LogAuditoriaService.class), sessoes, tokens);
+            privilegios, mock(LogAuditoriaService.class), sessoes, tokens);
+
+    @Test
+    void devePermitirAoPrincipalExcluirProfessor() {
+        Usuario principal = usuario(1L, Perfil.ADMINISTRADOR);
+        Usuario professor = usuario(2L, Perfil.PROFESSOR);
+        when(privilegios.verificarAdministrador(1L)).thenReturn(principal);
+        when(privilegios.ehPrincipal(principal)).thenReturn(true);
+        when(usuarios.findByExcluidoEmIsNull()).thenReturn(List.of(principal, professor));
+
+        var resultado = service.listarUsuarios(1L, null);
+
+        assertEquals(List.of(1L, 2L), resultado.stream().map(UsuarioAdministracaoResposta::id).toList());
+        assertFalse(resultado.getFirst().podeModerar());
+        assertTrue(resultado.getLast().podeExcluir());
+    }
+
+    @Test
+    void deveImpedirAdministradorComumDeModerarOutroAdministrador() {
+        Usuario conta = usuario(1L, Perfil.ADMINISTRADOR);
+        Usuario alvo = usuario(2L, Perfil.ADMINISTRADOR);
+        when(privilegios.verificarAdministrador(1L)).thenReturn(conta);
+        when(usuarios.findByExcluidoEmIsNull()).thenReturn(List.of(alvo));
+
+        var resultado = service.listarUsuarios(1L, null).getFirst();
+
+        assertFalse(resultado.podeModerar());
+        assertFalse(resultado.podeExcluir());
+    }
 
     @Test
     void deveConsiderarSuspensaoVigenteDeCadastroAnterior() {
@@ -55,7 +86,9 @@ class ModeracaoUsuarioServiceTest {
 
     @Test
     void deveSubstituirSuspensaoDeConteudoERevogarAcessos() {
+        autenticarAdministradorComum();
         Usuario alvo = cadastrarAlvo();
+        alvo.setPerfil(Perfil.PROFESSOR);
         var anterior = suspensao(2L, EscopoSuspensao.TOPICOS, null);
         when(suspensoes.findByIdUsuarioInAndRevogadaEmIsNullOrderByIdDesc(List.of(2L)))
                 .thenReturn(List.of(anterior));
@@ -71,6 +104,7 @@ class ModeracaoUsuarioServiceTest {
 
     @Test
     void deveRevogarSuspensaoVinculadaAoUsuario() {
+        autenticarAdministradorComum();
         cadastrarAlvo();
         var suspensao = suspensao(2L, EscopoSuspensao.FORUM, null);
         when(suspensoes.findById(5L)).thenReturn(Optional.of(suspensao));
@@ -80,8 +114,16 @@ class ModeracaoUsuarioServiceTest {
         assertNotNull(suspensao.getRevogadaEm());
     }
 
+    private void autenticarAdministradorComum() {
+        Usuario administrador = new Usuario();
+        ReflectionTestUtils.setField(administrador, "id", 1L);
+        administrador.setPerfil(Perfil.ADMINISTRADOR);
+        when(privilegios.verificarAdministrador(1L)).thenReturn(administrador);
+    }
+
     private Usuario cadastrarAlvo() {
         Usuario usuario = new Usuario();
+        ReflectionTestUtils.setField(usuario, "id", 2L);
         usuario.setPerfil(Perfil.ALUNO);
         usuario.setEmail("aluno@teste.com");
         when(usuarios.findById(2L)).thenReturn(Optional.of(usuario));
@@ -96,5 +138,14 @@ class ModeracaoUsuarioServiceTest {
         suspensao.setExpiraEm(fim);
         return suspensao;
     }
+
+    private Usuario usuario(Long id, Perfil perfil) {
+        Usuario usuario = new Usuario();
+        ReflectionTestUtils.setField(usuario, "id", id);
+        usuario.setPerfil(perfil);
+        usuario.setEmail("usuario" + id + "@example.com");
+        return usuario;
+    }
+
 }
 

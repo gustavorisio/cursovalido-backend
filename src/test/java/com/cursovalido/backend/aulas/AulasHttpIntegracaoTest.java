@@ -1,7 +1,7 @@
 package com.cursovalido.backend.aulas;
 
 import com.cursovalido.backend.aulas.dto.*;
-import com.cursovalido.backend.aulas.entity.SecaoCaminhos;
+import com.cursovalido.backend.aulas.dto.SecaoCaminhosResponse;
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.aulas.service.YoutubeClient;
 import com.cursovalido.backend.authentication.entity.*;
@@ -105,28 +105,28 @@ class AulasHttpIntegracaoTest {
                 .isEqualTo(HttpStatus.FORBIDDEN);
 
         var rascunho = new SecaoCaminhosRequest("Rascunho da seção", "Conteúdo inicial", 2, false);
-        var criacao = enviar(HttpMethod.POST, rota, tokenAdmin, rascunho, SecaoCaminhos.class);
+        var criacao = enviar(HttpMethod.POST, rota, tokenAdmin, rascunho, SecaoCaminhosResponse.class);
         assertThat(criacao.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        Long id = criacao.getBody().getId();
+        Long id = criacao.getBody().id();
         String detalhe = rota + "/" + id;
-        assertThat(enviar(HttpMethod.GET, rota, tokenAdmin, null, SecaoCaminhos[].class).getBody())
-                .anyMatch(secao -> id.equals(secao.getId()) && !secao.isPublicado());
+        assertThat(enviar(HttpMethod.GET, rota, tokenAdmin, null, SecaoCaminhosResponse[].class).getBody())
+                .anyMatch(secao -> id.equals(secao.id()) && !secao.publicado());
         assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
-                .getBody().secoes()).noneMatch(secao -> id.equals(secao.getId()));
+                .getBody().secoes()).noneMatch(secao -> id.equals(secao.id()));
 
         var publicado = new SecaoCaminhosRequest("Seção atualizada", "Conteúdo revisado", 1, true);
-        var edicao = enviar(HttpMethod.PUT, detalhe, tokenAdmin, publicado, SecaoCaminhos.class);
+        var edicao = enviar(HttpMethod.PUT, detalhe, tokenAdmin, publicado, SecaoCaminhosResponse.class);
         assertThat(edicao.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
-                .getBody().secoes()).anyMatch(secao -> id.equals(secao.getId())
-                        && secao.getTitulo().equals(publicado.titulo()) && secao.getOrdem() == 1);
+                .getBody().secoes()).anyMatch(secao -> id.equals(secao.id())
+                        && secao.titulo().equals(publicado.titulo()) && secao.ordem() == 1);
 
         assertThat(enviar(HttpMethod.DELETE, detalhe, tokenAdmin, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(enviar(HttpMethod.GET, rota, tokenAdmin, null, SecaoCaminhos[].class).getBody())
-                .noneMatch(secao -> id.equals(secao.getId()));
+        assertThat(enviar(HttpMethod.GET, rota, tokenAdmin, null, SecaoCaminhosResponse[].class).getBody())
+                .noneMatch(secao -> id.equals(secao.id()));
         assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
-                .getBody().secoes()).noneMatch(secao -> id.equals(secao.getId()));
+                .getBody().secoes()).noneMatch(secao -> id.equals(secao.id()));
     }
 
     @Test

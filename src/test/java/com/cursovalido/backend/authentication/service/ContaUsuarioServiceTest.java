@@ -71,6 +71,14 @@ class ContaUsuarioServiceTest {
     }
 
     @Test
+    void deveRetornarNotFoundAoExcluirPendenciaInexistente() {
+        var erro = assertThrows(ResponseStatusException.class, () -> service.excluirPendencia(2L));
+
+        assertEquals(HttpStatus.NOT_FOUND, erro.getStatusCode());
+        verifyNoInteractions(identidades, tokens, emails);
+    }
+
+    @Test
     void deveAnonimizarContaEArquivarAceiteAposValidarCodigo() {
         Usuario usuario = cadastrarUsuario(Perfil.ALUNO);
 

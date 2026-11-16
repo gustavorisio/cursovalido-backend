@@ -3,9 +3,11 @@ package com.cursovalido.backend.authentication.service;
 import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
+import com.cursovalido.backend.authentication.security.VisibilidadeEmail;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.authentication.validation.moderacao.ModeracaoValidation;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,13 +26,18 @@ public class ModeracaoUsuarioService {
     private final SessaoRepository sessoes;
     private final TokenEmailService tokensEmail;
 
+    @Transactional(readOnly = true)
+    public List<UsuarioAdministracaoResposta> listarUsuarios(Long idAdministrador, Boolean restrito) {
+        Usuario administrador = privilegios.verificarAdministrador(idAdministrador);
+        boolean administradorPrincipal = privilegios.ehPrincipal(administrador);
+        return usuarios.findByExcluidoEmIsNull().stream()
+                .map(usuario -> resumirUsuario(administrador, administradorPrincipal, usuario))
+                .filter(usuario -> restrito == null || restrito == !usuario.suspensoes().isEmpty())
+                .toList();
+    }
+
     public List<SuspensaoUsuario> vigentes(Long idUsuario) {
-        Instant agora = Instant.now();
-        var ids = new java.util.ArrayList<Long>();
-        ids.add(idUsuario);
-        usuarios.findById(idUsuario).ifPresent(u -> ids.addAll(identidades.anteriores(u.getEmail())));
-        return suspensoes.findByIdUsuarioInAndRevogadaEmIsNullOrderByIdDesc(ids).stream()
-                .filter(item -> item.vigente(agora)).toList();
+        return vigentes(idUsuario, usuarios.findById(idUsuario).orElse(null));
     }
 
     public boolean restrito(Long idUsuario, EscopoSuspensao escopo) {
@@ -59,9 +66,9 @@ public class ModeracaoUsuarioService {
 
     @Transactional
     public SuspensaoResponse aplicar(Long idUsuario, SuspensaoRequest dados, Long idAdministrador) {
-        verificarAlvo(idUsuario, idAdministrador);
+        Usuario alvo = ModeracaoValidation.verificarAlvo(idUsuario, idAdministrador, privilegios, usuarios);
         ModeracaoValidation.validarExpiracao(dados);
-        for (var existente : vigentes(idUsuario)) {
+        for (var existente : vigentes(idUsuario, alvo)) {
             if (substituiSuspensao(dados.escopo(), existente.getEscopo())) {
                 existente.setRevogadaEm(Instant.now());
             }
@@ -74,7 +81,7 @@ public class ModeracaoUsuarioService {
         suspensao.setExpiraEm(dados.expiraEm());
         suspensoes.save(suspensao);
         sessoes.revogarPorUsuario(idUsuario);
-        tokensEmail.invalidarAcessos(usuarios.findById(idUsuario).orElseThrow());
+        tokensEmail.invalidarAcessos(alvo);
         auditoria.registrar(idAdministrador, "SUSPENSAO_APLICADA", "Usuario " + idUsuario + ": " + dados.escopo(),
                 null);
         return SuspensaoResponse.de(suspensao);
@@ -82,7 +89,7 @@ public class ModeracaoUsuarioService {
 
     @Transactional
     public void revogar(Long idUsuario, Long idSuspensao, Long idAdministrador) {
-        verificarAlvo(idUsuario, idAdministrador);
+        ModeracaoValidation.verificarAlvo(idUsuario, idAdministrador, privilegios, usuarios);
         var suspensao = suspensoes.findById(idSuspensao)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Suspensao nao encontrada"));
         ModeracaoValidation.validarVinculo(suspensaoPertenceAoUsuario(suspensao, idUsuario));
@@ -90,6 +97,29 @@ public class ModeracaoUsuarioService {
             return;
         suspensao.setRevogadaEm(Instant.now());
         auditoria.registrar(idAdministrador, "SUSPENSAO_REVOGADA", "Usuario " + idUsuario + ": " + idSuspensao, null);
+    }
+
+    private UsuarioAdministracaoResposta resumirUsuario(Usuario administrador, boolean administradorPrincipal,
+            Usuario usuario) {
+        boolean podeModerar = ModeracaoValidation.podeModerar(administrador, usuario, administradorPrincipal,
+                privilegios);
+        boolean podeExcluir = administradorPrincipal && podeModerar
+                && (usuario.getPerfil() == Perfil.PROFESSOR || usuario.getPerfil() == Perfil.ADMINISTRADOR);
+        return new UsuarioAdministracaoResposta(usuario.getId(), usuario.getNomeCompleto(),
+                VisibilidadeEmail.paraListagem(usuario.getEmail(), usuario.getPerfil().name(), true),
+                usuario.getPerfil(), usuario.isAtivo(), podeModerar, podeExcluir,
+                vigentes(usuario.getId(), usuario).stream().map(SuspensaoResponse::de).toList());
+    }
+
+    private List<SuspensaoUsuario> vigentes(Long idUsuario, Usuario usuario) {
+        Instant agora = Instant.now();
+        var ids = new ArrayList<Long>();
+        ids.add(idUsuario);
+        if (usuario != null) {
+            ids.addAll(identidades.anteriores(usuario.getEmail()));
+        }
+        return suspensoes.findByIdUsuarioInAndRevogadaEmIsNullOrderByIdDesc(ids).stream()
+                .filter(item -> item.vigente(agora)).toList();
     }
 
     private boolean escopoDeConteudo(EscopoSuspensao escopo) {
@@ -120,9 +150,4 @@ public class ModeracaoUsuarioService {
         }
         return false;
     }
-
-    private void verificarAlvo(Long idUsuario, Long idAdministrador) {
-        ModeracaoValidation.verificarAlvo(idUsuario, idAdministrador, privilegios, usuarios);
-    }
-
 }

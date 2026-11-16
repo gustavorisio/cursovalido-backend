@@ -1,13 +1,12 @@
 package com.cursovalido.backend.authentication.controller;
 
-import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
-
-import com.cursovalido.backend.authentication.dto.*;
-import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
+import com.cursovalido.backend.authentication.dto.SuspensaoResponse;
+import com.cursovalido.backend.authentication.dto.UsuarioAdministracaoResposta;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
-import com.cursovalido.backend.authentication.security.VisibilidadeEmail;
-import com.cursovalido.backend.authentication.service.*;
+import com.cursovalido.backend.authentication.service.ContaUsuarioService;
+import com.cursovalido.backend.authentication.service.ModeracaoUsuarioService;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 public class ModeracaoController {
     private final PrivilegiosAdministrativosService privilegios;
     private final ModeracaoUsuarioService moderacao;
-    private final UsuarioRepository usuarios;
     private final ContaUsuarioService contas;
 
     @GetMapping("/api/administracao/permissoes")
@@ -31,24 +29,9 @@ public class ModeracaoController {
     }
 
     @GetMapping("/api/administracao/usuarios")
-    public List<UsuarioAdministracaoResposta> listar(@AuthenticationPrincipal UsuarioAutenticado principal) {
-        var administrador = privilegios.verificarAdministrador(principal.getId());
-        boolean administradorPrincipal = privilegios.ehPrincipal(administrador);
-        return usuarios.findAll().stream().filter(usuario -> usuario.getExcluidoEm() == null).map(usuario -> {
-            boolean podeModerar = !usuario.getId().equals(administrador.getId());
-            if (privilegios.ehPrincipal(usuario))
-                podeModerar = false;
-            if (usuario.getPerfil() == Perfil.ADMINISTRADOR) {
-                if (!privilegios.ehPrincipal(administrador))
-                    podeModerar = false;
-            }
-            boolean podeExcluir = administradorPrincipal && podeModerar
-                    && (usuario.getPerfil() == Perfil.PROFESSOR || usuario.getPerfil() == Perfil.ADMINISTRADOR);
-            return new UsuarioAdministracaoResposta(usuario.getId(), usuario.getNomeCompleto(),
-                    VisibilidadeEmail.paraListagem(usuario.getEmail(), usuario.getPerfil().name(), true),
-                    usuario.getPerfil(), usuario.isAtivo(), podeModerar, podeExcluir,
-                    moderacao.vigentes(usuario.getId()).stream().map(SuspensaoResponse::de).toList());
-        }).toList();
+    public List<UsuarioAdministracaoResposta> listar(@AuthenticationPrincipal UsuarioAutenticado principal,
+            @RequestParam(required = false) Boolean restrito) {
+        return moderacao.listarUsuarios(principal.getId(), restrito);
     }
 
     @DeleteMapping("/api/administracao/usuarios/{id}")
@@ -74,9 +57,5 @@ public class ModeracaoController {
     @GetMapping("/api/autenticacao/restricoes")
     public List<SuspensaoResponse> minhasRestricoes(@AuthenticationPrincipal UsuarioAutenticado principal) {
         return moderacao.vigentes(principal.getId()).stream().map(SuspensaoResponse::de).toList();
-    }
-
-    public record UsuarioAdministracaoResposta(Long id, String nome, String email, Perfil perfil,
-            boolean ativo, boolean podeModerar, boolean podeExcluir, List<SuspensaoResponse> suspensoes) {
     }
 }

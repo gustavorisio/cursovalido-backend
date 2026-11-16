@@ -6,11 +6,13 @@ import static org.mockito.Mockito.verify;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 
 import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.service.EmailService;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 import com.cursovalido.backend.forum.dto.*;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
@@ -33,6 +35,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -70,6 +73,8 @@ class ForumHttpIntegracaoTest {
     private com.cursovalido.backend.authentication.service.TokenEmailService tokensEmail;
     @MockitoBean
     private EmailService emails;
+    @MockitoSpyBean
+    private LogAuditoriaService auditoria;
     @MockitoBean
     private ValidacaoEmailService validacaoEmail;
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
@@ -211,6 +216,42 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
+    void administradorComumRestringeProfessorEConsultaPorSituacaoSemPoderExcluirEquipe() {
+        var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-restricoes@example.com");
+        var comum = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
+        var outroAdmin = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
+        var professor = cadastrarEAutenticar(Perfil.PROFESSOR);
+        String usuariosUrl = "/api/administracao/usuarios";
+        String restricoesUrl = usuariosUrl + "/" + professor.id() + "/suspensoes";
+        var dados = new SuspensaoRequest(EscopoSuspensao.FORUM, "Publicações repetidas", null);
+        var lista = UsuarioAdministracaoResposta[].class;
+
+        assertThat(enviar(HttpMethod.GET, usuariosUrl, comum.token(), null, lista).getBody())
+                .filteredOn(u -> u.id().equals(professor.id())).singleElement().satisfies(u -> {
+                    assertThat(u.podeModerar()).isTrue();
+                    assertThat(u.podeExcluir()).isFalse();
+                });
+        for (var admin : new Sessao[] { principal, outroAdmin, comum }) {
+            assertThat(enviar(HttpMethod.POST, usuariosUrl + "/" + admin.id() + "/suspensoes",
+                    comum.token(), dados, String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        }
+        assertThat(enviar(HttpMethod.DELETE, usuariosUrl + "/" + outroAdmin.id(), comum.token(), null, String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        var aplicacao = enviar(HttpMethod.POST, restricoesUrl, comum.token(), dados, SuspensaoResponse.class);
+        assertThat(aplicacao.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(enviar(HttpMethod.GET, usuariosUrl + "?restrito=true", comum.token(), null, lista).getBody())
+                .extracting(u -> u.id()).containsExactly(professor.id());
+        assertThat(enviar(HttpMethod.GET, usuariosUrl + "?restrito=false", comum.token(), null, lista).getBody())
+                .extracting(u -> u.id()).contains(outroAdmin.id()).doesNotContain(professor.id());
+
+        assertThat(enviar(HttpMethod.DELETE, restricoesUrl + "/" + aplicacao.getBody().id(),
+                comum.token(), null, String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(enviar(HttpMethod.GET, usuariosUrl + "?restrito=true", comum.token(), null, lista).getBody())
+                .isEmpty();
+    }
+
+    @Test
     void listagensMascaramAlunosEExibemEquipeSomenteParaAdministradores() {
         var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-listagem@example.com");
         var comum = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
@@ -219,7 +260,7 @@ class ForumHttpIntegracaoTest {
         String emailProfessor = usuarios.findById(professor.id()).orElseThrow().getEmail();
         String emailComum = usuarios.findById(comum.id()).orElseThrow().getEmail();
         var resposta = enviar(HttpMethod.GET, "/api/administracao/usuarios", principal.token(), null,
-                com.cursovalido.backend.authentication.controller.ModeracaoController.UsuarioAdministracaoResposta[].class);
+                UsuarioAdministracaoResposta[].class);
         assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(autor.id())).singleElement().satisfies(u -> {
             assertThat(u.email()).isEqualTo(emailAluno.substring(0, 1) + "*******@example.com");
             assertThat(u.podeExcluir()).isFalse();
@@ -235,7 +276,7 @@ class ForumHttpIntegracaoTest {
         assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(principal.id())).singleElement()
                 .satisfies(u -> assertThat(u.podeExcluir()).isFalse());
         assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", comum.token(), null,
-                com.cursovalido.backend.authentication.controller.ModeracaoController.UsuarioAdministracaoResposta[].class).getBody())
+                UsuarioAdministracaoResposta[].class).getBody())
                 .allSatisfy(u -> assertThat(u.podeExcluir()).isFalse());
         for (String token : new String[] { principal.token(), comum.token() }) {
             assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
@@ -338,6 +379,18 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
+    void criarTopico_comFalhaNaAuditoria_deveReverterCriacao() {
+        doThrow(new IllegalStateException("Falha na auditoria")).when(auditoria)
+                .registrar(eq(autor.id()), eq("CADASTRO_TOPICO"), anyString(), isNull());
+
+        var resposta = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
+                new TopicoRequest("Topico sem auditoria", "Descricao"), String.class);
+
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(topicos.findAll()).noneMatch(topico -> topico.getTitulo().equals("Topico sem auditoria"));
+    }
+
+    @Test
     void listarTopicos_comBuscaEPaginacao_deveFiltrarOrdenarEContarRespostasAtivas() {
         var primeiro = criarTopico("Java inicial");
         criarComentario(primeiro.id(), "Resposta");
@@ -382,6 +435,12 @@ class ForumHttpIntegracaoTest {
         var lista = enviar(HttpMethod.GET, "/api/forum/topicos", autor.token(), null, TopicoResumoDTO[].class);
         assertThat(lista.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(lista.getBody()).isEmpty();
+        var meus = enviar(HttpMethod.GET, "/api/forum/topicos/meus", autor.token(), null, String.class);
+        assertThat(meus.getBody()).doesNotContain("Arquivar");
+        var reabertura = enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id() + "/desarquivar",
+                autor.token(), null, String.class);
+        assertThat(reabertura.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(topicos.findById(topico.id()).orElseThrow().isAtivo()).isFalse();
     }
 
     @Test
@@ -392,14 +451,13 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
-    void apagarTopico_comAdministrador_deveRetornar200EExcluirLogicamente() {
+    void rotaDeExclusaoDeTopicoDeveSerNegadaAteParaAdministrador() {
         var topico = criarTopico("Excluir");
         var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
         var resposta = enviar(HttpMethod.DELETE, "/api/forum/topicos/" + topico.id(), admin.token(), null,
                 String.class);
-        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(resposta.getBody()).isNullOrEmpty();
-        assertThat(topicos.findById(topico.id()).orElseThrow().isAtivo()).isFalse();
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(topicos.findById(topico.id()).orElseThrow().isAtivo()).isTrue();
     }
 
     @Test
