@@ -73,7 +73,7 @@ class ConviteAcessoServiceTest {
         when(convites.findByTokenHash(anyString())).thenReturn(Optional.of(convite));
         when(politicas.versaoAtiva("v1.0")).thenReturn(true);
         when(senhas.encode("Senha@123")).thenReturn("hash");
-        var cadastro = new CadastroUsuarioRequest("Professor Teste", EMAIL, "Senha@123",
+        var cadastro = new CadastroUsuarioRequest("Professor Teste", EMAIL, "Senha@123", "Senha@123",
                 LocalDate.now().minusYears(30), true, true, "v1.0", true, "1.0");
 
         service.completar("token", cadastro, "192.0.2.10");
