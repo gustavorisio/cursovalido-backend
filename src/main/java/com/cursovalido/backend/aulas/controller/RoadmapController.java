@@ -1,7 +1,6 @@
 package com.cursovalido.backend.aulas.controller;
 
 import com.cursovalido.backend.aulas.dto.*;
-import com.cursovalido.backend.aulas.entity.SecaoCaminhos;
 import com.cursovalido.backend.aulas.service.RoadmapService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import jakarta.validation.Valid;
@@ -56,16 +55,20 @@ public class RoadmapController {
     public void excluir(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) { servico.excluirQuestionario(id, usuario.getId()); }
 
     @GetMapping("/administracao/caminhos/secoes")
-    public List<SecaoCaminhos> listarSecoes(@AuthenticationPrincipal UsuarioAutenticado usuario) {
-        return servico.listarSecoesAdministracao(usuario.getId());
+    public List<SecaoCaminhosResponse> listarSecoes(@AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return servico.listarSecoesAdministracao(usuario.getId()).stream().map(SecaoCaminhosResponse::de).toList();
     }
 
     @PostMapping("/administracao/caminhos/secoes")
     @ResponseStatus(HttpStatus.CREATED)
-    public SecaoCaminhos criarSecao(@Valid @RequestBody SecaoCaminhosRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) { return servico.salvarSecao(null, dados, usuario.getId()); }
+    public SecaoCaminhosResponse criarSecao(@Valid @RequestBody SecaoCaminhosRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return SecaoCaminhosResponse.de(servico.salvarSecao(null, dados, usuario.getId()));
+    }
 
     @PutMapping("/administracao/caminhos/secoes/{id}")
-    public SecaoCaminhos editarSecao(@PathVariable Long id, @Valid @RequestBody SecaoCaminhosRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) { return servico.salvarSecao(id, dados, usuario.getId()); }
+    public SecaoCaminhosResponse editarSecao(@PathVariable Long id, @Valid @RequestBody SecaoCaminhosRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return SecaoCaminhosResponse.de(servico.salvarSecao(id, dados, usuario.getId()));
+    }
 
     @DeleteMapping("/administracao/caminhos/secoes/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

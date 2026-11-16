@@ -1,7 +1,7 @@
 package com.cursovalido.backend.aulas.controller;
 
 import com.cursovalido.backend.aulas.dto.TemaRequest;
-import com.cursovalido.backend.aulas.entity.Tema;
+import com.cursovalido.backend.aulas.dto.TemaResponse;
 import com.cursovalido.backend.aulas.service.TemaService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import jakarta.validation.Valid;
@@ -18,19 +18,19 @@ public class TemaController {
     private final TemaService servico;
 
     @GetMapping("/catalogo/temas")
-    public List<Tema> listar() {
-        return servico.listar();
+    public List<TemaResponse> listar() {
+        return servico.listar().stream().map(TemaResponse::de).toList();
     }
 
     @PostMapping("/temas")
     @ResponseStatus(HttpStatus.CREATED)
-    public Tema criar(@Valid @RequestBody TemaRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) {
-        return servico.salvar(null, dados.nome(), usuario.getId());
+    public TemaResponse criar(@Valid @RequestBody TemaRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return TemaResponse.de(servico.salvar(null, dados.nome(), usuario.getId()));
     }
 
     @PutMapping("/temas/{id}")
-    public Tema editar(@PathVariable Long id, @Valid @RequestBody TemaRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) {
-        return servico.salvar(id, dados.nome(), usuario.getId());
+    public TemaResponse editar(@PathVariable Long id, @Valid @RequestBody TemaRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return TemaResponse.de(servico.salvar(id, dados.nome(), usuario.getId()));
     }
 
     @DeleteMapping("/temas/{id}")
