@@ -19,6 +19,72 @@ class TokenEmailServiceTest {
     private final TokenEmailService servico = new TokenEmailService(repositorio);
 
     @Test
+    void deveConsumirCodigo2faValido() {
+        Usuario usuario = new Usuario();
+        usuario.setEmail("aluno@example.com");
+        var registro = new TokenEmail("hash", usuario, "CODIGO_2FA", LocalDateTime.now().plusMinutes(5));
+        when(repositorio.findByTokenHashAndFinalidade(anyString(), eq("CODIGO_2FA")))
+                .thenReturn(Optional.of(registro));
+
+        assertSame(usuario, servico.validarCodigo2fa("ALUNO@example.com", "123456"));
+        assertTrue(registro.isUtilizado());
+        verify(repositorio).save(registro);
+    }
+
+    @Test
+    void deveGerarTokenDeRecuperacaoSemGuardarValorEmTexto() {
+        Usuario usuario = new Usuario();
+        String finalidade = servico.finalidadeAlteracaoSenha();
+
+        String token = servico.criarAlteracaoSenha(usuario);
+
+        var captura = ArgumentCaptor.forClass(TokenEmail.class);
+        verify(repositorio).save(captura.capture());
+        assertEquals(finalidade, captura.getValue().getFinalidade());
+        assertFalse(token.isBlank());
+        assertNotEquals(token, captura.getValue().getTokenHash());
+        verify(repositorio).invalidarTokensAtivos(usuario.getId(), finalidade);
+    }
+
+    @Test
+    void deveCriarCodigoDeExclusaoEInvalidarOAnterior() {
+        Usuario usuario = new Usuario();
+
+        String codigo = servico.criarExclusao(usuario);
+
+        assertTrue(codigo.matches("[0-9]{6}"));
+        var captura = ArgumentCaptor.forClass(TokenEmail.class);
+        verify(repositorio).save(captura.capture());
+        assertEquals("EXCLUSAO_CONTA", captura.getValue().getFinalidade());
+        assertNotEquals(codigo, captura.getValue().getTokenHash());
+        verify(repositorio).invalidarTokensAtivos(usuario.getId(), "EXCLUSAO_CONTA");
+    }
+
+    @Test
+    void deveConsumirCodigoDeExclusaoValido() {
+        Usuario usuario = new Usuario();
+        ReflectionTestUtils.setField(usuario, "id", 1L);
+        var registro = new TokenEmail("hash", usuario, "EXCLUSAO_CONTA", LocalDateTime.now().plusMinutes(5));
+        when(repositorio.findByTokenHashAndFinalidade(anyString(), eq("EXCLUSAO_CONTA")))
+                .thenReturn(Optional.of(registro));
+
+        servico.validarExclusao(1L, "123456");
+
+        assertTrue(registro.isUtilizado());
+        verify(repositorio).save(registro);
+    }
+
+    @Test
+    void deveInvalidarLoginERecuperacaoAoRevogarAcessos() {
+        Usuario usuario = new Usuario();
+
+        servico.invalidarAcessos(usuario);
+
+        verify(repositorio).invalidarTokensAtivos(usuario.getId(), "CODIGO_2FA");
+        verify(repositorio).invalidarTokensAtivos(usuario.getId(), "ALTERACAO_SENHA");
+    }
+
+    @Test
     void mesmoCodigoParaDuasPessoasNaoGeraMesmoHash() {
         var aleatorio = mock(SecureRandom.class);
         when(aleatorio.nextInt(1_000_000)).thenReturn(123456);

@@ -21,7 +21,7 @@ public class AutenticacaoService {
     private final UsuarioRepository repositorio;
     private final TokenJwtService tokens;
     private final TokenEmailService tokensEmail;
-    private final EmailService emails;
+    private final EnvioCodigo2faService envio2fa;
     private final PasswordEncoder codificadorSenha;
     private final LogAuditoriaService auditoria;
     private final UsuarioForumService usuariosForum;
@@ -40,9 +40,7 @@ public class AutenticacaoService {
                 enderecoIp, protecaoForcaBruta, auditoria);
         AutenticacaoValidation.validarLogin(usuario, enderecoIp, auditoria, moderacao);
         protecaoForcaBruta.registrarSucesso(identificador);
-        String codigo = tokensEmail.criarCodigo2fa(usuario);
-        emails.enviarCodigo2fa(usuario, codigo);
-        auditoria.registrar(usuario.getId(), "CODIGO_2FA_ENVIADO", "Codigo enviado por e-mail", enderecoIp);
+        envio2fa.enviar(usuario.getId(), enderecoIp, false);
         return new AutenticacaoResponse(null, null, null, null, true);
     }
 
@@ -61,11 +59,12 @@ public class AutenticacaoService {
             throw excecao;
         }
         protecaoForcaBruta.registrarSucesso(identificador);
-        AutenticacaoValidation.validarConfirmacao(usuario, moderacao, politicas, responsabilidade, privacidade, tokens);
+        AutenticacaoValidation.validarConfirmacao(usuario, moderacao);
         if (!usuario.isEmailConfirmado()) {
             usuario.setEmailConfirmado(true);
             repositorio.save(usuario);
         }
+        AutenticacaoValidation.validarAceite(usuario, politicas, responsabilidade, privacidade, tokens);
         usuariosForum.sincronizar(usuario);
         auditoria.registrar(usuario.getId(), "LOGIN", "Login realizado com 2FA", enderecoIp);
         return new AutenticacaoResponse(tokens.gerar(usuario), usuario.getId(), usuario.getNomeCompleto(),
@@ -78,13 +77,7 @@ public class AutenticacaoService {
                 .filter(Usuario::isAtivo)
                 .filter(usuario -> !moderacao.restrito(usuario.getId(), EscopoSuspensao.CONTA))
                 .filter(usuario -> usuario.getStatusAprovacao() == StatusAprovacao.APROVADO)
-                .filter(tokensEmail::temCodigo2faPendente)
-                .ifPresent(usuario -> {
-                    String codigo = tokensEmail.criarCodigo2fa(usuario);
-                    emails.enviarCodigo2fa(usuario, codigo);
-                    auditoria.registrar(usuario.getId(), "CODIGO_2FA_ENVIADO",
-                            "Codigo 2FA reenviado por e-mail", enderecoIp);
-                });
+                .ifPresent(usuario -> envio2fa.enviar(usuario.getId(), enderecoIp, true));
     }
 
     private String identificador(String email, String enderecoIp) {

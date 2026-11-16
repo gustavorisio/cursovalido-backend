@@ -1,5 +1,8 @@
 package com.cursovalido.backend.forum;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
@@ -47,6 +50,8 @@ class ForumHttpIntegracaoTest {
     private int porta;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private com.cursovalido.backend.authentication.service.CadastroUsuarioService cadastroUsuarios;
     @Autowired
     private TopicoRepository topicos;
     @Autowired
@@ -108,20 +113,17 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
-    void publicarIgnoraVersaoDoClienteEIncrementaAPersistida() {
+    void publicarIgnoraVersaoDoCliente() {
         var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-versoes@example.com");
-        for (int numero = 1; numero <= 2; numero++) {
-            var resposta = enviar(HttpMethod.POST, "/api/politicas", admin.token(),
-                    Map.of("nome", "Termos", "conteudo", "Texto " + numero, "versao", "999.0"),
-                    PoliticaResponse.class);
-            assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-            assertThat(resposta.getBody().versao()).isEqualTo(numero + ".0");
-        }
+        var resposta = enviar(HttpMethod.POST, "/api/politicas", admin.token(),
+                Map.of("nome", "Termos", "conteudo", "Texto novo", "versao", "999.0"),
+                PoliticaResponse.class);
+        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(resposta.getBody().versao()).isEqualTo("v1.0");
         assertThat(politicas.findByVersao("999.0")).isEmpty();
         assertThat(politicas.findByAtivaTrueOrderByDataPublicacaoDesc()).extracting(Politica::getVersao)
-                .containsExactly("2.0");
+                .containsExactly("v1.0");
     }
-
     @Test
     void publicarPrivacidadeGeraVersaoSemEntradaManual() {
         var admin = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-privacidade@example.com");
@@ -190,7 +192,7 @@ class ForumHttpIntegracaoTest {
                 Long.class, alvo.id())).isPositive();
         assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id=? "
                 + "and tipo_acao='EXCLUSAO_ADMINISTRATIVA_CONTA'", Long.class, principal.id())).isEqualTo(1);
-        var leitura = enviar(HttpMethod.GET, "/api/forum/topicos", null, null, TopicoResumoDTO[].class);
+        var leitura = enviar(HttpMethod.GET, "/api/forum/topicos", principal.token(), null, TopicoResumoDTO[].class);
         assertThat(leitura.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(leitura.getBody()).filteredOn(t -> t.id().equals(topico.id())).singleElement().satisfies(t -> {
             assertThat(t.descricao()).isEqualTo("Conteudo educacional preservado");
@@ -289,16 +291,16 @@ class ForumHttpIntegracaoTest {
     }
 
     @Test
-    void visitantePodeLerMasNaoPodeAlterarConteudo() {
+    void visitanteNaoPodeLerNemAlterarConteudo() {
         var criado = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
                 new TopicoRequest("Leitura aberta", "Descricao publica"), TopicoResponse.class).getBody();
         String caminho = "/api/forum/topicos/" + criado.id();
         assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.OK);
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(enviar(HttpMethod.GET, "/api/forum/topicos/meus", null, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(enviar(HttpMethod.GET, caminho + "/comentarios", null, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.OK);
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(enviar(HttpMethod.GET, "/api/noticias", null, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
         assertThat(enviar(HttpMethod.GET, "/api/forum/users", null, null, String.class).getStatusCode())
@@ -505,9 +507,9 @@ class ForumHttpIntegracaoTest {
     @Test
     void paginacaoPadraoDoForumEMeusTopicosExibeDezPorPagina() {
         for (int i = 0; i < 11; i++) criarTopico("Topico " + i);
-        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, TopicoResumoDTO[].class).getBody())
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", autor.token(), null, TopicoResumoDTO[].class).getBody())
                 .hasSize(10);
-        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos?page=1", null, null, TopicoResumoDTO[].class).getBody())
+        assertThat(enviar(HttpMethod.GET, "/api/forum/topicos?page=1", autor.token(), null, TopicoResumoDTO[].class).getBody())
                 .hasSize(1);
         var respostaMeus = enviar(HttpMethod.GET, "/api/forum/topicos/meus", autor.token(), null, Map.class);
         assertThat(respostaMeus.getStatusCode()).as("Resposta: %s", respostaMeus.getBody()).isEqualTo(HttpStatus.OK);
@@ -774,12 +776,12 @@ class ForumHttpIntegracaoTest {
         var resposta = enviar(HttpMethod.POST, "/api/politicas", admin.token(),
                 new PoliticaRequest("Novos termos", "Conteudo novo"), PoliticaResponse.class);
         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(resposta.getBody().versao()).isEqualTo("1.0");
+        assertThat(resposta.getBody().versao()).isEqualTo("v1.0");
         assertThat(resposta.getBody().nome()).isEqualTo("Novos termos");
         assertThat(resposta.getBody().conteudo()).isEqualTo("Conteudo novo");
-        assertThat(politicas.findByVersao("1.0")).isPresent();
+        assertThat(politicas.findByVersao("v1.0")).isPresent();
         assertThat(politicas.findByAtivaTrueOrderByDataPublicacaoDesc()).extracting(Politica::getVersao)
-                .containsExactly("1.0");
+                .containsExactly("v1.0");
         assertThat(usuarios.findById(autor.id()).orElseThrow().getAceitouTermosLgpd()).isTrue();
         assertThat(usuarios.findById(autor.id()).orElseThrow().getVersaoTermos()).isEqualTo("teste-v1");
     }
@@ -788,7 +790,7 @@ class ForumHttpIntegracaoTest {
     void publicarPolitica_comAluno_deveRetornar403SemPersistir() {
         verificarErro(enviar(HttpMethod.POST, "/api/politicas", autor.token(),
                 new PoliticaRequest("Termos", "Conteudo"), ErroHttp.class), 403);
-        assertThat(politicas.findByVersao("1.0")).isEmpty();
+        assertThat(politicas.findByVersao("v1.0")).isEmpty();
     }
 
     @Test
@@ -904,6 +906,28 @@ class ForumHttpIntegracaoTest {
         return confirmado.getBody().token();
     }
 
+    @Test
+    void cadastroPermiteDuasContasPorIpELoginNaoDuplicaCodigoPendente() {
+        for (int i = 1; i <= 3; i++) {
+            String email = "cadastro-" + i + "@example.com";
+            var cadastro = new CadastroUsuarioRequest("  João 12! da Silva ", email, SENHA,
+                    LocalDate.of(2000, 1, 1), true, true, "teste-v1");
+            var resposta = enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, cadastro, String.class);
+            assertThat(resposta.getStatusCode()).isEqualTo(i <= 2 ? HttpStatus.CREATED : HttpStatus.TOO_MANY_REQUESTS);
+        }
+        String email = "cadastro-1@example.com";
+        var usuario = usuarios.findByEmail(email).orElseThrow();
+        assertThat(usuario.getNomeCompleto()).isEqualTo("João da Silva");
+        var login = Map.of("email", email, "senha", SENHA);
+        for (int i = 0; i < 2; i++)
+            assertThat(enviar(HttpMethod.POST, "/api/autenticacao/login", null, login, AutenticacaoResponse.class)
+                    .getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(enviar(HttpMethod.POST, "/api/autenticacao/reenviar-2fa", null, Map.of("email", email), String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        verify(emails, times(1)).enviarCodigo2fa(argThat(u -> email.equals(u.getEmail())), anyString());
+        assertThat(usuarios.findByEmail("cadastro-3@example.com")).isEmpty();
+    }
+
     private Sessao cadastrarEAutenticar(Perfil perfil) {
         return cadastrarEAutenticar(perfil, null);
     }
@@ -911,12 +935,10 @@ class ForumHttpIntegracaoTest {
     private Sessao cadastrarEAutenticar(Perfil perfil, String emailPrincipal) {
         long numero = SEQUENCIA.incrementAndGet();
         String email = emailPrincipal == null ? "forum-" + numero + "@example.com" : emailPrincipal;
-        String nome = "Participante " + numero;
+        String nome = "Participante " + Character.toString((int) ('A' + numero % 26));
         var requisicao = new CadastroUsuarioRequest(nome, email, SENHA,
                 LocalDate.of(2000, 1, 1), true, true, "teste-v1");
-        assertThat(
-                enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, requisicao, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.CREATED);
+        cadastroUsuarios.cadastrar(requisicao, "2001:db8::" + Long.toHexString(numero));
         // Bootstrap do administrador: o cadastro publico cria somente ALUNO.
         if (perfil != Perfil.ALUNO) {
             var usuario = usuarios.findByEmail(email).orElseThrow();

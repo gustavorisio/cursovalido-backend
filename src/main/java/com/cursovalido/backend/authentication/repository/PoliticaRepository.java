@@ -8,5 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PoliticaRepository extends JpaRepository<Politica, Long> {
     List<Politica> findByAtivaTrueOrderByDataPublicacaoDesc();
 
+    boolean existsByAtivaTrueAndVersao(String versao);
+
     Optional<Politica> findByVersao(String versao);
 }

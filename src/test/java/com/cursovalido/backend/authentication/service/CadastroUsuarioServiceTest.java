@@ -40,7 +40,7 @@ class CadastroUsuarioServiceTest {
     @Mock
     private ValidacaoEmailService validacaoEmail;
     @Mock
-    private IdentidadeExcluidaService identidades;
+    private LimiteCadastroService limiteCadastro;
     @InjectMocks
     private CadastroUsuarioService servico;
 
@@ -71,6 +71,7 @@ class CadastroUsuarioServiceTest {
         Usuario resultado = servico.cadastrar(requisicao, "127.0.0.1");
 
         assertEquals(salvo, resultado);
+        verify(limiteCadastro).reservar("127.0.0.1");
         verify(emails).enviarCodigo2fa(salvo, "token");
         verify(repositorio).save(any(Usuario.class));
     }

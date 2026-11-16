@@ -42,6 +42,7 @@ public class ConviteAcessoService {
     private final LogAuditoriaService auditoria;
     private final UsuarioForumService usuariosForum;
     private final PrivilegiosAdministrativosService privilegios;
+    private final LimiteCadastroService limiteCadastro;
     private final SecureRandom aleatorio = new SecureRandom();
 
     @Transactional
@@ -92,6 +93,7 @@ public class ConviteAcessoService {
 
         responsabilidade.validar(convite.getPerfil(), cadastro.aceitouResponsabilidade(),
                 cadastro.versaoResponsabilidade(), enderecoIp);
+        limiteCadastro.reservar(enderecoIp);
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(cadastro.nomeCompleto());
         usuario.setEmail(convite.getEmail());
@@ -111,7 +113,7 @@ public class ConviteAcessoService {
                 cadastro.versaoResponsabilidade(), enderecoIp);
         convite.setStatus(StatusConvite.CONCLUIDO);
         convites.save(convite);
-        auditoria.registrar(usuario.getId(), "CADASTRO_PENDENTE_APROVACAO", convite.getPerfil().name(), null);
+        auditoria.registrar(usuario.getId(), "CADASTRO_PENDENTE_APROVACAO", convite.getPerfil().name(), enderecoIp);
     }
 
     // Lista os usuarios que aguardam aprovacao.

@@ -28,6 +28,6 @@ public class UsuarioDetalhesService implements UserDetailsService {
                 return new UsuarioAutenticado(usuario.getId(), usuario.getEmail(), usuario.getSenha(),
                                 usuario.getPerfil(), usuario.isEmailConfirmado(),
                                 Boolean.TRUE.equals(usuario.getAceitouTermosLgpd()) && responsabilidade.atualizado(usuario),
-                                acessoPermitido);
+                                acessoPermitido, usuario.getVersaoTermos());
         }
 }

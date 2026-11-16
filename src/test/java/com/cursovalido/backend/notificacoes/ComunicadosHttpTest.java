@@ -2,6 +2,7 @@ package com.cursovalido.backend.notificacoes;
 
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.ResponsabilidadeService;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
 import com.cursovalido.backend.forum.configuration.FlywayConfig;
@@ -38,6 +39,7 @@ class ComunicadosHttpTest {
     @LocalServerPort int porta;
     @Autowired UsuarioRepository usuarios;
     @Autowired TokenJwtService tokens;
+    @Autowired PoliticaService politicas;
     @Autowired ResponsabilidadeService responsabilidade;
     @Autowired JdbcTemplate jdbc;
     RestClient cliente;
@@ -265,7 +267,7 @@ class ComunicadosHttpTest {
         usuario.setDeclarouMaiorIdade(true);
         usuario.setAceitouTermosLgpd(true);
         usuario.setDataHoraAceite(LocalDateTime.now());
-        usuario.setVersaoTermos("teste-v1");
+        usuario.setVersaoTermos(politicas.listarAtivas().getFirst().versao());
         usuario.setPerfil(perfil);
         usuario.setEmailConfirmado(true);
         usuarios.saveAndFlush(usuario);
