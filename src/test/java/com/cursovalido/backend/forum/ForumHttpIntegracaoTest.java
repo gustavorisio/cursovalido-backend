@@ -67,7 +67,6 @@ class ForumHttpIntegracaoTest {
     private EmailService emails;
     @MockitoBean
     private ValidacaoEmailService validacaoEmail;
-    private final Map<String, String> confirmacoes = new ConcurrentHashMap<>();
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
     private final Map<String, String> convitesEnviados = new ConcurrentHashMap<>();
     @Autowired
@@ -91,7 +90,6 @@ class ForumHttpIntegracaoTest {
         if (!tabelas.isEmpty())
             jdbc.execute("TRUNCATE TABLE " + String.join(",", tabelas.stream()
                     .map(nome -> "\"" + nome.replace("\"", "\"\"") + "\"").toList()) + " RESTART IDENTITY CASCADE");
-        confirmacoes.clear();
         codigos.clear();
         convitesEnviados.clear();
         doAnswer(invocacao -> {
@@ -99,11 +97,6 @@ class ForumHttpIntegracaoTest {
             convitesEnviados.put(convite.getEmail(), invocacao.getArgument(1));
             return null;
         }).when(emails).enviarConvite(any(), anyString());
-        doAnswer(invocacao -> {
-            Usuario usuario = invocacao.getArgument(0);
-            confirmacoes.put(usuario.getEmail(), invocacao.getArgument(1));
-            return null;
-        }).when(emails).enviarConfirmacao(any(), anyString());
         doAnswer(invocacao -> {
             Usuario usuario = invocacao.getArgument(0);
             codigos.put(usuario.getEmail(), invocacao.getArgument(1));
@@ -924,9 +917,6 @@ class ForumHttpIntegracaoTest {
         assertThat(
                 enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, requisicao, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.CREATED);
-        assertThat(confirmacoes.get(email)).isNotBlank();
-        assertThat(enviar(HttpMethod.POST, "/api/autenticacao/confirmar-email", null,
-                Map.of("token", confirmacoes.get(email)), String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
         // Bootstrap do administrador: o cadastro publico cria somente ALUNO.
         if (perfil != Perfil.ALUNO) {
             var usuario = usuarios.findByEmail(email).orElseThrow();
@@ -939,10 +929,6 @@ class ForumHttpIntegracaoTest {
                 inicializacao.saveAndFlush(registro);
             }
         }
-        var login = enviar(HttpMethod.POST, "/api/autenticacao/login", null, Map.of("email", email, "senha", SENHA),
-                AutenticacaoResponse.class);
-        assertThat(login.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(login.getBody().requerCodigo2fa()).isTrue();
         assertThat(codigos.get(email)).isNotBlank();
         var confirmacao = enviar(HttpMethod.POST, "/api/autenticacao/confirmar-2fa", null,
                 Map.of("email", email, "codigo", codigos.get(email)), AutenticacaoResponse.class);

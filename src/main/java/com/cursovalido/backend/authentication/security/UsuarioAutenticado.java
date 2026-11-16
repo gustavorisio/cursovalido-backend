@@ -40,9 +40,6 @@ public class UsuarioAutenticado implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        if (!emailConfirmado) {
-            return false;
-        }
         return ativo;
     }
 }
