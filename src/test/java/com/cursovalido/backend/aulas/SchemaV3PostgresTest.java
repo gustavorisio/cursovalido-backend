@@ -38,7 +38,8 @@ class SchemaV3PostgresTest extends AulasIntegracaoTest {
     @Test
     void execucaoManualComBaselineEquivaleAInicializacaoAutomatica() {
         String referencia = "referencia_" + java.util.UUID.randomUUID().toString().replace("-", "");
-        FlywayConfig.configuracao().dataSource(fonte).schemas(referencia).defaultSchema(referencia).load().migrate();
+        var flywayReferencia = FlywayConfig.configuracao().dataSource(fonte).schemas(referencia).defaultSchema(referencia).load();
+        flywayReferencia.migrate();
         String colunas = """
                 select table_name, column_name, data_type, is_nullable, character_maximum_length
                 from information_schema.columns
@@ -69,7 +70,8 @@ class SchemaV3PostgresTest extends AulasIntegracaoTest {
                 .isEqualTo(1);
         assertThat(jdbc.queryForObject("select concluida from tb_inicializacao_administrador where id = 1",
                 Boolean.class)).isFalse();
-        assertThat(flyway.info().current().getVersion().toString()).isEqualTo("5");
+        assertThat(flyway.info().current().getVersion()).isEqualTo(flywayReferencia.info().current().getVersion());
+        assertThat(flyway.info().pending()).isEmpty();
         assertThat(flyway.migrate().migrationsExecuted).isZero();
     }
 
