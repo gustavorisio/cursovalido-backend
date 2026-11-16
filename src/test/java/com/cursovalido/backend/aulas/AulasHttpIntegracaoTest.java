@@ -7,6 +7,7 @@ import com.cursovalido.backend.aulas.service.YoutubeClient;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
+import com.cursovalido.backend.dashboard.dto.DashboardResponse.AtividadeDia;
 import com.cursovalido.backend.forum.support.PostgresTeste;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -460,6 +461,20 @@ class AulasHttpIntegracaoTest {
                 .isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(enviar(HttpMethod.GET, "/api/aluno/cursos", null, null, String.class).getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void atividadeDiariaDoDashboardExigeAdministradorEDataValida() {
+        String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
+        String rota = "/api/administracao/dashboard/atividade-diaria?data=";
+        LocalDate data = LocalDate.of(2020, 1, 15);
+        assertThat(enviar(HttpMethod.GET, rota + data, tokenAluno, null, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        var atividade = enviar(HttpMethod.GET, rota + data, tokenAdmin, null, AtividadeDia.class);
+        assertThat(atividade.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(atividade.getBody()).isEqualTo(new AtividadeDia(data, 0, 0, 0, 0, 0));
+        assertThat(enviar(HttpMethod.GET, rota + "2100-01-01", tokenAdmin, null, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     private void matricular() {
