@@ -9,7 +9,6 @@ import com.cursovalido.backend.authentication.dto.Codigo2faRequest;
 import com.cursovalido.backend.authentication.dto.DadosPessoaisResponse;
 import com.cursovalido.backend.authentication.dto.EmailRequest;
 import com.cursovalido.backend.authentication.dto.LoginRequest;
-import com.cursovalido.backend.authentication.dto.TokenEmailRequest;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.AutenticacaoService;
 import com.cursovalido.backend.authentication.service.CadastroUsuarioService;
@@ -84,17 +83,6 @@ public class AutenticacaoController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reenviar2fa(@Valid @RequestBody EmailRequest requisicao, HttpServletRequest request) {
         autenticacao.reenviarCodigo2fa(requisicao.email(), request.getRemoteAddr());
-    }
-
-    @PostMapping("/confirmar-email")
-    public void confirmarEmail(@Valid @RequestBody TokenEmailRequest requisicao) {
-        cadastroUsuarios.confirmarEmail(requisicao.token());
-    }
-
-    @PostMapping("/reenviar-confirmacao")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reenviarConfirmacao(@Valid @RequestBody EmailRequest requisicao) {
-        cadastroUsuarios.reenviarConfirmacao(requisicao.email());
     }
 
     @PostMapping("/solicitar-alteracao-senha")

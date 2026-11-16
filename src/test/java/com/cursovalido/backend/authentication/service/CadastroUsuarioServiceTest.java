@@ -14,7 +14,6 @@ import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
 import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,8 +31,6 @@ class CadastroUsuarioServiceTest {
     private PasswordEncoder codificadorSenha;
     @Mock
     private LogAuditoriaService auditoria;
-    @Mock
-    private UsuarioForumService usuariosForum;
     @Mock
     private PoliticaService politicas;
     @Mock
@@ -69,12 +66,12 @@ class CadastroUsuarioServiceTest {
         when(repositorio.existsByMatricula(any(String.class))).thenReturn(false);
         when(codificadorSenha.encode("senha-segura")).thenReturn("hash");
         when(repositorio.save(any(Usuario.class))).thenReturn(salvo);
-        when(tokensEmail.criarConfirmacao(salvo)).thenReturn("token");
+        when(tokensEmail.criarCodigo2fa(salvo)).thenReturn("token");
 
         Usuario resultado = servico.cadastrar(requisicao, "127.0.0.1");
 
         assertEquals(salvo, resultado);
-        verify(emails).enviarConfirmacao(salvo, "token");
+        verify(emails).enviarCodigo2fa(salvo, "token");
         verify(repositorio).save(any(Usuario.class));
     }
 
@@ -112,7 +109,7 @@ class CadastroUsuarioServiceTest {
         when(repositorio.existsByMatricula(any(String.class))).thenReturn(false);
         when(codificadorSenha.encode("senha-segura")).thenReturn("hash");
         when(repositorio.save(any(Usuario.class))).thenReturn(salvo);
-        when(tokensEmail.criarConfirmacao(salvo)).thenReturn("token");
+        when(tokensEmail.criarCodigo2fa(salvo)).thenReturn("token");
 
         Usuario resultado = servico.cadastrar(requisicao, "127.0.0.1");
 

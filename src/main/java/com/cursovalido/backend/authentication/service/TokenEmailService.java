@@ -18,31 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class TokenEmailService {
-    private static final String CONFIRMACAO_CADASTRO = "CONFIRMACAO_CADASTRO";
     private static final String ALTERACAO_SENHA = "ALTERACAO_SENHA";
     private static final String CODIGO_2FA = "CODIGO_2FA";
 
     private final TokenEmailRepository repositorio;
     private final SecureRandom aleatorio = new SecureRandom();
-
-    @Transactional
-    // Cria o token de confirmacao do cadastro.
-    public String criarConfirmacao(Usuario usuario) {
-        return criar(usuario, CONFIRMACAO_CADASTRO, 24);
-    }
-
-    @Transactional
-    // Cria um novo token e invalida o anterior.
-    public String criarNovaConfirmacao(Usuario usuario) {
-        repositorio.invalidarTokensAtivos(usuario.getId(), CONFIRMACAO_CADASTRO);
-        return criar(usuario, CONFIRMACAO_CADASTRO, 24);
-    }
-
-    // Verifica o limite de reenvios de confirmacao.
-    public boolean excedeuLimiteConfirmacao(Usuario usuario) {
-        return repositorio.countByUsuarioIdAndFinalidadeAndCriadoEmAfter(
-                usuario.getId(), CONFIRMACAO_CADASTRO, LocalDateTime.now().minusMinutes(15)) >= 3;
-    }
 
     @Transactional
     // Gera um novo codigo de 2FA e invalida o anterior.
@@ -149,11 +129,6 @@ public class TokenEmailService {
         } catch (Exception excecao) {
             throw new IllegalStateException("Nao foi possivel proteger o token", excecao);
         }
-    }
-
-    // Retorna o identificador do token de confirmacao.
-    public String finalidadeConfirmacao() {
-        return CONFIRMACAO_CADASTRO;
     }
 
     // Retorna o identificador do token de alteracao de senha.

@@ -62,6 +62,10 @@ public class AutenticacaoService {
         }
         protecaoForcaBruta.registrarSucesso(identificador);
         AutenticacaoValidation.validarConfirmacao(usuario, moderacao, politicas, responsabilidade, privacidade, tokens);
+        if (!usuario.isEmailConfirmado()) {
+            usuario.setEmailConfirmado(true);
+            repositorio.save(usuario);
+        }
         usuariosForum.sincronizar(usuario);
         auditoria.registrar(usuario.getId(), "LOGIN", "Login realizado com 2FA", enderecoIp);
         return new AutenticacaoResponse(tokens.gerar(usuario), usuario.getId(), usuario.getNomeCompleto(),
@@ -73,7 +77,6 @@ public class AutenticacaoService {
         repositorio.findByEmail(email)
                 .filter(Usuario::isAtivo)
                 .filter(usuario -> !moderacao.restrito(usuario.getId(), EscopoSuspensao.CONTA))
-                .filter(Usuario::isEmailConfirmado)
                 .filter(usuario -> usuario.getStatusAprovacao() == StatusAprovacao.APROVADO)
                 .filter(tokensEmail::temCodigo2faPendente)
                 .ifPresent(usuario -> {

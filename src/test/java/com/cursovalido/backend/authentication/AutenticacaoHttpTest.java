@@ -170,20 +170,14 @@ class AutenticacaoHttpTest {
     }
 
     @Test
-    void recuperacaoDeContaNaoConfirmadaReenviaConfirmacaoValida() {
+    void contaLegadaSemConfirmacaoPodeRedefinirSenhaEEntrarComCodigo() {
         usuario.setEmailConfirmado(false);
         usuarios.saveAndFlush(usuario);
-        tokensExclusao.criarConfirmacao(usuario);
-        for (int tentativa = 0; tentativa < 2; tentativa++) {
-            assertEquals(204, post("solicitar-alteracao-senha", Map.of("email", usuario.getEmail()))
-                    .getStatusCode().value());
-        }
-        var confirmacao = org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(emails, times(2)).enviarConfirmacao(any(), confirmacao.capture());
-        verify(emails, never()).enviarRedefinicaoSenha(any(), anyString());
-        assertEquals(200, post("confirmar-email", Map.of("token", confirmacao.getValue())).getStatusCode().value());
-        assertTrue(usuarios.findById(usuario.getId()).orElseThrow().isEmailConfirmado());
+        assertEquals(204, post("solicitar-alteracao-senha", Map.of("email", usuario.getEmail()))
+                .getStatusCode().value());
+        verify(emails).enviarRedefinicaoSenha(any(), anyString());
         assertNotNull(entrar());
+        assertTrue(usuarios.findById(usuario.getId()).orElseThrow().isEmailConfirmado());
     }
 
     @Test
@@ -202,14 +196,10 @@ class AutenticacaoHttpTest {
     }
 
     @Test
-    void naoEnviaCodigoSemSenhaCorretaOuSemConfirmacaoDoEmail() {
+    void naoEnviaCodigoSemSenhaCorretaOuDesafioPendente() {
         assertEquals(401,
                 post("login", Map.of("email", usuario.getEmail(), "senha", "incorreta")).getStatusCode().value());
         assertEquals(204, post("reenviar-2fa", Map.of("email", usuario.getEmail())).getStatusCode().value());
-        usuario.setEmailConfirmado(false);
-        usuarios.save(usuario);
-        assertEquals(403,
-                post("login", Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!")).getStatusCode().value());
         verify(emails, never()).enviarCodigo2fa(any(), anyString());
     }
 

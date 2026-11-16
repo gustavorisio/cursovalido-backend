@@ -6,7 +6,6 @@ import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.AcessoRejeitadoException;
 import com.cursovalido.backend.authentication.exception.BanimentoException;
 import com.cursovalido.backend.authentication.exception.CredenciaisInvalidasException;
-import com.cursovalido.backend.authentication.exception.EmailNaoConfirmadoException;
 import com.cursovalido.backend.authentication.exception.PendenteAprovacaoException;
 import com.cursovalido.backend.authentication.exception.TermosNaoAceitosException;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
@@ -31,8 +30,6 @@ public final class AutenticacaoValidation {
             auditoria.registrar(usuario.getId(), "LOGIN_RECUSADO", "Acesso rejeitado", enderecoIp);
             throw new AcessoRejeitadoException();
         }
-        if (!usuario.isEmailConfirmado())
-            throw new EmailNaoConfirmadoException();
         if (!usuario.isAtivo())
             throw new CredenciaisInvalidasException();
         verificarSuspensao(usuario, moderacao);
@@ -42,8 +39,6 @@ public final class AutenticacaoValidation {
             ResponsabilidadeService responsabilidade, PrivacidadeService privacidade, TokenJwtService tokens) {
         verificarSuspensao(usuario, moderacao);
         if (!usuario.isAtivo())
-            throw new CredenciaisInvalidasException();
-        if (!usuario.isEmailConfirmado())
             throw new CredenciaisInvalidasException();
         if (usuario.getStatusAprovacao() != StatusAprovacao.APROVADO)
             throw new CredenciaisInvalidasException();
