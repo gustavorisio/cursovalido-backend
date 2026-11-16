@@ -78,7 +78,8 @@ public class ContaUsuarioService {
     @Transactional
     // Remove a conta e trata os registros ligados ao usuario.
     public void solicitarExclusao(Long idUsuario) {
-        Usuario usuario = repositorio.findById(idUsuario).orElseThrow();
+        Usuario usuario = repositorio.findById(idUsuario)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
         emails.enviarExclusaoConta(usuario, tokensEmail.criarExclusao(usuario));
     }
 
@@ -112,7 +113,8 @@ public class ContaUsuarioService {
 
     @Transactional
     public void excluirPendencia(Long idUsuario) {
-        Usuario usuario = repositorio.findById(idUsuario).orElseThrow();
+        Usuario usuario = repositorio.findById(idUsuario)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
         ContaValidation.validarPendencia(usuario);
         usuario.setStatusAprovacao(com.cursovalido.backend.authentication.entity.StatusAprovacao.REJEITADO);
         encerrarConta(usuario);
