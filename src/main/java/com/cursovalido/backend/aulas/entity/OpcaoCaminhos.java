@@ -8,7 +8,7 @@ import lombok.Setter;
 @Embeddable
 @Getter @Setter @NoArgsConstructor
 public class OpcaoCaminhos {
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, length = 1500)
     private String texto;
     @Column(name = "proxima_pergunta", length = 50)
     private String proximaPergunta;

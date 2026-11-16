@@ -5,6 +5,7 @@ import com.cursovalido.backend.aulas.entity.SecaoCaminhos;
 import com.cursovalido.backend.aulas.service.RoadmapService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -53,6 +54,11 @@ public class RoadmapController {
     @DeleteMapping("/administracao/caminhos/questionarios/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) { servico.excluirQuestionario(id, usuario.getId()); }
+
+    @GetMapping("/administracao/caminhos/secoes")
+    public List<SecaoCaminhos> listarSecoes(@AuthenticationPrincipal UsuarioAutenticado usuario) {
+        return servico.listarSecoesAdministracao(usuario.getId());
+    }
 
     @PostMapping("/administracao/caminhos/secoes")
     @ResponseStatus(HttpStatus.CREATED)

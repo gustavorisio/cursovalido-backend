@@ -9,6 +9,6 @@ public record QuestionarioRequest(@NotBlank @Size(max = 255) String titulo, bool
     public record Pergunta(@NotBlank @Size(max = 1000) String enunciado,
             @NotNull @Size(min = 2, max = 6) List<@NotBlank @Size(max = 500) String> alternativas,
             @NotNull @Min(0) @Max(5) Integer alternativaCorreta,
-            @NotBlank @Size(max = 2000) String explicacao, @NotNull @Positive Long idAulaRevisao) {
+            @NotBlank @Size(max = 2000) String explicacao, @Positive Long idAulaRevisao) {
     }
 }
