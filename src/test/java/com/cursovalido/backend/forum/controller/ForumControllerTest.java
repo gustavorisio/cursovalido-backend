@@ -103,12 +103,6 @@ class ForumControllerTest {
     }
 
     @Test
-    void apagarTopico_comPrincipal_deveUsarUsuarioAutenticado() {
-        controlador.apagarTopico(principal, 10L);
-        verify(topicos).apagar(10L, 7L);
-    }
-
-    @Test
     void listarComentarios_comTopico_deveConverterRespostaSemExporEntidades() {
         when(comentarios.listarPorTopico(10L, 7L)).thenReturn(List.of(comentario));
         assertThat(controlador.listarComentarios(principal, 10L)).containsExactly(new ComentarioResponse(

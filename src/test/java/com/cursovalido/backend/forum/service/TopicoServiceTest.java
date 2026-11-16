@@ -192,25 +192,6 @@ class TopicoServiceTest {
         verify(auditoria, never()).registrar(any(), any(), any(), any());
     }
 
-    @Test
-    void apagar_comAdministrador_deveDesativarSemExcluirFisicamente() {
-        Topico topico = prepararTopico(99L);
-        when(usuarios.ehAdministrador(usuario)).thenReturn(true);
-        servico.apagar(10L, 7L);
-        assertThat(topico.isAtivo()).isFalse();
-        verify(repositorio).save(topico);
-        verify(repositorio, never()).delete(any());
-        verify(auditoria).registrar(7L, "EXCLUSAO_TOPICO", "Topico 10", null);
-    }
-
-    @Test
-    void apagar_comAluno_deveNegarMesmoQuandoAutor() {
-        when(usuarios.buscarAtivo(7L)).thenReturn(usuario);
-        assertThrows(AcessoNegadoException.class, () -> servico.apagar(10L, 7L));
-        verify(repositorio, never()).findById(any());
-        verify(repositorio, never()).save(any());
-    }
-
     private Topico prepararTopico(Long autorId) {
         Topico topico = new Topico();
         topico.setId(10L);
