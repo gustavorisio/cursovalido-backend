@@ -137,6 +137,7 @@ class CadastroUsuarioServiceTest {
                 "Aluno Teste",
                 "aluno@teste.com",
                 "senha-segura",
+                "senha-segura",
                 dataNascimento,
                 true,
                 true,

@@ -59,6 +59,22 @@ class AutenticacaoHttpTest {
     private final Map<String, String> codigos = new ConcurrentHashMap<>();
     private final Map<String, String> recuperacoes = new ConcurrentHashMap<>();
 
+    @Test
+    void swaggerExibeInterfaceEContratoDaApi() {
+        var interfaceSwagger = cliente.get().uri("/swagger-ui/index.html").retrieve().toEntity(String.class);
+        assertEquals(HttpStatus.OK, interfaceSwagger.getStatusCode());
+        assertTrue(interfaceSwagger.getBody().contains("Swagger UI"));
+
+        var contrato = cliente.get().uri("/v3/api-docs").retrieve().toEntity(String.class);
+        assertEquals(HttpStatus.OK, contrato.getStatusCode(), contrato.getBody());
+        assertTrue(contrato.getBody().contains("API Curso Válido"));
+        assertTrue(contrato.getBody().contains("/api/administracao/usuarios"));
+        assertTrue(contrato.getBody().contains("bearerAuth"));
+
+        assertEquals(HttpStatus.UNAUTHORIZED, cliente.get().uri("/api/administracao/usuarios")
+                .retrieve().toBodilessEntity().getStatusCode());
+    }
+
     @BeforeEach
     void preparar() {
         cliente = RestClient.builder().baseUrl("http://localhost:" + porta)

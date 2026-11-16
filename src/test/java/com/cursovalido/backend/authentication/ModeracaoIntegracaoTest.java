@@ -242,7 +242,7 @@ class ModeracaoIntegracaoTest {
                 politicas.save(new Politica("Termos", "convite-v1", "Termos do convite"));
                 String cadastro = """
                                 {"token":"%s","cadastro":{"nomeCompleto":"Professor Convidado","email":"convite@example.com",
-                                "senha":"SenhaTeste123!","dataNascimento":"1990-01-01",
+                                "senha":"SenhaTeste123!","confirmacaoSenha":"SenhaTeste123!","dataNascimento":"1990-01-01",
                                 "declarouMaiorIdade":true,"aceitouTermosLgpd":true,"versaoTermos":"convite-v1","aceitouResponsabilidade":true,"versaoResponsabilidade":"1.0"}}
                                 """
                                 .formatted(token.get());

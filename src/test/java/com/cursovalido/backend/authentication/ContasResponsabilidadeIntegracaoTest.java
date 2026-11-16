@@ -130,13 +130,13 @@ class ContasResponsabilidadeIntegracaoTest {
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.perfil").value(perfil.name()));
         politicas.save(new Politica("Termos", "convite-responsabilidade", "Termos gerais"));
         var semAceite = new com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest(
-                "Convidado", email, "SenhaTeste123!", LocalDate.of(1990, 1, 1),
+                "Convidado", email, "SenhaTeste123!", "SenhaTeste123!", LocalDate.of(1990, 1, 1),
                 true, true, "convite-responsabilidade");
         assertThatThrownBy(() -> servicoConvites.completar(token, semAceite, "127.0.0.1"))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(usuarios.existsByEmail(email)).isFalse();
         var comAceite = new com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest(
-                "Convidado", email, "SenhaTeste123!", LocalDate.of(1990, 1, 1),
+                "Convidado", email, "SenhaTeste123!", "SenhaTeste123!", LocalDate.of(1990, 1, 1),
                 true, true, "convite-responsabilidade", true, "1.0");
         servicoConvites.completar(token, comAceite, "127.0.0.1");
         var usuario = usuarios.findByEmail(email).orElseThrow();
