@@ -33,4 +33,3 @@ class VersaoDocumentoServiceTest {
         assertThrows(IllegalStateException.class, () -> service.proxima("TERMOS"));
     }
 }
-

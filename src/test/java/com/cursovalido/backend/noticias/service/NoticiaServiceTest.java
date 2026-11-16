@@ -102,4 +102,3 @@ class NoticiaServiceTest {
         return noticia;
     }
 }
-

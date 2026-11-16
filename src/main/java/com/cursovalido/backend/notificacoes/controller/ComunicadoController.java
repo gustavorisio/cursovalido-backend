@@ -41,18 +41,18 @@ public class ComunicadoController {
         return servico.listarAdministracao(usuario.getId(), page, size);
     }
 
-    @GetMapping({"/notificacoes", "/aluno/notificacoes"})
+    @GetMapping({ "/notificacoes", "/aluno/notificacoes" })
     public PaginaComunicadosResponse listarNotificacoes(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         return servico.listarNotificacoes(usuario.getId(), page, size);
     }
 
-    @GetMapping({"/notificacoes/nao-lidas", "/aluno/notificacoes/nao-lidas"})
+    @GetMapping({ "/notificacoes/nao-lidas", "/aluno/notificacoes/nao-lidas" })
     public Map<String, Long> contarNaoLidas(@AuthenticationPrincipal UsuarioAutenticado usuario) {
         return Map.of("quantidade", servico.contarNaoLidas(usuario.getId()));
     }
 
-    @PutMapping({"/notificacoes/{id}/lida", "/aluno/notificacoes/{id}/lida"})
+    @PutMapping({ "/notificacoes/{id}/lida", "/aluno/notificacoes/{id}/lida" })
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void marcarLida(@AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable Long id) {
         servico.marcarLida(usuario.getId(), id);

@@ -39,12 +39,14 @@ class CadastroContratoHttpTest {
                                 .content("{\"token\":\"convite\",\"cadastro\":" + dados() + "}"))
                                 .andExpect(status().isNoContent());
                 verify(cadastro).cadastrar(argThat(r -> r.email().equals("aluno@example.com")), anyString());
-                verify(convites).completar(eq("convite"), argThat(r -> r.email().equals("aluno@example.com")), eq("127.0.0.1"));
+                verify(convites).completar(eq("convite"), argThat(r -> r.email().equals("aluno@example.com")),
+                                eq("127.0.0.1"));
         }
 
         @Test
         void ambosCadastrosRecusamSenhasDiferentes() throws Exception {
-                String divergente = dados().replace("\"confirmacaoSenha\":\"SenhaTeste123!\"", "\"confirmacaoSenha\":\"OutraSenha!\"");
+                String divergente = dados().replace("\"confirmacaoSenha\":\"SenhaTeste123!\"",
+                                "\"confirmacaoSenha\":\"OutraSenha!\"");
                 mvc.perform(post("/api/autenticacao/cadastro").contentType(MediaType.APPLICATION_JSON)
                                 .content(divergente)).andExpect(status().isBadRequest());
                 mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON)
@@ -54,9 +56,11 @@ class CadastroContratoHttpTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = { "nomeCompleto", "email", "senha", "confirmacaoSenha", "dataNascimento", "declarouMaiorIdade", "aceitouTermosLgpd", "versaoTermos" })
+        @ValueSource(strings = { "nomeCompleto", "email", "senha", "confirmacaoSenha", "dataNascimento",
+                        "declarouMaiorIdade", "aceitouTermosLgpd", "versaoTermos" })
         void ambosCadastrosRecusamCampoObrigatorioNulo(String campo) throws Exception {
-                String incompleto = dados().replaceAll("\"" + campo + "\"\\s*:\\s*(\"[^\"]*\"|true)", "\"" + campo + "\":null");
+                String incompleto = dados().replaceAll("\"" + campo + "\"\\s*:\\s*(\"[^\"]*\"|true)",
+                                "\"" + campo + "\":null");
                 mvc.perform(post("/api/autenticacao/cadastro").contentType(MediaType.APPLICATION_JSON)
                                 .content(incompleto)).andExpect(status().isBadRequest());
                 mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON)

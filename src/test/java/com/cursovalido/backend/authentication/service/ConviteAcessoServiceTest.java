@@ -133,4 +133,3 @@ class ConviteAcessoServiceTest {
         return new ConviteAcesso(EMAIL, Perfil.PROFESSOR, "hash-anterior", LocalDateTime.now().plusDays(1));
     }
 }
-

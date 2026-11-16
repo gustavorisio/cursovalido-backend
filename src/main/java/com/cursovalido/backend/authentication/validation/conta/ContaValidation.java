@@ -8,12 +8,14 @@ public final class ContaValidation {
     }
 
     public static void validarPendencia(Usuario usuario) {
-        if (usuario.getStatusAprovacao() != com.cursovalido.backend.authentication.entity.StatusAprovacao.PENDENTE_APROVACAO
+        if (usuario
+                .getStatusAprovacao() != com.cursovalido.backend.authentication.entity.StatusAprovacao.PENDENTE_APROVACAO
                 || usuario.getExcluidoEm() != null)
             throw new IllegalArgumentException("Pendencia indisponivel");
     }
 
     public static void validarExclusao(Usuario usuario) {
-        if (usuario.getExcluidoEm() != null) throw new IllegalArgumentException("Conta ja excluida");
+        if (usuario.getExcluidoEm() != null)
+            throw new IllegalArgumentException("Conta ja excluida");
     }
 }

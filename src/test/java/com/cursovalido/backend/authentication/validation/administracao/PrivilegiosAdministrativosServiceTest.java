@@ -18,7 +18,8 @@ class PrivilegiosAdministrativosServiceTest {
 
     private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
     private final InicializacaoAdministradorRepository inicializacao = mock(InicializacaoAdministradorRepository.class);
-    private final PrivilegiosAdministrativosService service = new PrivilegiosAdministrativosService(usuarios, inicializacao);
+    private final PrivilegiosAdministrativosService service = new PrivilegiosAdministrativosService(usuarios,
+            inicializacao);
 
     @Test
     void devePermitirOperacaoExclusivaAoAdministradorPrincipal() {
@@ -68,4 +69,3 @@ class PrivilegiosAdministrativosServiceTest {
         when(usuarios.findById(1L)).thenReturn(Optional.of(usuario));
     }
 }
-

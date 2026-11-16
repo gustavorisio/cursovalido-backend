@@ -77,13 +77,14 @@ class ProtecaoRespostasHttpTest {
         mvc.perform(get("/teste/termos"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.codigo").value("TERMOS_NAO_ACEITOS"))
-                .andExpect(jsonPath("$.erro").value("Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar."));
+                .andExpect(jsonPath("$.erro")
+                        .value("Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar."));
     }
 
     @Test
     void validacaoApontaCamposComOrientacaoEmPortugues() throws Exception {
         mvc.perform(post("/teste/dados").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"email-incorreto\",\"senha\":\"\"}"))
+                .content("{\"email\":\"email-incorreto\",\"senha\":\"\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("CAMPOS_INVALIDOS"))
                 .andExpect(jsonPath("$.campos.email").value("Digite um e-mail válido, como nome@exemplo.com."))
@@ -93,21 +94,33 @@ class ProtecaoRespostasHttpTest {
     @RestController
     static class ControladorTeste {
         @GetMapping("/teste/credenciais")
-        public String credenciais() { throw new CredenciaisInvalidasException(); }
+        public String credenciais() {
+            throw new CredenciaisInvalidasException();
+        }
 
         @GetMapping("/teste/termos")
-        public String termos() { throw new TermosNaoAceitosException("token-teste"); }
+        public String termos() {
+            throw new TermosNaoAceitosException("token-teste");
+        }
 
         @PostMapping("/teste/dados")
-        public String dados(@Valid @RequestBody LoginRequest dados) { return "ok"; }
+        public String dados(@Valid @RequestBody LoginRequest dados) {
+            return "ok";
+        }
 
         @GetMapping("/teste/falha")
-        public String falha() { throw new IllegalStateException("jdbc:postgresql://interno/db password=segredo"); }
+        public String falha() {
+            throw new IllegalStateException("jdbc:postgresql://interno/db password=segredo");
+        }
 
         @GetMapping("/teste/fornecedor")
-        public String fornecedor() { throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "https://interno.example/segredo"); }
+        public String fornecedor() {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "https://interno.example/segredo");
+        }
 
         @GetMapping("/teste/restrito")
-        public String restrito() { throw new AccessDeniedException("ROLE_ADMINISTRADOR"); }
+        public String restrito() {
+            throw new AccessDeniedException("ROLE_ADMINISTRADOR");
+        }
     }
 }

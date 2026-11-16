@@ -7,9 +7,12 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "tb_caminhos_secoes")
-@Getter @Setter @NoArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class SecaoCaminhos {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(nullable = false, length = 255)
     private String titulo;

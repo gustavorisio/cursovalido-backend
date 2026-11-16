@@ -46,4 +46,3 @@ class PrivacidadeServiceTest {
         assertEquals("Privacidade", publicada.nome());
     }
 }
-

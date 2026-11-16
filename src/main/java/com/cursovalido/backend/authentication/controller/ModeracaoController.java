@@ -34,8 +34,7 @@ public class ModeracaoController {
     @Operation(summary = "Lista usuários para moderação", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/api/administracao/usuarios")
     public List<UsuarioAdministracaoResposta> listar(@AuthenticationPrincipal UsuarioAutenticado principal,
-            @Parameter(description = "Filtra por restrição vigente. Omitir para listar todos.")
-            @RequestParam(required = false) Boolean restrito) {
+            @Parameter(description = "Filtra por restrição vigente. Omitir para listar todos.") @RequestParam(required = false) Boolean restrito) {
         return moderacao.listarUsuarios(principal.getId(), restrito);
     }
 

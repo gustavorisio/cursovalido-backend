@@ -28,13 +28,20 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class VersionamentoDocumentosTest {
-    @Autowired PoliticaService termos;
-    @Autowired PrivacidadeService privacidade;
-    @Autowired PoliticaRepository politicas;
-    @Autowired PrivacidadeRepository privacidades;
-    @Autowired VersaoDocumentoRepository versoes;
-    @MockitoBean PrivilegiosAdministrativosService privilegios;
-    @MockitoBean LogAuditoriaService auditoria;
+    @Autowired
+    PoliticaService termos;
+    @Autowired
+    PrivacidadeService privacidade;
+    @Autowired
+    PoliticaRepository politicas;
+    @Autowired
+    PrivacidadeRepository privacidades;
+    @Autowired
+    VersaoDocumentoRepository versoes;
+    @MockitoBean
+    PrivilegiosAdministrativosService privilegios;
+    @MockitoBean
+    LogAuditoriaService auditoria;
 
     @DynamicPropertySource
     static void banco(DynamicPropertyRegistry registry) {
@@ -96,7 +103,8 @@ class VersionamentoDocumentosTest {
             assertTrue(prontas.await(10, TimeUnit.SECONDS));
             iniciar.countDown();
             Set<String> geradas = new HashSet<>();
-            for (var resultado : resultados) geradas.add(resultado.get(20, TimeUnit.SECONDS));
+            for (var resultado : resultados)
+                geradas.add(resultado.get(20, TimeUnit.SECONDS));
             assertEquals(Set.of("v1.0", "v1.2", "v1.4", "v1.6", "v1.8", "v2.0"), geradas);
         }
         assertEquals(6, politicas.count());

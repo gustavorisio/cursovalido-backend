@@ -83,7 +83,9 @@ public class CursoService {
         curso.setTitulo(dados.titulo().trim());
         curso.setDescricao(dados.descricao().trim());
         curso.setTema(dados.idTema() == null ? null : temas.buscar(dados.idTema()));
-        curso.setArea(dados.idArea() == null ? null : areas.findById(dados.idArea()).orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Area do roadmap nao encontrada")));
+        curso.setArea(dados.idArea() == null ? null
+                : areas.findById(dados.idArea()).orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Area do roadmap nao encontrada")));
     }
 
     private void verificarProfessor(Long idProfessor) {

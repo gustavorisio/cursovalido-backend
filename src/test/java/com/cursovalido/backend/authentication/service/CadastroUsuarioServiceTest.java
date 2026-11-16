@@ -99,7 +99,7 @@ class CadastroUsuarioServiceTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(ints = {18, 90})
+    @org.junit.jupiter.params.provider.ValueSource(ints = { 18, 90 })
     void aceitaIdadesNosLimites(int idade) {
         // A idade mínima também precisa ser aceita no limite da regra.
         CadastroUsuarioRequest requisicao = requisicaoComNascimento(

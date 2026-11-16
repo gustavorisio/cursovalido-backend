@@ -7,8 +7,7 @@ import java.time.LocalDate;
 import java.util.Locale;
 
 public record CadastroUsuarioRequest(
-        @NotBlank @Size(max = 120)
-        @Pattern(regexp = "(?s).*\\p{L}.*", message = "Informe um nome com letras.") String nomeCompleto,
+        @NotBlank @Size(max = 120) @Pattern(regexp = "(?s).*\\p{L}.*", message = "Informe um nome com letras.") String nomeCompleto,
         @NotBlank @Email @Size(max = 254) String email,
         @NotBlank @Size(max = 72, message = SenhaValida.MENSAGEM) @SenhaValida String senha,
         @NotBlank @Size(max = 72) String confirmacaoSenha,
@@ -18,7 +17,8 @@ public record CadastroUsuarioRequest(
         @NotBlank @Size(max = 30) String versaoTermos,
         Boolean aceitouResponsabilidade,
         @Size(max = 30) String versaoResponsabilidade) {
-    public CadastroUsuarioRequest(String nomeCompleto, String email, String senha, String confirmacaoSenha, LocalDate dataNascimento,
+    public CadastroUsuarioRequest(String nomeCompleto, String email, String senha, String confirmacaoSenha,
+            LocalDate dataNascimento,
             Boolean declarouMaiorIdade, Boolean aceitouTermosLgpd, String versaoTermos) {
         this(nomeCompleto, email, senha, confirmacaoSenha, dataNascimento, declarouMaiorIdade, aceitouTermosLgpd,
                 versaoTermos, null, null);

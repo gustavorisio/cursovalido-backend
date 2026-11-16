@@ -30,7 +30,8 @@ class AutenticacaoControllerTest {
 
     private static final String EMAIL = "aluno@teste.com";
     private static final String IP = "192.0.2.10";
-    private final UsuarioAutenticado usuario = new UsuarioAutenticado(1L, EMAIL, "hash", Perfil.ALUNO, true, true, true);
+    private final UsuarioAutenticado usuario = new UsuarioAutenticado(1L, EMAIL, "hash", Perfil.ALUNO, true, true,
+            true);
     private final AutenticacaoService autenticacao = mock(AutenticacaoService.class);
     private final CadastroUsuarioService cadastros = mock(CadastroUsuarioService.class);
     private final TermosUsuarioService termos = mock(TermosUsuarioService.class);
@@ -166,4 +167,3 @@ class AutenticacaoControllerTest {
         return requisicao;
     }
 }
-

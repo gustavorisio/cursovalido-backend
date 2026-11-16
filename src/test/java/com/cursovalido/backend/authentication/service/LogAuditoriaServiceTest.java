@@ -53,4 +53,3 @@ class LogAuditoriaServiceTest {
         return captura.getValue();
     }
 }
-

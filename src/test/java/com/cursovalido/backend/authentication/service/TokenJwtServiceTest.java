@@ -29,7 +29,8 @@ class TokenJwtServiceTest {
         // A chave é definida porque o teste não carrega o Spring.
         sessoes = org.mockito.Mockito.mock(SessaoRepository.class);
         usuarios = org.mockito.Mockito.mock(com.cursovalido.backend.authentication.repository.UsuarioRepository.class);
-        org.mockito.Mockito.when(usuarios.buscarParaAtualizar(org.mockito.ArgumentMatchers.anyLong())).thenAnswer(chamada -> Optional.of(usuario));
+        org.mockito.Mockito.when(usuarios.buscarParaAtualizar(org.mockito.ArgumentMatchers.anyLong()))
+                .thenAnswer(chamada -> Optional.of(usuario));
         servico = new TokenJwtService(sessoes, usuarios);
         registros = new HashMap<>();
         org.mockito.Mockito.doAnswer(chamada -> {
