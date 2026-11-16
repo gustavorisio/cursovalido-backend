@@ -18,7 +18,7 @@ public class PerguntaCaminhos {
     private QuestionarioCaminhos questionario;
     @Column(nullable = false, length = 50)
     private String chave;
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, length = 2500)
     private String enunciado;
     @Column(nullable = false)
     private int ordem;

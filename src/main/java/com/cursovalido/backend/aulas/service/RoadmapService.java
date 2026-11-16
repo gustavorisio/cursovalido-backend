@@ -29,9 +29,14 @@ public class RoadmapService {
     }
 
     public PaginaCaminhosResponse consultarAdministracao(Long idUsuario) {
-        verificarPerfil(idUsuario, Perfil.ADMINISTRADOR);
+        var secoesAdministracao = listarSecoesAdministracao(idUsuario);
         return new PaginaCaminhosResponse(questionarios.findByAtivoTrueOrderByIdDesc().stream().map(this::resumo).toList(),
-                secoes.findAllByOrderByOrdemAscIdAsc());
+                secoesAdministracao);
+    }
+
+    public List<SecaoCaminhos> listarSecoesAdministracao(Long idAdministrador) {
+        verificarPerfil(idAdministrador, Perfil.ADMINISTRADOR);
+        return secoes.findAllByOrderByOrdemAscIdAsc();
     }
 
     @Transactional(readOnly = true)
