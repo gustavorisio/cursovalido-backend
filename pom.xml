@@ -218,22 +218,7 @@
 								<configuration>
 									<rules>
 										<rule>
-											<element>CLASS</element>
-											<includes>
-												<include>com.cursovalido.backend.*.service.*</include>
-												<include>com.cursovalido.backend.authentication.validation.*.*Service</include>
-												<include>com.cursovalido.backend.authentication.validation.login.AutenticacaoValidation</include>
-												<include>com.cursovalido.backend.authentication.configuration.*Filter</include>
-												<include>com.cursovalido.backend.authentication.controller.AutenticacaoController</include>
-												<include>com.cursovalido.backend.authentication.controller.DocumentoTermosController</include>
-												<include>com.cursovalido.backend.authentication.controller.ModeracaoController</include>
-												<include>com.cursovalido.backend.authentication.suporte.LimiteSuporteService</include>
-												<include>com.cursovalido.backend.authentication.suporte.SuporteController</include>
-												<include>com.cursovalido.backend.forum.controller.ForumController</include>
-											</includes>
-											<excludes>
-												<exclude>*$*</exclude>
-											</excludes>
+										<element>BUNDLE</element>
 											<limits>
 												<limit>
 													<counter>LINE</counter>

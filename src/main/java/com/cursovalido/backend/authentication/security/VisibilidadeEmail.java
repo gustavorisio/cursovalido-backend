@@ -12,9 +12,11 @@ public final class VisibilidadeEmail {
     }
 
     public static String mascarar(String email) {
-        if (email == null) return "*******";
+        if (email == null)
+            return "*******";
         int arroba = email.lastIndexOf('@');
-        if (arroba <= 0 || arroba == email.length() - 1) return "*******";
+        if (arroba <= 0 || arroba == email.length() - 1)
+            return "*******";
         return email.substring(0, email.offsetByCodePoints(0, 1)) + "*******" + email.substring(arroba);
     }
 }

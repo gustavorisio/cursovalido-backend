@@ -95,4 +95,3 @@ class DashboardServiceTest {
         when(usuarios.findById(1L)).thenReturn(Optional.of(usuario));
     }
 }
-

@@ -147,4 +147,3 @@ class TokenJwtFilterTest {
         return autenticacao.getAuthorities().iterator().next().getAuthority();
     }
 }
-

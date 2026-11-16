@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TemaRepository extends JpaRepository<Tema, Long> {
     List<Tema> findAllByOrderByNomeAsc();
+
     boolean existsByNomeIgnoreCaseAndIdNot(String nome, Long id);
 }

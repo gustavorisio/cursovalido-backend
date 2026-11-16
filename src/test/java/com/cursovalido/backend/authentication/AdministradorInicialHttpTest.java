@@ -49,7 +49,8 @@ class AdministradorInicialHttpTest {
                 assertEquals(200, resposta.getStatusCode().value());
                 assertNull(resposta.getBody().get("token"));
                 var codigo = org.mockito.ArgumentCaptor.forClass(String.class);
-                org.mockito.Mockito.verify(emails).enviarCodigo2fa(org.mockito.ArgumentMatchers.any(), codigo.capture());
+                org.mockito.Mockito.verify(emails).enviarCodigo2fa(org.mockito.ArgumentMatchers.any(),
+                                codigo.capture());
                 resposta = cliente.post().uri("/api/autenticacao/confirmar-2fa")
                                 .body(Map.of("email", "primeiro-admin@example.com", "codigo", codigo.getValue()))
                                 .retrieve().toEntity(Map.class);

@@ -74,5 +74,3 @@ class EnvioCodigo2faServiceTest {
         return usuario;
     }
 }
-
-

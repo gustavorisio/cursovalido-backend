@@ -5,5 +5,6 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TentativaQuestionarioRepository extends JpaRepository<TentativaQuestionario, Long> {
-    Optional<TentativaQuestionario> findFirstByIdAlunoAndIdQuestionarioAndVersaoOrderByIdDesc(Long idAluno, Long idQuestionario, int versao);
+    Optional<TentativaQuestionario> findFirstByIdAlunoAndIdQuestionarioAndVersaoOrderByIdDesc(Long idAluno,
+            Long idQuestionario, int versao);
 }

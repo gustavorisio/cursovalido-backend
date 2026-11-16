@@ -14,6 +14,7 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Curso c set c.tema = null where c.tema.id = :idTema")
     void removerTema(@Param("idTema") Long idTema);
+
     List<Curso> findByIdProfessorAndAtivoTrueOrderByIdDesc(Long idProfessor);
 
     List<Curso> findByAtivoTrueOrderByIdDesc();

@@ -55,7 +55,8 @@ class EmailServiceTest {
 
     @Test
     void deveEnviarLinkDeCadastroParaConvidado() {
-        var convite = new ConviteAcesso("professor@example.com", Perfil.PROFESSOR, "hash", LocalDateTime.now().plusDays(2));
+        var convite = new ConviteAcesso("professor@example.com", Perfil.PROFESSOR, "hash",
+                LocalDateTime.now().plusDays(2));
         esperarMensagemCom("https://curso.example.com/convites/cadastro?token=token-teste");
 
         service.enviarConvite(convite, "token-teste");
@@ -105,4 +106,3 @@ class EmailServiceTest {
         return usuario;
     }
 }
-

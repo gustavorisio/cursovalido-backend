@@ -24,12 +24,14 @@ public class TemaController {
 
     @PostMapping("/temas")
     @ResponseStatus(HttpStatus.CREATED)
-    public TemaResponse criar(@Valid @RequestBody TemaRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+    public TemaResponse criar(@Valid @RequestBody TemaRequest dados,
+            @AuthenticationPrincipal UsuarioAutenticado usuario) {
         return TemaResponse.de(servico.salvar(null, dados.nome(), usuario.getId()));
     }
 
     @PutMapping("/temas/{id}")
-    public TemaResponse editar(@PathVariable Long id, @Valid @RequestBody TemaRequest dados, @AuthenticationPrincipal UsuarioAutenticado usuario) {
+    public TemaResponse editar(@PathVariable Long id, @Valid @RequestBody TemaRequest dados,
+            @AuthenticationPrincipal UsuarioAutenticado usuario) {
         return TemaResponse.de(servico.salvar(id, dados.nome(), usuario.getId()));
     }
 

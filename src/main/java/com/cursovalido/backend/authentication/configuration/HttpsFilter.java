@@ -19,7 +19,9 @@ public class HttpsFilter extends OncePerRequestFilter {
             return;
         }
         if (!request.isSecure()) {
-            RespostaErroHttp.escrever(response, 426, "Não foi possível abrir uma conexão segura. Atualize a página e tente novamente.", "HTTPS_OBRIGATORIO");
+            RespostaErroHttp.escrever(response, 426,
+                    "Não foi possível abrir uma conexão segura. Atualize a página e tente novamente.",
+                    "HTTPS_OBRIGATORIO");
             return;
         }
         cadeia.doFilter(request, response);

@@ -41,501 +41,553 @@ import static org.mockito.Mockito.*;
 @Import(AulasPostgresTest.MigracaoTeste.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class AulasHttpIntegracaoTest {
-    private static final AtomicLong SEQUENCIA = new AtomicLong(20_000_000_000L);
-    @LocalServerPort
-    private int porta;
-    @Autowired
-    private UsuarioRepository usuarios;
-    @Autowired
-    private TokenJwtService tokens;
-    @Autowired
-    private PoliticaService politicas;
-    @Autowired
-    private MatriculaRepository matriculas;
-    @Autowired
-    private ProgressoAulaRepository progressos;
-    @Autowired
-    private JdbcTemplate jdbc;
-    @MockitoBean
-    private YoutubeClient youtube;
-    @Autowired
-    private com.cursovalido.backend.authentication.service.ResponsabilidadeService responsabilidade;
-    private RestClient cliente;
-    private Usuario aluno;
-    private String tokenAluno;
-    private String tokenProfessor;
-    private long idCurso;
-    private long idModulo;
-    private long idAula;
+        private static final AtomicLong SEQUENCIA = new AtomicLong(20_000_000_000L);
+        @LocalServerPort
+        private int porta;
+        @Autowired
+        private UsuarioRepository usuarios;
+        @Autowired
+        private TokenJwtService tokens;
+        @Autowired
+        private PoliticaService politicas;
+        @Autowired
+        private MatriculaRepository matriculas;
+        @Autowired
+        private ProgressoAulaRepository progressos;
+        @Autowired
+        private JdbcTemplate jdbc;
+        @MockitoBean
+        private YoutubeClient youtube;
+        @Autowired
+        private com.cursovalido.backend.authentication.service.ResponsabilidadeService responsabilidade;
+        private RestClient cliente;
+        private Usuario aluno;
+        private String tokenAluno;
+        private String tokenProfessor;
+        private long idCurso;
+        private long idModulo;
+        private long idAula;
 
-    @DynamicPropertySource
-    static void banco(DynamicPropertyRegistry registry) {
-        PostgresTeste.configurar(registry, "aulas_http");
-    }
-
-    @BeforeEach
-    void preparar() {
-        var fabrica = new JdkClientHttpRequestFactory();
-        fabrica.setReadTimeout(Duration.ofSeconds(10));
-        cliente = RestClient.builder().baseUrl("http://127.0.0.1:" + porta).requestFactory(fabrica)
-                .defaultStatusHandler(status -> true, (request, response) -> {
-                }).build();
-        tokenProfessor = tokens.gerar(criarUsuario(Perfil.PROFESSOR));
-        aluno = criarUsuario(Perfil.ALUNO);
-        tokenAluno = tokens.gerar(aluno);
-        var curso = enviar(HttpMethod.POST, "/api/cursos", tokenProfessor,
-                new CursoRequest("Java", "Curso HTTP"), CursoResponse.class);
-        assertThat(curso.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        idCurso = curso.getBody().id();
-        var modulo = enviar(HttpMethod.POST, "/api/cursos/" + idCurso + "/modulos", tokenProfessor,
-                new ModuloRequest("Inicio", "Basico", 1), ModuloResponse.class);
-        assertThat(modulo.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        idModulo = modulo.getBody().id();
-        var aula = enviar(HttpMethod.POST, "/api/modulos/" + idModulo + "/aulas", tokenProfessor,
-                new AulaRequest("Java", "Introducao", 1, "https://youtu.be/M7lc1UVf-VE"), AulaResponse.class);
-        assertThat(aula.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        idAula = aula.getBody().id();
-    }
-
-    @Test
-    void administradorListaAtualizaEExcluiSecoesExplicativas() {
-        String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
-        String rota = "/api/administracao/caminhos/secoes";
-        assertThat(enviar(HttpMethod.GET, rota, tokenAluno, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
-
-        var rascunho = new SecaoCaminhosRequest("Rascunho da seção", "Conteúdo inicial", 2, false);
-        var criacao = enviar(HttpMethod.POST, rota, tokenAdmin, rascunho, SecaoCaminhosResponse.class);
-        assertThat(criacao.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        Long id = criacao.getBody().id();
-        String detalhe = rota + "/" + id;
-        assertThat(enviar(HttpMethod.GET, rota, tokenAdmin, null, SecaoCaminhosResponse[].class).getBody())
-                .anyMatch(secao -> id.equals(secao.id()) && !secao.publicado());
-        assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
-                .getBody().secoes()).noneMatch(secao -> id.equals(secao.id()));
-
-        var publicado = new SecaoCaminhosRequest("Seção atualizada", "Conteúdo revisado", 1, true);
-        var edicao = enviar(HttpMethod.PUT, detalhe, tokenAdmin, publicado, SecaoCaminhosResponse.class);
-        assertThat(edicao.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
-                .getBody().secoes()).anyMatch(secao -> id.equals(secao.id())
-                        && secao.titulo().equals(publicado.titulo()) && secao.ordem() == 1);
-
-        assertThat(enviar(HttpMethod.DELETE, detalhe, tokenAdmin, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.NO_CONTENT);
-        assertThat(enviar(HttpMethod.GET, rota, tokenAdmin, null, SecaoCaminhosResponse[].class).getBody())
-                .noneMatch(secao -> id.equals(secao.id()));
-        assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
-                .getBody().secoes()).noneMatch(secao -> id.equals(secao.id()));
-    }
-
-    @Test
-    void caminhosAceitaLimitesERejeitaCamposAcimaDoMaximo() {
-        String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
-        String base = "/api/administracao/caminhos";
-        var secao = new SecaoCaminhosRequest("t".repeat(80), "c".repeat(2500), 1, true);
-        assertThat(enviar(HttpMethod.POST, base + "/secoes", tokenAdmin, secao, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.CREATED);
-        for (var invalida : List.of(
-                new SecaoCaminhosRequest(secao.titulo() + "t", secao.conteudo(), 1, true),
-                new SecaoCaminhosRequest(secao.titulo(), secao.conteudo() + "c", 1, true))) {
-            assertThat(enviar(HttpMethod.POST, base + "/secoes", tokenAdmin, invalida, String.class).getStatusCode())
-                    .isEqualTo(HttpStatus.BAD_REQUEST);
+        @DynamicPropertySource
+        static void banco(DynamicPropertyRegistry registry) {
+                PostgresTeste.configurar(registry, "aulas_http");
         }
 
-        var opcao = new CaminhosRequest.Opcao("a".repeat(1500), null, "r");
-        var pergunta = new CaminhosRequest.Pergunta("p", "e".repeat(2500), List.of(opcao, opcao));
-        var resultado = new CaminhosRequest.Resultado("r", "t".repeat(80), "o".repeat(1500), List.of("Java"));
-        var dados = new CaminhosRequest("q".repeat(80), "d".repeat(2500), true, 0, "p",
-                List.of(pergunta), List.of(resultado));
-        var salvo = enviar(HttpMethod.POST, base + "/questionarios", tokenAdmin, dados, CaminhosResponse.class);
-        assertThat(salvo.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        var consultado = enviar(HttpMethod.GET, base + "/questionarios/" + salvo.getBody().id(), tokenAdmin, null,
-                CaminhosResponse.class).getBody();
-        assertThat(consultado.descricao()).isEqualTo(dados.descricao());
-        assertThat(consultado.perguntas().getFirst().enunciado()).isEqualTo(pergunta.enunciado());
-        assertThat(consultado.perguntas().getFirst().opcoes().getFirst().texto()).isEqualTo(opcao.texto());
-
-        var perguntaLonga = new CaminhosRequest.Pergunta("p", pergunta.enunciado() + "e", pergunta.opcoes());
-        var opcaoLonga = new CaminhosRequest.Opcao(opcao.texto() + "a", null, "r");
-        var alternativaLonga = new CaminhosRequest.Pergunta("p", pergunta.enunciado(), List.of(opcao, opcaoLonga));
-        var tituloLongo = new CaminhosRequest.Resultado("r", resultado.titulo() + "t", resultado.orientacao(), resultado.temasPesquisa());
-        var orientacaoLonga = new CaminhosRequest.Resultado("r", resultado.titulo(), resultado.orientacao() + "o", resultado.temasPesquisa());
-        for (var invalido : List.of(
-                new CaminhosRequest(dados.titulo() + "q", dados.descricao(), true, 0, "p", dados.perguntas(), dados.resultados()),
-                new CaminhosRequest(dados.titulo(), dados.descricao() + "d", true, 0, "p", dados.perguntas(), dados.resultados()),
-                new CaminhosRequest(dados.titulo(), dados.descricao(), true, 0, "p", List.of(perguntaLonga), dados.resultados()),
-                new CaminhosRequest(dados.titulo(), dados.descricao(), true, 0, "p", List.of(alternativaLonga), dados.resultados()),
-                new CaminhosRequest(dados.titulo(), dados.descricao(), true, 0, "p", dados.perguntas(), List.of(tituloLongo)),
-                new CaminhosRequest(dados.titulo(), dados.descricao(), true, 0, "p", dados.perguntas(), List.of(orientacaoLonga)))) {
-            assertThat(enviar(HttpMethod.POST, base + "/questionarios", tokenAdmin, invalido, String.class).getStatusCode())
-                    .isEqualTo(HttpStatus.BAD_REQUEST);
+        @BeforeEach
+        void preparar() {
+                var fabrica = new JdkClientHttpRequestFactory();
+                fabrica.setReadTimeout(Duration.ofSeconds(10));
+                cliente = RestClient.builder().baseUrl("http://127.0.0.1:" + porta).requestFactory(fabrica)
+                                .defaultStatusHandler(status -> true, (request, response) -> {
+                                }).build();
+                tokenProfessor = tokens.gerar(criarUsuario(Perfil.PROFESSOR));
+                aluno = criarUsuario(Perfil.ALUNO);
+                tokenAluno = tokens.gerar(aluno);
+                var curso = enviar(HttpMethod.POST, "/api/cursos", tokenProfessor,
+                                new CursoRequest("Java", "Curso HTTP"), CursoResponse.class);
+                assertThat(curso.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                idCurso = curso.getBody().id();
+                var modulo = enviar(HttpMethod.POST, "/api/cursos/" + idCurso + "/modulos", tokenProfessor,
+                                new ModuloRequest("Inicio", "Basico", 1), ModuloResponse.class);
+                assertThat(modulo.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                idModulo = modulo.getBody().id();
+                var aula = enviar(HttpMethod.POST, "/api/modulos/" + idModulo + "/aulas", tokenProfessor,
+                                new AulaRequest("Java", "Introducao", 1, "https://youtu.be/M7lc1UVf-VE"),
+                                AulaResponse.class);
+                assertThat(aula.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                idAula = aula.getBody().id();
         }
-    }
 
-    @Test
-    void avaliacaoDoCursoAceitaDezPerguntasSemAulaDeRevisao() {
-        String rotaGestao = "/api/professor/cursos/" + idCurso + "/diagnostico";
-        var pergunta = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Incorreta"), 0,
-                "Explicação", null);
-        var acimaDoLimite = new QuestionarioRequest("Avaliação do curso", true,
-                java.util.Collections.nCopies(11, pergunta));
-        assertThat(enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, acimaDoLimite, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.BAD_REQUEST);
+        @Test
+        void administradorListaAtualizaEExcluiSecoesExplicativas() {
+                String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
+                String rota = "/api/administracao/caminhos/secoes";
+                assertThat(enviar(HttpMethod.GET, rota, tokenAluno, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.FORBIDDEN);
 
-        var dados = new QuestionarioRequest("Avaliação do curso", true, java.util.Collections.nCopies(10, pergunta));
-        var salva = enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, dados, QuestionarioGestaoResponse.class);
-        assertThat(salva.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(salva.getBody().perguntas()).hasSize(10).allMatch(p -> p.idAulaRevisao() == null);
+                var rascunho = new SecaoCaminhosRequest("Rascunho da seção", "Conteúdo inicial", 2, false);
+                var criacao = enviar(HttpMethod.POST, rota, tokenAdmin, rascunho, SecaoCaminhosResponse.class);
+                assertThat(criacao.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                Long id = criacao.getBody().id();
+                String detalhe = rota + "/" + id;
+                assertThat(enviar(HttpMethod.GET, rota, tokenAdmin, null, SecaoCaminhosResponse[].class).getBody())
+                                .anyMatch(secao -> id.equals(secao.id()) && !secao.publicado());
+                assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
+                                .getBody().secoes()).noneMatch(secao -> id.equals(secao.id()));
 
-        matricular();
-        String rotaAluno = "/api/aluno/cursos/" + idCurso + "/diagnostico";
-        var respostas = new RespostasQuestionarioRequest(salva.getBody().versao(), java.util.Collections.nCopies(10, 1));
-        var resultado = enviar(HttpMethod.POST, rotaAluno + "/respostas", tokenAluno, respostas,
-                ResultadoQuestionarioResponse.class);
-        assertThat(resultado.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(resultado.getBody().acertos()).isZero();
-        assertThat(resultado.getBody().revisoes()).isEmpty();
+                var publicado = new SecaoCaminhosRequest("Seção atualizada", "Conteúdo revisado", 1, true);
+                var edicao = enviar(HttpMethod.PUT, detalhe, tokenAdmin, publicado, SecaoCaminhosResponse.class);
+                assertThat(edicao.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
+                                .getBody().secoes()).anyMatch(
+                                                secao -> id.equals(secao.id())
+                                                                && secao.titulo().equals(publicado.titulo())
+                                                                && secao.ordem() == 1);
 
-        String rotaModulo = "/api/professor/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
-        var modulo = enviar(HttpMethod.PUT, rotaModulo, tokenProfessor, dados, QuestionarioGestaoResponse.class);
-        assertThat(modulo.getStatusCode()).isEqualTo(HttpStatus.OK);
-        String rotaAlunoModulo = "/api/aluno/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
-        var respostasModulo = new RespostasQuestionarioRequest(modulo.getBody().versao(), java.util.Collections.nCopies(10, 1));
-        var resultadoModulo = enviar(HttpMethod.POST, rotaAlunoModulo + "/respostas", tokenAluno, respostasModulo,
-                ResultadoQuestionarioResponse.class);
-        assertThat(resultadoModulo.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(resultadoModulo.getBody().correcoes()).hasSize(10);
-        assertThat(resultadoModulo.getBody().revisoes()).isEmpty();
-    }
-
-    @Test
-    void administradorEditaArquivaEReabreSemPerderProgresso() {
-        String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
-        matricular();
-        enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno, new ProgressoAulaRequest(120L),
-                ProgressoAulaResponse.class);
-        String rota = "/api/administracao/aulas/" + idAula;
-        var dados = new AulaRequest("Editada pelo administrador", "Descricao atualizada", 2,
-                "https://youtu.be/M7lc1UVf-VE");
-        assertThat(enviar(HttpMethod.PUT, rota, tokenAluno, dados, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(enviar(HttpMethod.PUT, rota + "/arquivar", tokenProfessor, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(enviar(HttpMethod.PUT, rota + "/reabrir", null, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(enviar(HttpMethod.PUT, rota, tokenAdmin, dados, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.OK);
-        assertThat(enviar(HttpMethod.PUT, rota + "/arquivar", tokenAdmin, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.OK);
-        assertThat(enviar(HttpMethod.GET, "/api/aluno/aulas/" + idAula, tokenAluno, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(enviar(HttpMethod.GET, "/api/administracao/modulos/" + idModulo + "/aulas", tokenAdmin, null,
-                String.class).getBody()).contains("Editada pelo administrador").contains("false");
-        assertThat(enviar(HttpMethod.PUT, rota + "/reabrir", tokenAdmin, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.OK);
-        assertThat(enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class).getBody()
-                .posicaoSegundos()).isEqualTo(120);
-    }
-
-    @Test
-    void dadosPessoaisNaoIncluemTelefoneNemPermitemEdicao() {
-        var resposta = enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokenAluno, null,
-                com.cursovalido.backend.authentication.dto.DadosPessoaisResponse.class);
-        assertThat(resposta.getBody().nomeCompleto()).isEqualTo(aluno.getNomeCompleto());
-        assertThat(resposta.getBody().email()).isEqualTo(aluno.getEmail());
-        assertThat(resposta.getBody().dataNascimento()).isEqualTo(aluno.getDataNascimento());
-        var contato = java.util.Map.of("telefone", "21988888888");
-        assertThat(
-                enviar(HttpMethod.PATCH, "/api/autenticacao/meus-dados", null, contato, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(enviar(HttpMethod.PATCH, "/api/autenticacao/meus-dados", tokenAluno, contato, String.class)
-                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        var atualizado = usuarios.findById(aluno.getId()).orElseThrow();
-        assertThat(atualizado.getEmail()).isEqualTo(aluno.getEmail());
-        assertThat(atualizado.getNomeCompleto()).isEqualTo(aluno.getNomeCompleto());
-        var exportacao = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", tokenAluno, null, String.class);
-        assertThat(exportacao.getHeaders().getCacheControl()).contains("no-store");
-        assertThat(exportacao.getBody()).contains(aluno.getEmail()).doesNotContain("telefone", "11999999999", "senha",
-                "password", "token", "registrosAuditoria");
-        assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = ?",
-                Long.class, aluno.getId(), "EXPORTACAO_DADOS")).isGreaterThan(0);
-    }
-
-    @Test
-    void segurancaRejeitaIdentidadeInventadaMesmoComTokenAssinado() {
-        var identidade = new Usuario();
-        org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
-        identidade.setEmail("inexistente-" + System.nanoTime() + "@example.invalid");
-        identidade.setPerfil(Perfil.ADMINISTRADOR);
-        String token = tokens.gerar(identidade);
-        assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", token, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", token, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void segurancaRejeitaEmailDeOutraContaComIdValidoDiferente() {
-        Usuario outra = criarUsuario(Perfil.ALUNO);
-        var identidade = new Usuario();
-        org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
-        identidade.setEmail(outra.getEmail());
-        identidade.setPerfil(Perfil.ALUNO);
-        assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokens.gerar(identidade), null, String.class)
-                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void segurancaIgnoraPerfilAdministrativoInventadoNoTokenAssinado() {
-        var identidade = new Usuario();
-        org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
-        identidade.setEmail(aluno.getEmail());
-        identidade.setPerfil(Perfil.ADMINISTRADOR);
-        assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", tokens.gerar(identidade), null, String.class)
-                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-    }
-
-    @Test
-    void segurancaRejeitaTokenAdulteradoSemAssinaturaValida() {
-        String[] partes = tokenAluno.split("[.]");
-        String payload = new String(java.util.Base64.getUrlDecoder().decode(partes[1]),
-                java.nio.charset.StandardCharsets.UTF_8);
-        payload = payload.replace("ALUNO", "ADMINISTRADOR");
-        String adulterado = partes[0] + "." + java.util.Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8)) + "." + partes[2];
-        for (String token : List.of(adulterado, "token-inventado", "eyJhbGciOiJub25lIn0.e30.")) {
-            assertThat(
-                    enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", token, null, String.class).getStatusCode())
-                    .isEqualTo(HttpStatus.UNAUTHORIZED);
-            assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", token, null, String.class).getStatusCode())
-                    .isEqualTo(HttpStatus.UNAUTHORIZED);
+                assertThat(enviar(HttpMethod.DELETE, detalhe, tokenAdmin, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.NO_CONTENT);
+                assertThat(enviar(HttpMethod.GET, rota, tokenAdmin, null, SecaoCaminhosResponse[].class).getBody())
+                                .noneMatch(secao -> id.equals(secao.id()));
+                assertThat(enviar(HttpMethod.GET, "/api/catalogo/roadmap", null, null, PaginaCaminhosResponse.class)
+                                .getBody().secoes()).noneMatch(secao -> id.equals(secao.id()));
         }
-    }
 
-    @Test
-    void segurancaNaoAceitaIdForcadoPorCabecalhoOuParametro() {
-        Usuario outra = criarUsuario(Perfil.ADMINISTRADOR);
-        var semToken = cliente.get().uri("/api/autenticacao/meus-dados?idUsuario=" + outra.getId())
-                .header("X-User-Id", outra.getId().toString()).retrieve().toEntity(String.class);
-        assertThat(semToken.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        var comToken = cliente.get().uri("/api/autenticacao/meus-dados?idUsuario=" + outra.getId())
-                .header("X-User-Id", outra.getId().toString()).headers(h -> h.setBearerAuth(tokenAluno))
-                .retrieve().toEntity(com.cursovalido.backend.authentication.dto.DadosPessoaisResponse.class);
-        assertThat(comToken.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(comToken.getBody().id()).isEqualTo(aluno.getId());
-    }
-
-    @Test
-    void segurancaRejeitaSessaoRevogadaETokenLimitadoAosTermos() {
-        String limitado = tokens.gerarTermos(aluno);
-        assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", limitado, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
-        tokens.encerrar(limitado);
-        assertThat(
-                enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokenAluno, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void segurancaBloqueiaRotasPrivadasPorMetodoSemLogin() {
-        for (String rota : List.of("/api/autenticacao/meus-dados", "/api/autenticacao/exportar-dados",
-                "/api/administracao/usuarios", "/api/administracao/cursos", "/api/cursos", "/api/modulos/" + idModulo,
-                "/api/aulas/" + idAula, "/api/aluno/matriculas", "/api/aluno/aulas/" + idAula + "/progresso")) {
-            assertThat(enviar(HttpMethod.GET, rota, null, null, String.class).getStatusCode()).as(rota)
-                    .isEqualTo(HttpStatus.UNAUTHORIZED);
-        }
-        for (HttpMethod metodo : List.of(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE)) {
-            assertThat(enviar(metodo, "/api/cursos/" + idCurso, null, null, String.class).getStatusCode())
-                    .isEqualTo(HttpStatus.UNAUTHORIZED);
-        }
-    }
-
-    @Test
-    void visitanteVeApenasCatalogoSemAcessoAoConteudoOuMatricula() {
-        var catalogo = enviar(HttpMethod.GET, "/api/catalogo/cursos", null, null, String.class);
-        assertThat(catalogo.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(catalogo.getBody()).contains("Java").doesNotContain("youtube", "modulos", "idProfessor");
-        for (String caminho : List.of("/api/aluno/cursos/" + idCurso,
-                "/api/aluno/cursos/" + idCurso + "/modulos", "/api/aluno/modulos/" + idModulo + "/aulas",
-                "/api/aluno/aulas/" + idAula, "/api/aluno/matriculas")) {
-            assertThat(enviar(HttpMethod.GET, caminho, null, null, String.class).getStatusCode())
-                    .isEqualTo(HttpStatus.UNAUTHORIZED);
-        }
-        assertThat(enviar(HttpMethod.POST, "/api/aluno/cursos/" + idCurso + "/matriculas", null, null, String.class)
-                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void jwtRealLiberaMatriculaERetomadaAposNovoToken() {
-        assertThat(enviar(HttpMethod.GET, "/api/aluno/aulas/" + idAula, tokenAluno, null, String.class)
-                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        matricular();
-        var salvo = enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno,
-                new ProgressoAulaRequest(145L), ProgressoAulaResponse.class);
-        assertThat(salvo.getStatusCode()).isEqualTo(HttpStatus.OK);
-        tokenAluno = tokens.gerar(aluno);
-        var consulta = enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class);
-        assertThat(consulta.getBody().posicaoSegundos()).isEqualTo(145);
-        var conclusao = enviar(HttpMethod.POST, "/api/aluno/aulas/" + idAula + "/conclusao",
-                tokenAluno, null, ProgressoAulaResponse.class);
-        assertThat(conclusao.getBody().concluida()).isTrue();
-        var matricula = matriculas.findByIdAlunoAndIdCurso(aluno.getId(), idCurso).orElseThrow();
-        assertThat(progressos.findByIdMatriculaAndIdAula(matricula.getId(), idAula).orElseThrow().isConcluida())
-                .isTrue();
-    }
-
-    @Test
-    void duasMatriculasSimultaneasRetornamMesmoRegistro() throws Exception {
-        var respostas = simultaneas(
-                () -> enviar(HttpMethod.POST, rotaMatricula(), tokenAluno, null, MatriculaResponse.class));
-        assertThat(respostas).allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
-        assertThat(respostas.get(0).getBody().id()).isEqualTo(respostas.get(1).getBody().id());
-        assertThat(matriculas.findByIdAlunoOrderByIdDesc(aluno.getId())).hasSize(1);
-        assertThat(jdbc.queryForObject(
-                "select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = 'MATRICULA_CURSO'",
-                Long.class, aluno.getId())).isEqualTo(1);
-    }
-
-    @Test
-    void atualizacaoSimultaneaNaoDuplicaProgresso() throws Exception {
-        matricular();
-        var respostas = simultaneas(() -> enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno,
-                new ProgressoAulaRequest(100L), ProgressoAulaResponse.class));
-        assertThat(respostas).allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
-        assertThat(jdbc.queryForObject("select count(*) from tb_progresso_aulas where aula_id = ?", Long.class, idAula))
-                .isEqualTo(1);
-    }
-
-    @Test
-    void conclusaoSimultaneaNaoDuplicaAuditoria() throws Exception {
-        matricular();
-        var respostas = simultaneas(() -> enviar(HttpMethod.POST, "/api/aluno/aulas/" + idAula + "/conclusao",
-                tokenAluno, null, ProgressoAulaResponse.class));
-        assertThat(respostas).allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
-        // PostgreSQL armazena microssegundos; a resposta inicial pode conter
-        // nanossegundos.
-        assertThat(respostas.get(0).getBody().concluidaEm()).isCloseTo(respostas.get(1).getBody().concluidaEm(),
-                within(1, java.time.temporal.ChronoUnit.MICROS));
-        assertThat(jdbc.queryForObject(
-                "select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = 'CONCLUSAO_AULA'",
-                Long.class, aluno.getId())).isEqualTo(1);
-    }
-
-    @Test
-    void outroAlunoNaoLeNemAlteraProgressoMesmoMatriculado() {
-        matricular();
-        enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno, new ProgressoAulaRequest(120L),
-                ProgressoAulaResponse.class);
-        String outroToken = tokens.gerar(criarUsuario(Perfil.ALUNO));
-        assertThat(enviar(HttpMethod.GET, rotaProgresso(), outroToken, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
-        enviar(HttpMethod.POST, rotaMatricula(), outroToken, null, MatriculaResponse.class);
-        assertThat(enviar(HttpMethod.GET, rotaProgresso(), outroToken, null, ProgressoAulaResponse.class)
-                .getBody().posicaoSegundos()).isZero();
-        enviar(HttpMethod.PUT, rotaProgresso(), outroToken, new ProgressoAulaRequest(15L), ProgressoAulaResponse.class);
-        assertThat(enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class)
-                .getBody().posicaoSegundos()).isEqualTo(120);
-    }
-
-    @Test
-    void falhaDoYoutubePreservaEdicaoEProgressoEmOutraTransacao() {
-        matricular();
-        enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno, new ProgressoAulaRequest(120L),
-                ProgressoAulaResponse.class);
-        doThrow(new org.springframework.web.server.ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE))
-                .when(youtube).validarVideo("abcdefghijk");
-        var falha = enviar(HttpMethod.PUT, "/api/aulas/" + idAula, tokenProfessor,
-                new AulaRequest("Nao salvar", "Novo", 2, "https://youtu.be/abcdefghijk"), String.class);
-        assertThat(falha.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
-        var aula = enviar(HttpMethod.GET, "/api/aulas/" + idAula, tokenProfessor, null, AulaResponse.class).getBody();
-        assertThat(aula.titulo()).isEqualTo("Java");
-        assertThat(aula.youtubeVideoId()).isEqualTo("M7lc1UVf-VE");
-        assertThat(enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class)
-                .getBody().posicaoSegundos()).isEqualTo(120);
-    }
-
-    @Test
-    void jwtDeContaInativadaPerdeAcessoImediatamente() {
-        matricular();
-        aluno.setAtivo(false);
-        usuarios.saveAndFlush(aluno);
-        assertThat(enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(enviar(HttpMethod.GET, "/api/aluno/cursos", null, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void atividadeDiariaDoDashboardExigeAdministradorEDataValida() {
-        String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
-        String rota = "/api/administracao/dashboard/atividade-diaria?data=";
-        LocalDate data = LocalDate.of(2020, 1, 15);
-        assertThat(enviar(HttpMethod.GET, rota + data, tokenAluno, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
-        var atividade = enviar(HttpMethod.GET, rota + data, tokenAdmin, null, AtividadeDia.class);
-        assertThat(atividade.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(atividade.getBody()).isEqualTo(new AtividadeDia(data, 0, 0, 0, 0, 0));
-        assertThat(enviar(HttpMethod.GET, rota + "2100-01-01", tokenAdmin, null, String.class).getStatusCode())
-                .isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    private void matricular() {
-        assertThat(enviar(HttpMethod.POST, rotaMatricula(), tokenAluno, null, MatriculaResponse.class).getStatusCode())
-                .isEqualTo(HttpStatus.OK);
-    }
-
-    private String rotaMatricula() {
-        return "/api/aluno/cursos/" + idCurso + "/matriculas";
-    }
-
-    private String rotaProgresso() {
-        return "/api/aluno/aulas/" + idAula + "/progresso";
-    }
-
-    private <T> List<T> simultaneas(Supplier<T> chamada) throws Exception {
-        CountDownLatch inicio = new CountDownLatch(1);
-        try (var executor = Executors.newFixedThreadPool(2)) {
-            Callable<T> tarefa = () -> {
-                if (!inicio.await(5, TimeUnit.SECONDS)) {
-                    throw new IllegalStateException("Inicio nao liberado");
+        @Test
+        void caminhosAceitaLimitesERejeitaCamposAcimaDoMaximo() {
+                String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
+                String base = "/api/administracao/caminhos";
+                var secao = new SecaoCaminhosRequest("t".repeat(80), "c".repeat(2500), 1, true);
+                assertThat(enviar(HttpMethod.POST, base + "/secoes", tokenAdmin, secao, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.CREATED);
+                for (var invalida : List.of(
+                                new SecaoCaminhosRequest(secao.titulo() + "t", secao.conteudo(), 1, true),
+                                new SecaoCaminhosRequest(secao.titulo(), secao.conteudo() + "c", 1, true))) {
+                        assertThat(enviar(HttpMethod.POST, base + "/secoes", tokenAdmin, invalida, String.class)
+                                        .getStatusCode())
+                                        .isEqualTo(HttpStatus.BAD_REQUEST);
                 }
-                return chamada.get();
-            };
-            Future<T> primeira = executor.submit(tarefa);
-            Future<T> segunda = executor.submit(tarefa);
-            inicio.countDown();
-            return List.of(primeira.get(20, TimeUnit.SECONDS), segunda.get(20, TimeUnit.SECONDS));
-        }
-    }
 
-    private <T> ResponseEntity<T> enviar(HttpMethod metodo, String rota, String token, Object corpo, Class<T> tipo) {
-        var requisicao = cliente.method(metodo).uri(rota);
-        if (token != null) {
-            requisicao.headers(headers -> headers.setBearerAuth(token));
-        }
-        if (corpo != null) {
-            requisicao.contentType(MediaType.APPLICATION_JSON).body(corpo);
-        }
-        return requisicao.retrieve().toEntity(tipo);
-    }
+                var opcao = new CaminhosRequest.Opcao("a".repeat(1500), null, "r");
+                var pergunta = new CaminhosRequest.Pergunta("p", "e".repeat(2500), List.of(opcao, opcao));
+                var resultado = new CaminhosRequest.Resultado("r", "t".repeat(80), "o".repeat(1500), List.of("Java"));
+                var dados = new CaminhosRequest("q".repeat(80), "d".repeat(2500), true, 0, "p",
+                                List.of(pergunta), List.of(resultado));
+                var salvo = enviar(HttpMethod.POST, base + "/questionarios", tokenAdmin, dados, CaminhosResponse.class);
+                assertThat(salvo.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                var consultado = enviar(HttpMethod.GET, base + "/questionarios/" + salvo.getBody().id(), tokenAdmin,
+                                null,
+                                CaminhosResponse.class).getBody();
+                assertThat(consultado.descricao()).isEqualTo(dados.descricao());
+                assertThat(consultado.perguntas().getFirst().enunciado()).isEqualTo(pergunta.enunciado());
+                assertThat(consultado.perguntas().getFirst().opcoes().getFirst().texto()).isEqualTo(opcao.texto());
 
-    private Usuario criarUsuario(Perfil perfil) {
-        long numero = SEQUENCIA.incrementAndGet();
-        Usuario usuario = new Usuario();
-        usuario.setNomeCompleto("Teste HTTP " + numero);
-        usuario.setEmail(numero + "@aulas.example.com");
-        usuario.setSenha("hash-de-teste");
-        usuario.setMatricula("http-" + numero);
-        usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
-        usuario.setDeclarouMaiorIdade(true);
-        usuario.setAceitouTermosLgpd(true);
-        usuario.setDataHoraAceite(LocalDateTime.now());
-        usuario.setVersaoTermos(politicas.listarAtivas().getFirst().versao());
-        usuario.setPerfil(perfil);
-        usuario.setEmailConfirmado(true);
-        usuarios.saveAndFlush(usuario);
-        if (perfil != Perfil.ALUNO) responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
-        return usuario;
-    }
+                var perguntaLonga = new CaminhosRequest.Pergunta("p", pergunta.enunciado() + "e", pergunta.opcoes());
+                var opcaoLonga = new CaminhosRequest.Opcao(opcao.texto() + "a", null, "r");
+                var alternativaLonga = new CaminhosRequest.Pergunta("p", pergunta.enunciado(),
+                                List.of(opcao, opcaoLonga));
+                var tituloLongo = new CaminhosRequest.Resultado("r", resultado.titulo() + "t", resultado.orientacao(),
+                                resultado.temasPesquisa());
+                var orientacaoLonga = new CaminhosRequest.Resultado("r", resultado.titulo(),
+                                resultado.orientacao() + "o", resultado.temasPesquisa());
+                for (var invalido : List.of(
+                                new CaminhosRequest(dados.titulo() + "q", dados.descricao(), true, 0, "p",
+                                                dados.perguntas(), dados.resultados()),
+                                new CaminhosRequest(dados.titulo(), dados.descricao() + "d", true, 0, "p",
+                                                dados.perguntas(), dados.resultados()),
+                                new CaminhosRequest(dados.titulo(), dados.descricao(), true, 0, "p",
+                                                List.of(perguntaLonga), dados.resultados()),
+                                new CaminhosRequest(dados.titulo(), dados.descricao(), true, 0, "p",
+                                                List.of(alternativaLonga), dados.resultados()),
+                                new CaminhosRequest(dados.titulo(), dados.descricao(), true, 0, "p", dados.perguntas(),
+                                                List.of(tituloLongo)),
+                                new CaminhosRequest(dados.titulo(), dados.descricao(), true, 0, "p", dados.perguntas(),
+                                                List.of(orientacaoLonga)))) {
+                        assertThat(enviar(HttpMethod.POST, base + "/questionarios", tokenAdmin, invalido, String.class)
+                                        .getStatusCode())
+                                        .isEqualTo(HttpStatus.BAD_REQUEST);
+                }
+        }
+
+        @Test
+        void avaliacaoDoCursoAceitaDezPerguntasSemAulaDeRevisao() {
+                String rotaGestao = "/api/professor/cursos/" + idCurso + "/diagnostico";
+                var pergunta = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Incorreta"), 0,
+                                "Explicação", null);
+                var acimaDoLimite = new QuestionarioRequest("Avaliação do curso", true,
+                                java.util.Collections.nCopies(11, pergunta));
+                assertThat(enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, acimaDoLimite, String.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.BAD_REQUEST);
+
+                var dados = new QuestionarioRequest("Avaliação do curso", true,
+                                java.util.Collections.nCopies(10, pergunta));
+                var salva = enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, dados, QuestionarioGestaoResponse.class);
+                assertThat(salva.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(salva.getBody().perguntas()).hasSize(10).allMatch(p -> p.idAulaRevisao() == null);
+
+                matricular();
+                String rotaAluno = "/api/aluno/cursos/" + idCurso + "/diagnostico";
+                var respostas = new RespostasQuestionarioRequest(salva.getBody().versao(),
+                                java.util.Collections.nCopies(10, 1));
+                var resultado = enviar(HttpMethod.POST, rotaAluno + "/respostas", tokenAluno, respostas,
+                                ResultadoQuestionarioResponse.class);
+                assertThat(resultado.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(resultado.getBody().acertos()).isZero();
+                assertThat(resultado.getBody().revisoes()).isEmpty();
+
+                String rotaModulo = "/api/professor/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
+                var modulo = enviar(HttpMethod.PUT, rotaModulo, tokenProfessor, dados,
+                                QuestionarioGestaoResponse.class);
+                assertThat(modulo.getStatusCode()).isEqualTo(HttpStatus.OK);
+                String rotaAlunoModulo = "/api/aluno/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
+                var respostasModulo = new RespostasQuestionarioRequest(modulo.getBody().versao(),
+                                java.util.Collections.nCopies(10, 1));
+                var resultadoModulo = enviar(HttpMethod.POST, rotaAlunoModulo + "/respostas", tokenAluno,
+                                respostasModulo,
+                                ResultadoQuestionarioResponse.class);
+                assertThat(resultadoModulo.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(resultadoModulo.getBody().correcoes()).hasSize(10);
+                assertThat(resultadoModulo.getBody().revisoes()).isEmpty();
+        }
+
+        @Test
+        void administradorEditaArquivaEReabreSemPerderProgresso() {
+                String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
+                matricular();
+                enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno, new ProgressoAulaRequest(120L),
+                                ProgressoAulaResponse.class);
+                String rota = "/api/administracao/aulas/" + idAula;
+                var dados = new AulaRequest("Editada pelo administrador", "Descricao atualizada", 2,
+                                "https://youtu.be/M7lc1UVf-VE");
+                assertThat(enviar(HttpMethod.PUT, rota, tokenAluno, dados, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.FORBIDDEN);
+                assertThat(enviar(HttpMethod.PUT, rota + "/arquivar", tokenProfessor, null, String.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.FORBIDDEN);
+                assertThat(enviar(HttpMethod.PUT, rota + "/reabrir", null, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.UNAUTHORIZED);
+                assertThat(enviar(HttpMethod.PUT, rota, tokenAdmin, dados, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.OK);
+                assertThat(enviar(HttpMethod.PUT, rota + "/arquivar", tokenAdmin, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.OK);
+                assertThat(enviar(HttpMethod.GET, "/api/aluno/aulas/" + idAula, tokenAluno, null, String.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.NOT_FOUND);
+                assertThat(enviar(HttpMethod.GET, "/api/administracao/modulos/" + idModulo + "/aulas", tokenAdmin, null,
+                                String.class).getBody()).contains("Editada pelo administrador").contains("false");
+                assertThat(enviar(HttpMethod.PUT, rota + "/reabrir", tokenAdmin, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.OK);
+                assertThat(enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class)
+                                .getBody()
+                                .posicaoSegundos()).isEqualTo(120);
+        }
+
+        @Test
+        void dadosPessoaisNaoIncluemTelefoneNemPermitemEdicao() {
+                var resposta = enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokenAluno, null,
+                                com.cursovalido.backend.authentication.dto.DadosPessoaisResponse.class);
+                assertThat(resposta.getBody().nomeCompleto()).isEqualTo(aluno.getNomeCompleto());
+                assertThat(resposta.getBody().email()).isEqualTo(aluno.getEmail());
+                assertThat(resposta.getBody().dataNascimento()).isEqualTo(aluno.getDataNascimento());
+                var contato = java.util.Map.of("telefone", "21988888888");
+                assertThat(
+                                enviar(HttpMethod.PATCH, "/api/autenticacao/meus-dados", null, contato, String.class)
+                                                .getStatusCode())
+                                .isEqualTo(HttpStatus.UNAUTHORIZED);
+                assertThat(enviar(HttpMethod.PATCH, "/api/autenticacao/meus-dados", tokenAluno, contato, String.class)
+                                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                var atualizado = usuarios.findById(aluno.getId()).orElseThrow();
+                assertThat(atualizado.getEmail()).isEqualTo(aluno.getEmail());
+                assertThat(atualizado.getNomeCompleto()).isEqualTo(aluno.getNomeCompleto());
+                var exportacao = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", tokenAluno, null,
+                                String.class);
+                assertThat(exportacao.getHeaders().getCacheControl()).contains("no-store");
+                assertThat(exportacao.getBody()).contains(aluno.getEmail()).doesNotContain("telefone", "11999999999",
+                                "senha",
+                                "password", "token", "registrosAuditoria");
+                assertThat(jdbc.queryForObject(
+                                "select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = ?",
+                                Long.class, aluno.getId(), "EXPORTACAO_DADOS")).isGreaterThan(0);
+        }
+
+        @Test
+        void segurancaRejeitaIdentidadeInventadaMesmoComTokenAssinado() {
+                var identidade = new Usuario();
+                org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
+                identidade.setEmail("inexistente-" + System.nanoTime() + "@example.invalid");
+                identidade.setPerfil(Perfil.ADMINISTRADOR);
+                String token = tokens.gerar(identidade);
+                assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", token, null, String.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.UNAUTHORIZED);
+                assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", token, null, String.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+
+        @Test
+        void segurancaRejeitaEmailDeOutraContaComIdValidoDiferente() {
+                Usuario outra = criarUsuario(Perfil.ALUNO);
+                var identidade = new Usuario();
+                org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
+                identidade.setEmail(outra.getEmail());
+                identidade.setPerfil(Perfil.ALUNO);
+                assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokens.gerar(identidade), null,
+                                String.class)
+                                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+
+        @Test
+        void segurancaIgnoraPerfilAdministrativoInventadoNoTokenAssinado() {
+                var identidade = new Usuario();
+                org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
+                identidade.setEmail(aluno.getEmail());
+                identidade.setPerfil(Perfil.ADMINISTRADOR);
+                assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", tokens.gerar(identidade), null,
+                                String.class)
+                                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        }
+
+        @Test
+        void segurancaRejeitaTokenAdulteradoSemAssinaturaValida() {
+                String[] partes = tokenAluno.split("[.]");
+                String payload = new String(java.util.Base64.getUrlDecoder().decode(partes[1]),
+                                java.nio.charset.StandardCharsets.UTF_8);
+                payload = payload.replace("ALUNO", "ADMINISTRADOR");
+                String adulterado = partes[0] + "." + java.util.Base64.getUrlEncoder().withoutPadding()
+                                .encodeToString(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8)) + "."
+                                + partes[2];
+                for (String token : List.of(adulterado, "token-inventado", "eyJhbGciOiJub25lIn0.e30.")) {
+                        assertThat(
+                                        enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", token, null,
+                                                        String.class).getStatusCode())
+                                        .isEqualTo(HttpStatus.UNAUTHORIZED);
+                        assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", token, null, String.class)
+                                        .getStatusCode())
+                                        .isEqualTo(HttpStatus.UNAUTHORIZED);
+                }
+        }
+
+        @Test
+        void segurancaNaoAceitaIdForcadoPorCabecalhoOuParametro() {
+                Usuario outra = criarUsuario(Perfil.ADMINISTRADOR);
+                var semToken = cliente.get().uri("/api/autenticacao/meus-dados?idUsuario=" + outra.getId())
+                                .header("X-User-Id", outra.getId().toString()).retrieve().toEntity(String.class);
+                assertThat(semToken.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+                var comToken = cliente.get().uri("/api/autenticacao/meus-dados?idUsuario=" + outra.getId())
+                                .header("X-User-Id", outra.getId().toString()).headers(h -> h.setBearerAuth(tokenAluno))
+                                .retrieve()
+                                .toEntity(com.cursovalido.backend.authentication.dto.DadosPessoaisResponse.class);
+                assertThat(comToken.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(comToken.getBody().id()).isEqualTo(aluno.getId());
+        }
+
+        @Test
+        void segurancaRejeitaSessaoRevogadaETokenLimitadoAosTermos() {
+                String limitado = tokens.gerarTermos(aluno);
+                assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", limitado, null, String.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.FORBIDDEN);
+                tokens.encerrar(limitado);
+                assertThat(
+                                enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokenAluno, null, String.class)
+                                                .getStatusCode())
+                                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+
+        @Test
+        void segurancaBloqueiaRotasPrivadasPorMetodoSemLogin() {
+                for (String rota : List.of("/api/autenticacao/meus-dados", "/api/autenticacao/exportar-dados",
+                                "/api/administracao/usuarios", "/api/administracao/cursos", "/api/cursos",
+                                "/api/modulos/" + idModulo,
+                                "/api/aulas/" + idAula, "/api/aluno/matriculas",
+                                "/api/aluno/aulas/" + idAula + "/progresso")) {
+                        assertThat(enviar(HttpMethod.GET, rota, null, null, String.class).getStatusCode()).as(rota)
+                                        .isEqualTo(HttpStatus.UNAUTHORIZED);
+                }
+                for (HttpMethod metodo : List.of(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE)) {
+                        assertThat(enviar(metodo, "/api/cursos/" + idCurso, null, null, String.class).getStatusCode())
+                                        .isEqualTo(HttpStatus.UNAUTHORIZED);
+                }
+        }
+
+        @Test
+        void visitanteVeApenasCatalogoSemAcessoAoConteudoOuMatricula() {
+                var catalogo = enviar(HttpMethod.GET, "/api/catalogo/cursos", null, null, String.class);
+                assertThat(catalogo.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(catalogo.getBody()).contains("Java").doesNotContain("youtube", "modulos", "idProfessor");
+                for (String caminho : List.of("/api/aluno/cursos/" + idCurso,
+                                "/api/aluno/cursos/" + idCurso + "/modulos",
+                                "/api/aluno/modulos/" + idModulo + "/aulas",
+                                "/api/aluno/aulas/" + idAula, "/api/aluno/matriculas")) {
+                        assertThat(enviar(HttpMethod.GET, caminho, null, null, String.class).getStatusCode())
+                                        .isEqualTo(HttpStatus.UNAUTHORIZED);
+                }
+                assertThat(enviar(HttpMethod.POST, "/api/aluno/cursos/" + idCurso + "/matriculas", null, null,
+                                String.class)
+                                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+
+        @Test
+        void jwtRealLiberaMatriculaERetomadaAposNovoToken() {
+                assertThat(enviar(HttpMethod.GET, "/api/aluno/aulas/" + idAula, tokenAluno, null, String.class)
+                                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                matricular();
+                var salvo = enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno,
+                                new ProgressoAulaRequest(145L), ProgressoAulaResponse.class);
+                assertThat(salvo.getStatusCode()).isEqualTo(HttpStatus.OK);
+                tokenAluno = tokens.gerar(aluno);
+                var consulta = enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class);
+                assertThat(consulta.getBody().posicaoSegundos()).isEqualTo(145);
+                var conclusao = enviar(HttpMethod.POST, "/api/aluno/aulas/" + idAula + "/conclusao",
+                                tokenAluno, null, ProgressoAulaResponse.class);
+                assertThat(conclusao.getBody().concluida()).isTrue();
+                var matricula = matriculas.findByIdAlunoAndIdCurso(aluno.getId(), idCurso).orElseThrow();
+                assertThat(progressos.findByIdMatriculaAndIdAula(matricula.getId(), idAula).orElseThrow().isConcluida())
+                                .isTrue();
+        }
+
+        @Test
+        void duasMatriculasSimultaneasRetornamMesmoRegistro() throws Exception {
+                var respostas = simultaneas(
+                                () -> enviar(HttpMethod.POST, rotaMatricula(), tokenAluno, null,
+                                                MatriculaResponse.class));
+                assertThat(respostas)
+                                .allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
+                assertThat(respostas.get(0).getBody().id()).isEqualTo(respostas.get(1).getBody().id());
+                assertThat(matriculas.findByIdAlunoOrderByIdDesc(aluno.getId())).hasSize(1);
+                assertThat(jdbc.queryForObject(
+                                "select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = 'MATRICULA_CURSO'",
+                                Long.class, aluno.getId())).isEqualTo(1);
+        }
+
+        @Test
+        void atualizacaoSimultaneaNaoDuplicaProgresso() throws Exception {
+                matricular();
+                var respostas = simultaneas(() -> enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno,
+                                new ProgressoAulaRequest(100L), ProgressoAulaResponse.class));
+                assertThat(respostas)
+                                .allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
+                assertThat(jdbc.queryForObject("select count(*) from tb_progresso_aulas where aula_id = ?", Long.class,
+                                idAula))
+                                .isEqualTo(1);
+        }
+
+        @Test
+        void conclusaoSimultaneaNaoDuplicaAuditoria() throws Exception {
+                matricular();
+                var respostas = simultaneas(() -> enviar(HttpMethod.POST, "/api/aluno/aulas/" + idAula + "/conclusao",
+                                tokenAluno, null, ProgressoAulaResponse.class));
+                assertThat(respostas)
+                                .allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
+                // PostgreSQL armazena microssegundos; a resposta inicial pode conter
+                // nanossegundos.
+                assertThat(respostas.get(0).getBody().concluidaEm()).isCloseTo(respostas.get(1).getBody().concluidaEm(),
+                                within(1, java.time.temporal.ChronoUnit.MICROS));
+                assertThat(jdbc.queryForObject(
+                                "select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = 'CONCLUSAO_AULA'",
+                                Long.class, aluno.getId())).isEqualTo(1);
+        }
+
+        @Test
+        void outroAlunoNaoLeNemAlteraProgressoMesmoMatriculado() {
+                matricular();
+                enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno, new ProgressoAulaRequest(120L),
+                                ProgressoAulaResponse.class);
+                String outroToken = tokens.gerar(criarUsuario(Perfil.ALUNO));
+                assertThat(enviar(HttpMethod.GET, rotaProgresso(), outroToken, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.FORBIDDEN);
+                enviar(HttpMethod.POST, rotaMatricula(), outroToken, null, MatriculaResponse.class);
+                assertThat(enviar(HttpMethod.GET, rotaProgresso(), outroToken, null, ProgressoAulaResponse.class)
+                                .getBody().posicaoSegundos()).isZero();
+                enviar(HttpMethod.PUT, rotaProgresso(), outroToken, new ProgressoAulaRequest(15L),
+                                ProgressoAulaResponse.class);
+                assertThat(enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class)
+                                .getBody().posicaoSegundos()).isEqualTo(120);
+        }
+
+        @Test
+        void falhaDoYoutubePreservaEdicaoEProgressoEmOutraTransacao() {
+                matricular();
+                enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno, new ProgressoAulaRequest(120L),
+                                ProgressoAulaResponse.class);
+                doThrow(new org.springframework.web.server.ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE))
+                                .when(youtube).validarVideo("abcdefghijk");
+                var falha = enviar(HttpMethod.PUT, "/api/aulas/" + idAula, tokenProfessor,
+                                new AulaRequest("Nao salvar", "Novo", 2, "https://youtu.be/abcdefghijk"), String.class);
+                assertThat(falha.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+                var aula = enviar(HttpMethod.GET, "/api/aulas/" + idAula, tokenProfessor, null, AulaResponse.class)
+                                .getBody();
+                assertThat(aula.titulo()).isEqualTo("Java");
+                assertThat(aula.youtubeVideoId()).isEqualTo("M7lc1UVf-VE");
+                assertThat(enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, ProgressoAulaResponse.class)
+                                .getBody().posicaoSegundos()).isEqualTo(120);
+        }
+
+        @Test
+        void jwtDeContaInativadaPerdeAcessoImediatamente() {
+                matricular();
+                aluno.setAtivo(false);
+                usuarios.saveAndFlush(aluno);
+                assertThat(enviar(HttpMethod.GET, rotaProgresso(), tokenAluno, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.FORBIDDEN);
+                assertThat(enviar(HttpMethod.GET, "/api/aluno/cursos", null, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+
+        @Test
+        void atividadeDiariaDoDashboardExigeAdministradorEDataValida() {
+                String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
+                String rota = "/api/administracao/dashboard/atividade-diaria?data=";
+                LocalDate data = LocalDate.of(2020, 1, 15);
+                assertThat(enviar(HttpMethod.GET, rota + data, tokenAluno, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.FORBIDDEN);
+                var atividade = enviar(HttpMethod.GET, rota + data, tokenAdmin, null, AtividadeDia.class);
+                assertThat(atividade.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(atividade.getBody()).isEqualTo(new AtividadeDia(data, 0, 0, 0, 0, 0));
+                assertThat(enviar(HttpMethod.GET, rota + "2100-01-01", tokenAdmin, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+
+        private void matricular() {
+                assertThat(enviar(HttpMethod.POST, rotaMatricula(), tokenAluno, null, MatriculaResponse.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.OK);
+        }
+
+        private String rotaMatricula() {
+                return "/api/aluno/cursos/" + idCurso + "/matriculas";
+        }
+
+        private String rotaProgresso() {
+                return "/api/aluno/aulas/" + idAula + "/progresso";
+        }
+
+        private <T> List<T> simultaneas(Supplier<T> chamada) throws Exception {
+                CountDownLatch inicio = new CountDownLatch(1);
+                try (var executor = Executors.newFixedThreadPool(2)) {
+                        Callable<T> tarefa = () -> {
+                                if (!inicio.await(5, TimeUnit.SECONDS)) {
+                                        throw new IllegalStateException("Inicio nao liberado");
+                                }
+                                return chamada.get();
+                        };
+                        Future<T> primeira = executor.submit(tarefa);
+                        Future<T> segunda = executor.submit(tarefa);
+                        inicio.countDown();
+                        return List.of(primeira.get(20, TimeUnit.SECONDS), segunda.get(20, TimeUnit.SECONDS));
+                }
+        }
+
+        private <T> ResponseEntity<T> enviar(HttpMethod metodo, String rota, String token, Object corpo,
+                        Class<T> tipo) {
+                var requisicao = cliente.method(metodo).uri(rota);
+                if (token != null) {
+                        requisicao.headers(headers -> headers.setBearerAuth(token));
+                }
+                if (corpo != null) {
+                        requisicao.contentType(MediaType.APPLICATION_JSON).body(corpo);
+                }
+                return requisicao.retrieve().toEntity(tipo);
+        }
+
+        private Usuario criarUsuario(Perfil perfil) {
+                long numero = SEQUENCIA.incrementAndGet();
+                Usuario usuario = new Usuario();
+                usuario.setNomeCompleto("Teste HTTP " + numero);
+                usuario.setEmail(numero + "@aulas.example.com");
+                usuario.setSenha("hash-de-teste");
+                usuario.setMatricula("http-" + numero);
+                usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
+                usuario.setDeclarouMaiorIdade(true);
+                usuario.setAceitouTermosLgpd(true);
+                usuario.setDataHoraAceite(LocalDateTime.now());
+                usuario.setVersaoTermos(politicas.listarAtivas().getFirst().versao());
+                usuario.setPerfil(perfil);
+                usuario.setEmailConfirmado(true);
+                usuarios.saveAndFlush(usuario);
+                if (perfil != Perfil.ALUNO)
+                        responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
+                return usuario;
+        }
 }

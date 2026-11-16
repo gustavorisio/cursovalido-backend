@@ -33,4 +33,3 @@ class IdentidadeExcluidaServiceTest {
         assertEquals(List.of(1L), service.anteriores(" aluno@teste.com "));
     }
 }
-

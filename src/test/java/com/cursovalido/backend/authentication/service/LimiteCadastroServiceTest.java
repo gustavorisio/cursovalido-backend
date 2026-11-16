@@ -21,8 +21,10 @@ import org.springframework.web.server.ResponseStatusException;
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class LimiteCadastroServiceTest {
-    @Autowired LimiteCadastroService limite;
-    @Autowired TransactionTemplate transacoes;
+    @Autowired
+    LimiteCadastroService limite;
+    @Autowired
+    TransactionTemplate transacoes;
 
     @DynamicPropertySource
     static void banco(DynamicPropertyRegistry registry) {

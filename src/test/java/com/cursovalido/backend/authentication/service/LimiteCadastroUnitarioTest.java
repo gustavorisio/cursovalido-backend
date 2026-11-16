@@ -39,4 +39,3 @@ class LimiteCadastroUnitarioTest {
         verifyNoInteractions(jdbc);
     }
 }
-

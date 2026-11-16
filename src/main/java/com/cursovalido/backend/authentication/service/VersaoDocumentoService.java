@@ -11,7 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class VersaoDocumentoService {
     private final VersaoDocumentoRepository repositorio;
 
-    // O bloqueio permanece ate o commit da publicacao, inclusive em varias instancias.
+    // O bloqueio permanece ate o commit da publicacao, inclusive em varias
+    // instancias.
     @Transactional(propagation = Propagation.MANDATORY)
     public String proxima(String tipo) {
         return repositorio.bloquear(tipo)

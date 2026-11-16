@@ -52,4 +52,3 @@ class PoliticaServiceTest {
         verify(privilegios).verificarPrincipal(1L);
     }
 }
-

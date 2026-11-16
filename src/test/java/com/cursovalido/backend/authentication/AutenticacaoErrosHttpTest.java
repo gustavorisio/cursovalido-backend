@@ -32,7 +32,8 @@ class AutenticacaoErrosHttpTest {
                                                         ? "Nao foi possivel concluir a operacao. Tente novamente mais tarde."
                                                         : "Motivo da recusa"))
                                         .andExpect(jsonPath("$.codigo").value(status.is5xxServerError()
-                                                        ? "ERRO_INTERNO" : "OPERACAO_RECUSADA"));
+                                                        ? "ERRO_INTERNO"
+                                                        : "OPERACAO_RECUSADA"));
                 }
         }
 

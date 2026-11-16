@@ -53,5 +53,3 @@ class UsuarioDetalhesServiceTest {
         return usuario;
     }
 }
-
-

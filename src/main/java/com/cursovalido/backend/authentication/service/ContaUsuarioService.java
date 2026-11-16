@@ -95,17 +95,20 @@ public class ContaUsuarioService {
     public void excluirPelaAdministracao(Long idUsuario, Long idAdministrador) {
         privilegios.verificarPrincipal(idAdministrador);
         if (idUsuario.equals(idAdministrador)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nao e permitido excluir a propria conta pelo painel");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Nao e permitido excluir a propria conta pelo painel");
         }
         Usuario usuario = repositorio.buscarParaAtualizar(idUsuario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
         if (privilegios.ehPrincipal(usuario)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Nao e permitido excluir o administrador principal");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Nao e permitido excluir o administrador principal");
         }
         if (usuario.getPerfil() != Perfil.PROFESSOR && usuario.getPerfil() != Perfil.ADMINISTRADOR) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A exclusao administrativa e restrita a equipe");
         }
-        if (usuario.getExcluidoEm() != null) return;
+        if (usuario.getExcluidoEm() != null)
+            return;
         encerrarConta(usuario);
         auditoria.registrar(idAdministrador, "EXCLUSAO_ADMINISTRATIVA_CONTA",
                 "Usuario " + idUsuario + "; perfil " + usuario.getPerfil(), null);
@@ -137,8 +140,9 @@ public class ContaUsuarioService {
         usuario.setDataNascimento(null);
         usuario.setMatricula("excluido-" + idUsuario);
         repositorio.saveAndFlush(usuario);
-        usuariosForumRepositorio.findById(idUsuario).ifPresent(forum ->
-                usuariosForumRepositorio.sincronizar(idUsuario, usuario.getNomeCompleto(), usuario.getEmail(),
+        usuariosForumRepositorio.findById(idUsuario)
+                .ifPresent(forum -> usuariosForumRepositorio.sincronizar(idUsuario, usuario.getNomeCompleto(),
+                        usuario.getEmail(),
                         usuario.getPerfil().name(), false));
     }
 }

@@ -30,4 +30,3 @@ class ProtecaoForcaBrutaServiceTest {
         assertDoesNotThrow(() -> service.verificar(email));
     }
 }
-

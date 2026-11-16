@@ -9,7 +9,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface QuestionarioCaminhosRepository extends JpaRepository<QuestionarioCaminhos, Long> {
     List<QuestionarioCaminhos> findByAtivoTrueOrderByIdDesc();
+
     List<QuestionarioCaminhos> findByAtivoTrueAndPublicadoTrueOrderByIdDesc();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select q from QuestionarioCaminhos q where q.id = :id")
     Optional<QuestionarioCaminhos> buscarParaAlterar(@Param("id") Long id);

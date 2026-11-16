@@ -26,7 +26,8 @@ public class TemaService {
     }
 
     public Tema buscar(Long id) {
-        return temas.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tema nao encontrado"));
+        return temas.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tema nao encontrado"));
     }
 
     @Transactional
@@ -53,9 +54,12 @@ public class TemaService {
     }
 
     private void verificarGestor(Long id) {
-        var usuario = usuarios.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario nao encontrado"));
-        if (!usuario.isAtivo() || (usuario.getPerfil() != Perfil.PROFESSOR && usuario.getPerfil() != Perfil.ADMINISTRADOR)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso exclusivo de professor ou administrador ativo");
+        var usuario = usuarios.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario nao encontrado"));
+        if (!usuario.isAtivo()
+                || (usuario.getPerfil() != Perfil.PROFESSOR && usuario.getPerfil() != Perfil.ADMINISTRADOR)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Acesso exclusivo de professor ou administrador ativo");
         }
     }
 }

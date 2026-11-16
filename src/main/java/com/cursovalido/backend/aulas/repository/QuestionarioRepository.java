@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface QuestionarioRepository extends JpaRepository<Questionario, Long> {
     Optional<Questionario> findByIdCursoAndIdModulo(Long idCurso, Long idModulo);
+
     List<Questionario> findByIdCursoAndPublicadoTrueOrderByIdAsc(Long idCurso);
 }

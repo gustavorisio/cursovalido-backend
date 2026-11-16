@@ -24,13 +24,15 @@ public class RoadmapService {
     private final LogAuditoriaService auditoria;
 
     public PaginaCaminhosResponse consultar() {
-        return new PaginaCaminhosResponse(questionarios.findByAtivoTrueAndPublicadoTrueOrderByIdDesc().stream().map(this::resumo).toList(),
+        return new PaginaCaminhosResponse(
+                questionarios.findByAtivoTrueAndPublicadoTrueOrderByIdDesc().stream().map(this::resumo).toList(),
                 secoes.findByPublicadoTrueOrderByOrdemAscIdAsc().stream().map(SecaoCaminhosResponse::de).toList());
     }
 
     public PaginaCaminhosResponse consultarAdministracao(Long idUsuario) {
         var secoesAdministracao = listarSecoesAdministracao(idUsuario);
-        return new PaginaCaminhosResponse(questionarios.findByAtivoTrueOrderByIdDesc().stream().map(this::resumo).toList(),
+        return new PaginaCaminhosResponse(
+                questionarios.findByAtivoTrueOrderByIdDesc().stream().map(this::resumo).toList(),
                 secoesAdministracao.stream().map(SecaoCaminhosResponse::de).toList());
     }
 
@@ -41,9 +43,11 @@ public class RoadmapService {
 
     @Transactional(readOnly = true)
     public CaminhosResponse consultarQuestionario(Long id, Long idAdministrador) {
-        if (idAdministrador != null) verificarPerfil(idAdministrador, Perfil.ADMINISTRADOR);
+        if (idAdministrador != null)
+            verificarPerfil(idAdministrador, Perfil.ADMINISTRADOR);
         var questionario = buscar(id);
-        if (idAdministrador == null && !questionario.isPublicado()) throw erro(HttpStatus.NOT_FOUND, "Questionario nao publicado");
+        if (idAdministrador == null && !questionario.isPublicado())
+            throw erro(HttpStatus.NOT_FOUND, "Questionario nao publicado");
         return converter(questionario, idAdministrador != null);
     }
 
@@ -52,8 +56,10 @@ public class RoadmapService {
         verificarPerfil(idAdministrador, Perfil.ADMINISTRADOR);
         ValidacaoCaminhos.validar(dados);
         var questionario = id == null ? new QuestionarioCaminhos() : buscarParaAlterar(id);
-        if (id != null && dados.versao() != questionario.getVersao()) throw erro(HttpStatus.CONFLICT, "O questionario foi alterado. Recarregue antes de salvar");
-        if (id != null) questionario.setVersao(questionario.getVersao() + 1);
+        if (id != null && dados.versao() != questionario.getVersao())
+            throw erro(HttpStatus.CONFLICT, "O questionario foi alterado. Recarregue antes de salvar");
+        if (id != null)
+            questionario.setVersao(questionario.getVersao() + 1);
         questionario.setTitulo(dados.titulo().trim());
         questionario.setDescricao(dados.descricao().trim());
         questionario.setPublicado(dados.publicado());
@@ -81,7 +87,8 @@ public class RoadmapService {
             resultado.setChave(dadosResultado.chave());
             resultado.setTitulo(dadosResultado.titulo().trim());
             resultado.setOrientacao(dadosResultado.orientacao().trim());
-            resultado.setTemasPesquisa(new ArrayList<>(dadosResultado.temasPesquisa().stream().map(String::trim).toList()));
+            resultado.setTemasPesquisa(
+                    new ArrayList<>(dadosResultado.temasPesquisa().stream().map(String::trim).toList()));
             resultado.setOrdem(questionario.getResultados().size());
             questionario.getResultados().add(resultado);
         }
@@ -102,7 +109,8 @@ public class RoadmapService {
     @Transactional
     public SecaoCaminhos salvarSecao(Long id, SecaoCaminhosRequest dados, Long idAdministrador) {
         verificarPerfil(idAdministrador, Perfil.ADMINISTRADOR);
-        var secao = id == null ? new SecaoCaminhos() : secoes.findById(id).orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Secao nao encontrada"));
+        var secao = id == null ? new SecaoCaminhos()
+                : secoes.findById(id).orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Secao nao encontrada"));
         secao.setTitulo(dados.titulo().trim());
         secao.setConteudo(dados.conteudo().trim());
         secao.setOrdem(dados.ordem());
@@ -122,10 +130,13 @@ public class RoadmapService {
 
     @Transactional
     public ResultadoCaminhosResponse calcular(Long id, RespostasCaminhosRequest dados, Long idAluno) {
-        if (idAluno != null) verificarPerfil(idAluno, Perfil.ALUNO);
+        if (idAluno != null)
+            verificarPerfil(idAluno, Perfil.ALUNO);
         var questionario = buscarParaAlterar(id);
-        if (!questionario.isPublicado()) throw erro(HttpStatus.NOT_FOUND, "Questionario nao publicado");
-        if (dados.versao() != questionario.getVersao()) throw erro(HttpStatus.CONFLICT, "O questionario foi atualizado. Recarregue para recomecar");
+        if (!questionario.isPublicado())
+            throw erro(HttpStatus.NOT_FOUND, "Questionario nao publicado");
+        if (dados.versao() != questionario.getVersao())
+            throw erro(HttpStatus.CONFLICT, "O questionario foi atualizado. Recarregue para recomecar");
         var resultado = avaliar(questionario, dados.respostas());
         LocalDateTime atualizadoEm = null;
         if (idAluno != null) {
@@ -145,41 +156,49 @@ public class RoadmapService {
             respostas.save(resposta);
             atualizadoEm = resposta.getAtualizadoEm();
         }
-        return new ResultadoCaminhosResponse(questionario.getVersao(), dados.respostas(), converterResultado(resultado), atualizadoEm);
+        return new ResultadoCaminhosResponse(questionario.getVersao(), dados.respostas(), converterResultado(resultado),
+                atualizadoEm);
     }
 
     @Transactional(readOnly = true)
     public ResultadoCaminhosResponse consultarResultado(Long id, Long idAluno) {
         verificarPerfil(idAluno, Perfil.ALUNO);
         var questionario = buscar(id);
-        if (!questionario.isPublicado()) throw erro(HttpStatus.NOT_FOUND, "Questionario nao publicado");
+        if (!questionario.isPublicado())
+            throw erro(HttpStatus.NOT_FOUND, "Questionario nao publicado");
         var resposta = respostas.findByIdAlunoAndIdQuestionario(idAluno, id).orElse(null);
-        if (resposta == null || resposta.getVersao() != questionario.getVersao()) return null;
+        if (resposta == null || resposta.getVersao() != questionario.getVersao())
+            return null;
         var resultado = questionario.getResultados().stream()
                 .filter(item -> item.getChave().equals(resposta.getResultado())).findFirst().orElse(null);
         if (resultado == null) {
             return null;
         }
         return new ResultadoCaminhosResponse(resposta.getVersao(), resposta.getRespostas().stream()
-                .map(e -> new RespostasCaminhosRequest.Escolha(e.getPergunta(), e.getOpcao())).toList(), converterResultado(resultado), resposta.getAtualizadoEm());
+                .map(e -> new RespostasCaminhosRequest.Escolha(e.getPergunta(), e.getOpcao())).toList(),
+                converterResultado(resultado), resposta.getAtualizadoEm());
     }
 
-    private ResultadoCaminhos avaliar(QuestionarioCaminhos questionario, List<RespostasCaminhosRequest.Escolha> escolhas) {
+    private ResultadoCaminhos avaliar(QuestionarioCaminhos questionario,
+            List<RespostasCaminhosRequest.Escolha> escolhas) {
         Map<String, PerguntaCaminhos> perguntas = new HashMap<>();
         questionario.getPerguntas().forEach(p -> perguntas.put(p.getChave(), p));
         String atual = questionario.getPerguntaInicial();
         for (int i = 0; i < escolhas.size(); i++) {
             var escolha = escolhas.get(i);
             var pergunta = perguntas.get(atual);
-            if (pergunta == null || !atual.equals(escolha.pergunta()) || escolha.opcao() >= pergunta.getOpcoes().size()) {
+            if (pergunta == null || !atual.equals(escolha.pergunta())
+                    || escolha.opcao() >= pergunta.getOpcoes().size()) {
                 throw erro(HttpStatus.BAD_REQUEST, "As respostas nao seguem o caminho do questionario");
             }
             var opcao = pergunta.getOpcoes().get(escolha.opcao());
             if (opcao.getResultado() != null) {
-                if (i != escolhas.size() - 1) throw erro(HttpStatus.BAD_REQUEST, "Existem respostas depois do resultado final");
+                if (i != escolhas.size() - 1)
+                    throw erro(HttpStatus.BAD_REQUEST, "Existem respostas depois do resultado final");
                 return questionario.getResultados().stream()
                         .filter(item -> item.getChave().equals(opcao.getResultado())).findFirst()
-                        .orElseThrow(() -> new IllegalStateException("Resultado configurado nao encontrado no questionario"));
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Resultado configurado nao encontrado no questionario"));
             }
             atual = opcao.getProximaPergunta();
         }
@@ -187,31 +206,39 @@ public class RoadmapService {
     }
 
     private QuestionarioCaminhos buscar(Long id) {
-        return questionarios.findById(id).filter(QuestionarioCaminhos::isAtivo).orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Questionario nao encontrado"));
+        return questionarios.findById(id).filter(QuestionarioCaminhos::isAtivo)
+                .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Questionario nao encontrado"));
     }
 
     private QuestionarioCaminhos buscarParaAlterar(Long id) {
-        return questionarios.buscarParaAlterar(id).filter(QuestionarioCaminhos::isAtivo).orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Questionario nao encontrado"));
+        return questionarios.buscarParaAlterar(id).filter(QuestionarioCaminhos::isAtivo)
+                .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Questionario nao encontrado"));
     }
 
     private PaginaCaminhosResponse.Resumo resumo(QuestionarioCaminhos q) {
-        return new PaginaCaminhosResponse.Resumo(q.getId(), q.getTitulo(), q.getDescricao(), q.isPublicado(), q.getVersao());
+        return new PaginaCaminhosResponse.Resumo(q.getId(), q.getTitulo(), q.getDescricao(), q.isPublicado(),
+                q.getVersao());
     }
 
     private CaminhosResponse converter(QuestionarioCaminhos q, boolean gestao) {
-        return new CaminhosResponse(q.getId(), q.getTitulo(), q.getDescricao(), q.isPublicado(), q.getVersao(), q.getPerguntaInicial(),
-                q.getPerguntas().stream().map(p -> new CaminhosRequest.Pergunta(p.getChave(), p.getEnunciado(), p.getOpcoes().stream()
-                        .map(o -> new CaminhosRequest.Opcao(o.getTexto(), o.getProximaPergunta(), o.getResultado())).toList())).toList(),
+        return new CaminhosResponse(q.getId(), q.getTitulo(), q.getDescricao(), q.isPublicado(), q.getVersao(),
+                q.getPerguntaInicial(),
+                q.getPerguntas().stream().map(p -> new CaminhosRequest.Pergunta(p.getChave(), p.getEnunciado(), p
+                        .getOpcoes().stream()
+                        .map(o -> new CaminhosRequest.Opcao(o.getTexto(), o.getProximaPergunta(), o.getResultado()))
+                        .toList())).toList(),
                 gestao ? q.getResultados().stream().map(this::converterResultado).toList() : List.of());
     }
 
     private CaminhosRequest.Resultado converterResultado(ResultadoCaminhos r) {
-        return new CaminhosRequest.Resultado(r.getChave(), r.getTitulo(), r.getOrientacao(), List.copyOf(r.getTemasPesquisa()));
+        return new CaminhosRequest.Resultado(r.getChave(), r.getTitulo(), r.getOrientacao(),
+                List.copyOf(r.getTemasPesquisa()));
     }
 
     private void verificarPerfil(Long id, Perfil perfil) {
         var usuario = usuarios.findById(id).orElseThrow(() -> erro(HttpStatus.FORBIDDEN, "Usuario nao encontrado"));
-        if (!usuario.isAtivo() || usuario.getPerfil() != perfil || (perfil == Perfil.ALUNO && (!usuario.isEmailConfirmado() || !Boolean.TRUE.equals(usuario.getAceitouTermosLgpd())))) {
+        if (!usuario.isAtivo() || usuario.getPerfil() != perfil || (perfil == Perfil.ALUNO
+                && (!usuario.isEmailConfirmado() || !Boolean.TRUE.equals(usuario.getAceitouTermosLgpd())))) {
             throw erro(HttpStatus.FORBIDDEN, "Perfil sem permissao para esta operacao");
         }
     }

@@ -48,7 +48,8 @@ public class TokenJwtFilter extends OncePerRequestFilter {
         if ("POST".equals(request.getMethod())) {
             return switch (caminho) {
                 case "/api/suporte/solicitacoes", "/api/autenticacao/login",
-                        "/api/autenticacao/confirmar-2fa", "/api/autenticacao/reenviar-2fa" -> true;
+                        "/api/autenticacao/confirmar-2fa", "/api/autenticacao/reenviar-2fa" ->
+                    true;
                 default -> false;
             };
         }
@@ -74,12 +75,14 @@ public class TokenJwtFilter extends OncePerRequestFilter {
                     var detalhes = usuarios.loadUserByUsername(email);
                     if (detalhes instanceof UsuarioAutenticado usuario) {
                         if (!usuario.getId().equals(tokens.extrairIdUsuario(token))) {
-                            RespostaErroHttp.escrever(response, 401, "Seu acesso não é mais válido. Entre na sua conta novamente.", "SESSAO_INVALIDA");
+                            RespostaErroHttp.escrever(response, 401,
+                                    "Seu acesso não é mais válido. Entre na sua conta novamente.", "SESSAO_INVALIDA");
                             return;
                         }
                     }
                     if (!detalhes.isEnabled()) {
-                        RespostaErroHttp.escrever(response, 403, "Sua conta não tem acesso no momento. Entre em contato pelo Suporte.", "ACESSO_NEGADO");
+                        RespostaErroHttp.escrever(response, 403,
+                                "Sua conta não tem acesso no momento. Entre em contato pelo Suporte.", "ACESSO_NEGADO");
                         return;
                     }
                     boolean termos = tokens.apenasTermos(token);
