@@ -1,6 +1,7 @@
 package com.cursovalido.backend.notificacoes.service;
 
 import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.notificacoes.dto.*;
@@ -45,8 +46,18 @@ public class ComunicadoService {
     }
 
     @Transactional(readOnly = true)
-    public PaginaComunicadosResponse listar(Long usuario, Perfil perfil, int pagina, int tamanho) {
-        verificarPerfil(usuario, perfil);
+    public PaginaComunicadosResponse listarAdministracao(Long usuario, int pagina, int tamanho) {
+        verificarPerfil(usuario, Perfil.ADMINISTRADOR);
+        return listar(usuario, pagina, tamanho, false);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginaComunicadosResponse listarNotificacoes(Long usuario, int pagina, int tamanho) {
+        verificarContaAtiva(usuario);
+        return listar(usuario, pagina, tamanho, true);
+    }
+
+    private PaginaComunicadosResponse listar(Long usuario, int pagina, int tamanho, boolean incluirNaoLidas) {
         if (pagina < 0 || tamanho < 1 || tamanho > 50) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Página deve ser maior ou igual a zero e tamanho deve estar entre 1 e 50.");
@@ -54,28 +65,35 @@ public class ComunicadoService {
         long total = repositorio.contar();
         return new PaginaComunicadosResponse(repositorio.listar(usuario, pagina, tamanho), pagina,
                 (int) Math.ceil((double) total / tamanho), total,
-                perfil == Perfil.ALUNO ? repositorio.contarNaoLidas(usuario) : 0);
+                incluirNaoLidas ? repositorio.contarNaoLidas(usuario) : 0);
     }
 
     @Transactional(readOnly = true)
-    public long contarNaoLidas(Long aluno) {
-        verificarPerfil(aluno, Perfil.ALUNO);
-        return repositorio.contarNaoLidas(aluno);
+    public long contarNaoLidas(Long usuario) {
+        verificarContaAtiva(usuario);
+        return repositorio.contarNaoLidas(usuario);
     }
 
     @Transactional
-    public void marcarLida(Long aluno, Long id) {
-        verificarPerfil(aluno, Perfil.ALUNO);
+    public void marcarLida(Long usuario, Long id) {
+        verificarContaAtiva(usuario);
         if (!repositorio.existe(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comunicado não encontrado.");
         }
-        repositorio.marcarLida(id, aluno);
+        repositorio.marcarLida(id, usuario);
     }
 
     private void verificarPerfil(Long id, Perfil perfil) {
-        var usuario = id == null ? null : usuarios.findById(id).orElse(null);
-        if (usuario == null || !usuario.isAtivo() || usuario.getPerfil() != perfil) {
+        if (verificarContaAtiva(id).getPerfil() != perfil) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso não permitido para esta conta.");
         }
+    }
+
+    private Usuario verificarContaAtiva(Long id) {
+        var usuario = id == null ? null : usuarios.findById(id).orElse(null);
+        if (usuario == null || !usuario.isAtivo()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso não permitido para esta conta.");
+        }
+        return usuario;
     }
 }
