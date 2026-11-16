@@ -1,58 +1,56 @@
 package com.cursovalido.backend.dashboard;
 
+import com.cursovalido.backend.dashboard.dto.DashboardResponse.AtividadeDia;
 import com.cursovalido.backend.dashboard.repository.DashboardRepository;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DashboardRepositoryTest {
     private JdbcTemplate jdbc;
     private DashboardRepository repository;
-    private LocalDate hoje;
 
     @BeforeEach
     void preparar() {
         jdbc = new JdbcTemplate(new DriverManagerDataSource("jdbc:h2:mem:dashboard;DB_CLOSE_DELAY=-1", "sa", ""));
         jdbc.execute("DROP ALL OBJECTS");
-        jdbc.execute("CREATE TABLE tb_usuarios (ativo BOOLEAN, perfil VARCHAR, data_nascimento DATE)");
-        jdbc.execute("CREATE TABLE tb_cursos (id BIGINT, ativo BOOLEAN)");
+        jdbc.execute("CREATE TABLE tb_usuarios (ativo BOOLEAN, perfil VARCHAR)");
+        jdbc.execute("CREATE TABLE tb_cursos (id BIGINT, ativo BOOLEAN, criado_em TIMESTAMP)");
         jdbc.execute("CREATE TABLE tb_modulos (id BIGINT, curso_id BIGINT, ativo BOOLEAN)");
-        jdbc.execute("CREATE TABLE tb_aulas (modulo_id BIGINT, ativo BOOLEAN)");
-        jdbc.execute("CREATE TABLE tb_matriculas (curso_id BIGINT)");
-        jdbc.execute("CREATE TABLE tb_topics (active BOOLEAN)");
-        jdbc.execute("CREATE TABLE tb_noticias (ativo BOOLEAN)");
+        jdbc.execute("CREATE TABLE tb_aulas (modulo_id BIGINT, ativo BOOLEAN, criado_em TIMESTAMP)");
+        jdbc.execute("CREATE TABLE tb_matriculas (curso_id BIGINT, matriculado_em TIMESTAMP)");
+        jdbc.execute("CREATE TABLE tb_topics (active BOOLEAN, created_at TIMESTAMP)");
+        jdbc.execute("CREATE TABLE tb_noticias (ativo BOOLEAN, criado_em TIMESTAMP)");
         repository = new DashboardRepository(jdbc);
-        hoje = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
-    }
-
-    private void usuario(boolean ativo, String perfil, LocalDate nascimento) {
-        jdbc.update("INSERT INTO tb_usuarios VALUES (?, ?, ?)", ativo, perfil, nascimento);
     }
 
     @Test
-    void mediaConsideraAniversarioEExcluiEquipeInativosEDatasAusentesOuFuturas() {
-        usuario(true, "ALUNO", hoje.minusYears(20));
-        usuario(true, "ALUNO", hoje.minusYears(31).plusDays(1));
-        usuario(true, "ALUNO", null);
-        usuario(true, "ALUNO", hoje.plusDays(1));
-        usuario(false, "ALUNO", hoje.minusYears(60));
-        usuario(true, "PROFESSOR", hoje.minusYears(50));
-        usuario(true, "ADMINISTRADOR", hoje.minusYears(40));
+    void resumoContaUsuariosAtivosPorPerfil() {
+        jdbc.execute("INSERT INTO tb_usuarios VALUES (TRUE, 'ALUNO'), (FALSE, 'ALUNO'), (TRUE, 'PROFESSOR')");
         var resumo = repository.resumo();
-        assertEquals(25.0, resumo.mediaIdadeAlunos());
-        assertEquals(2, resumo.alunosComNascimentoInformado());
-        assertEquals(4, resumo.alunosAtivos());
+        assertEquals(1, resumo.alunosAtivos());
+        assertEquals(1, resumo.professoresAtivos());
     }
 
     @Test
-    void semDatasValidasRetornaMediaAusente() {
-        usuario(true, "ALUNO", null);
-        var resumo = repository.resumo();
-        assertNull(resumo.mediaIdadeAlunos());
-        assertEquals(0, resumo.alunosComNascimentoInformado());
+    void atividadeContaRegistrosEntreOInicioDoDiaEAMeiaNoiteSeguinte() {
+        LocalDate data = LocalDate.of(2026, 5, 10);
+        jdbc.execute("""
+                INSERT INTO tb_matriculas VALUES (1, '2026-05-09 23:59:59'), (1, '2026-05-10 00:00:00'),
+                  (1, '2026-05-10 23:59:59'), (1, '2026-05-11 00:00:00')
+                """);
+        jdbc.execute("INSERT INTO tb_cursos VALUES (1, FALSE, '2026-05-10 12:00:00')");
+        jdbc.execute("INSERT INTO tb_aulas VALUES (1, TRUE, '2026-05-10 12:00:00')");
+        jdbc.execute("INSERT INTO tb_topics VALUES (TRUE, '2026-05-10 12:00:00')");
+        jdbc.execute("INSERT INTO tb_noticias VALUES (TRUE, '2026-05-10 12:00:00')");
+        assertEquals(new AtividadeDia(data, 2, 1, 1, 1, 1),
+                repository.atividadeDia(data, data.atStartOfDay(), data.plusDays(1).atStartOfDay()));
+        LocalDate diaSemAtividade = data.plusDays(2);
+        assertEquals(new AtividadeDia(diaSemAtividade, 0, 0, 0, 0, 0),
+                repository.atividadeDia(diaSemAtividade, diaSemAtividade.atStartOfDay(),
+                        diaSemAtividade.plusDays(1).atStartOfDay()));
     }
 }
