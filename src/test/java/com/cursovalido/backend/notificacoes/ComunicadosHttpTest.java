@@ -99,19 +99,21 @@ class ComunicadosHttpTest {
             assertThat(enviar(HttpMethod.GET, "/api/administracao/comunicados", token, null, String.class)
                     .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         }
-        for (String token : new String[] { admin, professor }) {
-            for (String rota : new String[] { "/api/aluno/notificacoes", "/api/aluno/notificacoes/nao-lidas" }) {
-                assertThat(enviar(HttpMethod.GET, rota, token, null, String.class).getStatusCode())
-                        .isEqualTo(HttpStatus.FORBIDDEN);
-            }
-            assertThat(enviar(HttpMethod.PUT, "/api/aluno/notificacoes/1/lida", token, null, String.class)
-                    .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        var comunicado = publicar("Aviso");
+        for (String token : new String[] { aluno, professor, admin }) {
+            var lista = enviar(HttpMethod.GET, "/api/notificacoes", token, null, PaginaComunicadosResponse.class);
+            assertThat(lista.getStatusCode()).isEqualTo(HttpStatus.OK);
+            assertThat(lista.getBody().naoLidas()).isEqualTo(1);
+            assertThat(enviar(HttpMethod.PUT, "/api/notificacoes/" + comunicado.id() + "/lida", token, null,
+                    String.class).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+            assertThat(enviar(HttpMethod.GET, "/api/notificacoes/nao-lidas", token, null, Map.class)
+                    .getBody().get("quantidade")).isEqualTo(0);
         }
         assertThat(enviar(HttpMethod.POST, "/api/administracao/comunicados", null, dados, String.class)
                 .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(enviar(HttpMethod.GET, "/api/aluno/notificacoes", null, null, String.class)
+        assertThat(enviar(HttpMethod.GET, "/api/notificacoes", null, null, String.class)
                 .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        assertThat(enviar(HttpMethod.PUT, "/api/aluno/notificacoes/1/lida", null, null, String.class)
+        assertThat(enviar(HttpMethod.PUT, "/api/notificacoes/" + comunicado.id() + "/lida", null, null, String.class)
                 .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
