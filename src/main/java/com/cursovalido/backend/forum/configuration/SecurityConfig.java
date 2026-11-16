@@ -86,6 +86,7 @@ public class SecurityConfig {
                                                 // Administracao; os servicos exigem o principal nas operacoes
                                                 // exclusivas.
                                                 .requestMatchers(HttpMethod.GET, "/api/administracao/dashboard/resumo",
+                                                                "/api/administracao/dashboard/atividade-diaria",
                                                                 "/api/administracao/dashboard/matriculas-por-mes",
                                                                 "/api/administracao/dashboard/cursos-mais-procurados",
                                                                 "/api/administracao/dashboard/usuarios-por-perfil")

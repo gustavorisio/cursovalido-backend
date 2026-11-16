@@ -3,8 +3,10 @@ package com.cursovalido.backend.dashboard.controller;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.*;
 import com.cursovalido.backend.dashboard.service.DashboardService;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +19,12 @@ public class DashboardController {
     @GetMapping("/resumo")
     public Resumo resumo(@AuthenticationPrincipal UsuarioAutenticado usuario) {
         return servico.resumo(usuario.getId());
+    }
+
+    @GetMapping("/atividade-diaria")
+    public AtividadeDia atividadeDia(@AuthenticationPrincipal UsuarioAutenticado usuario,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
+        return servico.atividadeDia(usuario.getId(), data);
     }
 
     @GetMapping("/matriculas-por-mes")
