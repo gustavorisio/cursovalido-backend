@@ -118,11 +118,11 @@ class TopicoServiceTest {
         topico.setQuantidadeRespostas(12);
         when(usuarios.buscarAtivo(7L)).thenReturn(usuario);
         when(repositorio.save(topico)).thenReturn(topico);
-        var antes = java.time.LocalDateTime.now();
+        var antes = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC);
         Topico resultado = servico.criar(topico, 7L);
         assertThat(resultado.getIdAutor()).isEqualTo(7L);
         assertThat(resultado.getUsuarioAutor()).isSameAs(usuario);
-        assertThat(resultado.getCriadoEm()).isBetween(antes, java.time.LocalDateTime.now());
+        assertThat(resultado.getCriadoEm()).isBetween(antes, java.time.LocalDateTime.now(java.time.ZoneOffset.UTC));
         assertThat(resultado.isAtivo()).isTrue();
         assertThat(resultado.isFechado()).isFalse();
         assertThat(resultado.getQuantidadeRespostas()).isZero();
