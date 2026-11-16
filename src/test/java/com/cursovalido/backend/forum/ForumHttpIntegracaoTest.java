@@ -941,7 +941,7 @@ class ForumHttpIntegracaoTest {
         assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", token), String.class)
                 .getStatusCode())
                 .isEqualTo(HttpStatus.NO_CONTENT);
-        var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA,
+        var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA, SENHA,
                 LocalDate.of(1990, 1, 1),
                 true, true, "teste-v1", true, "1.0");
         assertThat(enviar(HttpMethod.POST, "/api/convites/completar-cadastro", null,
@@ -968,7 +968,7 @@ class ForumHttpIntegracaoTest {
     void cadastroPermiteDuasContasPorIpELoginNaoDuplicaCodigoPendente() {
         for (int i = 1; i <= 3; i++) {
             String email = "cadastro-" + i + "@example.com";
-            var cadastro = new CadastroUsuarioRequest("  João 12! da Silva ", email, SENHA,
+            var cadastro = new CadastroUsuarioRequest("  João 12! da Silva ", email, SENHA, SENHA,
                     LocalDate.of(2000, 1, 1), true, true, "teste-v1");
             var resposta = enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, cadastro, String.class);
             assertThat(resposta.getStatusCode()).isEqualTo(i <= 2 ? HttpStatus.CREATED : HttpStatus.TOO_MANY_REQUESTS);
@@ -994,7 +994,7 @@ class ForumHttpIntegracaoTest {
         long numero = SEQUENCIA.incrementAndGet();
         String email = emailPrincipal == null ? "forum-" + numero + "@example.com" : emailPrincipal;
         String nome = "Participante " + Character.toString((int) ('A' + numero % 26));
-        var requisicao = new CadastroUsuarioRequest(nome, email, SENHA,
+        var requisicao = new CadastroUsuarioRequest(nome, email, SENHA, SENHA,
                 LocalDate.of(2000, 1, 1), true, true, "teste-v1");
         cadastroUsuarios.cadastrar(requisicao, "2001:db8::" + Long.toHexString(numero));
         // Bootstrap do administrador: o cadastro publico cria somente ALUNO.
