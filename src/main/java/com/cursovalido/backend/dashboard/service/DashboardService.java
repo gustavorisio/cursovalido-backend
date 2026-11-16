@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DashboardService {
+    private static final ZoneId FUSO_DASHBOARD = ZoneId.of("America/Sao_Paulo");
     private final UsuarioRepository usuarios;
     private final DashboardRepository dashboard;
 
@@ -27,11 +28,23 @@ public class DashboardService {
         return dashboard.resumo();
     }
 
+    public AtividadeDia atividadeDia(Long id, LocalDate data) {
+        verificarAdministrador(id);
+        if (data.isAfter(LocalDate.now(FUSO_DASHBOARD))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione uma data até hoje.");
+        }
+        // As datas de criação são armazenadas no horário local do servidor.
+        ZoneId fusoServidor = ZoneId.systemDefault();
+        var inicio = data.atStartOfDay(FUSO_DASHBOARD).withZoneSameInstant(fusoServidor).toLocalDateTime();
+        var fim = data.plusDays(1).atStartOfDay(FUSO_DASHBOARD).withZoneSameInstant(fusoServidor).toLocalDateTime();
+        return dashboard.atividadeDia(data, inicio, fim);
+    }
+
     public List<MatriculasMes> matriculasPorMes(Long id, int meses) {
         verificarAdministrador(id);
         if (meses < 1 || meses > 24)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Meses deve estar entre 1 e 24");
-        LocalDate atual = LocalDate.now(ZoneId.of("America/Sao_Paulo")).withDayOfMonth(1);
+        LocalDate atual = LocalDate.now(FUSO_DASHBOARD).withDayOfMonth(1);
         LocalDate inicio = atual.minusMonths(meses - 1L);
         var valores = dashboard.matriculasPorMes(inicio, atual.plusMonths(1)).stream()
                 .collect(Collectors.toMap(MatriculasMes::mes, MatriculasMes::matriculas));

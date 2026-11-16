@@ -3,8 +3,7 @@ package com.cursovalido.backend.dashboard.repository;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.*;
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.Period;
-import java.time.ZoneId;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,14 +15,6 @@ public class DashboardRepository {
     private final JdbcTemplate jdbc;
 
     public Resumo resumo() {
-        LocalDate hoje = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
-        var idades = jdbc.query("""
-                SELECT data_nascimento FROM tb_usuarios
-                WHERE ativo AND perfil='ALUNO' AND data_nascimento IS NOT NULL
-                  AND data_nascimento <= ?
-                """, (rs, row) -> Period.between(rs.getDate("data_nascimento").toLocalDate(), hoje).getYears(),
-                java.sql.Date.valueOf(hoje));
-        Double mediaIdade = idades.isEmpty() ? null : idades.stream().mapToInt(Integer::intValue).average().orElseThrow();
         return jdbc.queryForObject(
                 """
                         SELECT
@@ -38,7 +29,22 @@ public class DashboardRepository {
                         """,
                 (rs, row) -> new Resumo(rs.getLong("alunos"), rs.getLong("professores"),
                         rs.getLong("cursos"), rs.getLong("aulas"), rs.getLong("matriculas"),
-                        rs.getLong("topicos"), rs.getLong("noticias"), mediaIdade, idades.size()));
+                        rs.getLong("topicos"), rs.getLong("noticias")));
+    }
+
+    public AtividadeDia atividadeDia(LocalDate data, LocalDateTime inicio, LocalDateTime fim) {
+        var inicioSql = Timestamp.valueOf(inicio);
+        var fimSql = Timestamp.valueOf(fim);
+        return jdbc.queryForObject("""
+                SELECT
+                  (SELECT count(*) FROM tb_matriculas WHERE matriculado_em >= ? AND matriculado_em < ?) AS matriculas,
+                  (SELECT count(*) FROM tb_cursos WHERE criado_em >= ? AND criado_em < ?) AS cursos,
+                  (SELECT count(*) FROM tb_aulas WHERE criado_em >= ? AND criado_em < ?) AS aulas,
+                  (SELECT count(*) FROM tb_topics WHERE created_at >= ? AND created_at < ?) AS topicos,
+                  (SELECT count(*) FROM tb_noticias WHERE criado_em >= ? AND criado_em < ?) AS noticias
+                """, (rs, row) -> new AtividadeDia(data, rs.getLong("matriculas"), rs.getLong("cursos"),
+                        rs.getLong("aulas"), rs.getLong("topicos"), rs.getLong("noticias")),
+                inicioSql, fimSql, inicioSql, fimSql, inicioSql, fimSql, inicioSql, fimSql, inicioSql, fimSql);
     }
 
     public List<MatriculasMes> matriculasPorMes(LocalDate inicio, LocalDate fimExclusivo) {

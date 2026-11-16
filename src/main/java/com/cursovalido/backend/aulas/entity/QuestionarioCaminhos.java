@@ -15,7 +15,7 @@ public class QuestionarioCaminhos {
     private Long id;
     @Column(nullable = false, length = 255)
     private String titulo;
-    @Column(nullable = false, length = 2000)
+    @Column(nullable = false, length = 2500)
     private String descricao;
     @Column(name = "pergunta_inicial", length = 50)
     private String perguntaInicial;

@@ -1,6 +1,5 @@
 package com.cursovalido.backend.notificacoes.controller;
 
-import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.notificacoes.dto.*;
 import com.cursovalido.backend.notificacoes.service.ComunicadoService;
@@ -39,21 +38,21 @@ public class ComunicadoController {
     @GetMapping("/administracao/comunicados")
     public PaginaComunicadosResponse listarAdministracao(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        return servico.listar(usuario.getId(), Perfil.ADMINISTRADOR, page, size);
+        return servico.listarAdministracao(usuario.getId(), page, size);
     }
 
-    @GetMapping("/aluno/notificacoes")
-    public PaginaComunicadosResponse listarAluno(@AuthenticationPrincipal UsuarioAutenticado usuario,
+    @GetMapping({"/notificacoes", "/aluno/notificacoes"})
+    public PaginaComunicadosResponse listarNotificacoes(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        return servico.listar(usuario.getId(), Perfil.ALUNO, page, size);
+        return servico.listarNotificacoes(usuario.getId(), page, size);
     }
 
-    @GetMapping("/aluno/notificacoes/nao-lidas")
+    @GetMapping({"/notificacoes/nao-lidas", "/aluno/notificacoes/nao-lidas"})
     public Map<String, Long> contarNaoLidas(@AuthenticationPrincipal UsuarioAutenticado usuario) {
         return Map.of("quantidade", servico.contarNaoLidas(usuario.getId()));
     }
 
-    @PutMapping("/aluno/notificacoes/{id}/lida")
+    @PutMapping({"/notificacoes/{id}/lida", "/aluno/notificacoes/{id}/lida"})
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void marcarLida(@AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable Long id) {
         servico.marcarLida(usuario.getId(), id);

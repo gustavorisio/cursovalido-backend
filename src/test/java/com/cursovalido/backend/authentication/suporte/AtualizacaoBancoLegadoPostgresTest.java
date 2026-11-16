@@ -7,6 +7,7 @@ import com.cursovalido.backend.forum.configuration.FlywayConfig;
 import com.cursovalido.backend.forum.support.PostgresTeste;
 import java.util.HashMap;
 import java.util.function.Supplier;
+import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.exception.FlywayValidateException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,9 +45,7 @@ class AtualizacaoBancoLegadoPostgresTest {
                 """);
 
         var atual = new FlywayConfig().flyway(fonte, false, "1");
-        assertThat(atual.info().pending()).hasSize(3);
-        assertThat(atual.migrate().migrationsExecuted).isEqualTo(3);
-        assertThat(atual.info().current().getVersion().toString()).isEqualTo("5");
+        migrarAteUltimaVersao(atual, "3", "4", "5", "6");
         assertThat(atual.info().applied()[0].getChecksum()).isEqualTo(-1935617500);
         assertThat(atual.info().applied()[1].getChecksum()).isEqualTo(-175556913);
         assertThat(jdbc.queryForObject("SELECT email FROM tb_usuarios WHERE id = 101", String.class))
@@ -87,8 +86,7 @@ class AtualizacaoBancoLegadoPostgresTest {
         jdbc.update("INSERT INTO tb_cursos (id, titulo, descricao, criado_em) VALUES (101, 'Curso existente', 'Conteudo preservado', CURRENT_TIMESTAMP)");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'tb_cursos' AND column_name = 'capa_jpeg'", Integer.class)).isZero();
         var atual = new FlywayConfig().flyway(fonte, false, "1");
-        assertThat(atual.migrate().migrationsExecuted).isEqualTo(1);
-        assertThat(atual.info().current().getVersion().toString()).isEqualTo("5");
+        migrarAteUltimaVersao(atual, "5", "6");
         assertThat(jdbc.queryForObject("SELECT checksum FROM flyway_schema_history WHERE version = '4'", Integer.class)).isEqualTo(-766395840);
         assertThat(jdbc.queryForObject("SELECT descricao FROM tb_cursos WHERE id = 101", String.class)).isEqualTo("Conteudo preservado");
         assertThat(jdbc.queryForObject("SELECT capa_jpeg FROM tb_cursos WHERE id = 101", String.class)).isNull();
@@ -109,6 +107,14 @@ class AtualizacaoBancoLegadoPostgresTest {
                 .hasMessageContaining("checksum mismatch");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE version = '3'", Long.class))
                 .isZero();
+    }
+
+    private void migrarAteUltimaVersao(Flyway flyway, String... versoesEsperadas) {
+        var pendentes = flyway.info().pending();
+        assertThat(pendentes).extracting(item -> item.getVersion().getVersion()).startsWith(versoesEsperadas);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(pendentes.length);
+        assertThat(flyway.info().pending()).isEmpty();
+        assertThat(flyway.info().current().getVersion()).isEqualTo(pendentes[pendentes.length - 1].getVersion());
     }
 
     private DriverManagerDataSource fonte(String schema) {

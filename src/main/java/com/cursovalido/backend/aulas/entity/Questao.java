@@ -25,7 +25,7 @@ public class Questao {
     private String explicacao;
     @Column(name = "alternativa_correta", nullable = false)
     private int alternativaCorreta;
-    @Column(name = "aula_revisao_id", nullable = false)
+    @Column(name = "aula_revisao_id")
     private Long idAulaRevisao;
     @Column(nullable = false)
     private int ordem;
