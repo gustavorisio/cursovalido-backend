@@ -35,13 +35,16 @@ public final class AutenticacaoValidation {
         verificarSuspensao(usuario, moderacao);
     }
 
-    public static void validarConfirmacao(Usuario usuario, ModeracaoUsuarioService moderacao, PoliticaService politicas,
-            ResponsabilidadeService responsabilidade, PrivacidadeService privacidade, TokenJwtService tokens) {
+    public static void validarConfirmacao(Usuario usuario, ModeracaoUsuarioService moderacao) {
         verificarSuspensao(usuario, moderacao);
         if (!usuario.isAtivo())
             throw new CredenciaisInvalidasException();
         if (usuario.getStatusAprovacao() != StatusAprovacao.APROVADO)
             throw new CredenciaisInvalidasException();
+    }
+
+    public static void validarAceite(Usuario usuario, PoliticaService politicas, ResponsabilidadeService responsabilidade,
+            PrivacidadeService privacidade, TokenJwtService tokens) {
         if (!aceiteAtualizado(usuario, politicas, responsabilidade, privacidade))
             throw new TermosNaoAceitosException(tokens.gerarTermos(usuario));
     }

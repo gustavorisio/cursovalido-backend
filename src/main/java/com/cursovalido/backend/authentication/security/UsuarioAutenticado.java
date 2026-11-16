@@ -18,6 +18,12 @@ public class UsuarioAutenticado implements UserDetails {
     private final boolean emailConfirmado;
     private final boolean termosAceitos;
     private final boolean ativo;
+    private final String versaoTermos;
+
+    public UsuarioAutenticado(Long id, String email, String senha, Perfil perfil, boolean emailConfirmado,
+            boolean termosAceitos, boolean ativo) {
+        this(id, email, senha, perfil, emailConfirmado, termosAceitos, ativo, null);
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

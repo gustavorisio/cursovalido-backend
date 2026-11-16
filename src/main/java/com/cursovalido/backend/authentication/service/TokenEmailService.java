@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,9 +62,8 @@ public class TokenEmailService {
         return criar(usuario, ALTERACAO_SENHA, 0.5);
     }
 
-    public boolean temCodigo2faPendente(Usuario usuario) {
-        return repositorio.existsByUsuarioIdAndFinalidadeAndUtilizadoFalseAndExpiraEmAfter(
-                usuario.getId(), CODIGO_2FA, LocalDateTime.now());
+    public Optional<TokenEmail> ultimoCodigo2fa(Usuario usuario) {
+        return repositorio.findFirstByUsuarioIdAndFinalidadeOrderByCriadoEmDescIdDesc(usuario.getId(), CODIGO_2FA);
     }
 
     @Transactional

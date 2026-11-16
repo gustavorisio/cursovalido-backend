@@ -6,6 +6,7 @@ import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.aulas.service.YoutubeClient;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.AtividadeDia;
 import com.cursovalido.backend.forum.support.PostgresTeste;
@@ -47,6 +48,8 @@ class AulasHttpIntegracaoTest {
     private UsuarioRepository usuarios;
     @Autowired
     private TokenJwtService tokens;
+    @Autowired
+    private PoliticaService politicas;
     @Autowired
     private MatriculaRepository matriculas;
     @Autowired
@@ -528,7 +531,7 @@ class AulasHttpIntegracaoTest {
         usuario.setDeclarouMaiorIdade(true);
         usuario.setAceitouTermosLgpd(true);
         usuario.setDataHoraAceite(LocalDateTime.now());
-        usuario.setVersaoTermos("teste-v1");
+        usuario.setVersaoTermos(politicas.listarAtivas().getFirst().versao());
         usuario.setPerfil(perfil);
         usuario.setEmailConfirmado(true);
         usuarios.saveAndFlush(usuario);

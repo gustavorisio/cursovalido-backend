@@ -56,13 +56,13 @@ class VersionamentoDocumentosTest {
 
     @Test
     void incrementaHistoricoSemAlterarConteudoAnteriorESeparaTipos() {
-        assertEquals("1.0", termos.publicar(documento("Texto original"), 1L).versao());
-        assertEquals("2.0", termos.publicar(documento("Texto revisado"), 1L).versao());
+        assertEquals("v1.0", termos.publicar(documento("Texto original"), 1L).versao());
+        assertEquals("v1.2", termos.publicar(documento("Texto revisado"), 1L).versao());
         assertEquals("1.0", privacidade.publicar(documento("Privacidade"), 1L).versao());
-        var anterior = politicas.findByVersao("1.0").orElseThrow();
+        var anterior = politicas.findByVersao("v1.0").orElseThrow();
         assertEquals("Texto original", anterior.getConteudo());
         assertFalse(anterior.isAtiva());
-        assertEquals(List.of("2.0"), termos.listarAtivas().stream().map(PoliticaResponse::versao).toList());
+        assertEquals(List.of("v1.2"), termos.listarAtivas().stream().map(PoliticaResponse::versao).toList());
         assertEquals(2, versoes.findById("TERMOS").orElseThrow().getNumero());
     }
 
@@ -70,22 +70,22 @@ class VersionamentoDocumentosTest {
     void falhaNaPublicacaoReverteContadorDocumentoEAtivacao() {
         termos.publicar(documento("Original"), 1L);
         doThrow(new IllegalStateException("Falha de auditoria"))
-                .when(auditoria).registrar(1L, "POLITICA_PUBLICADA", "2.0", null);
+                .when(auditoria).registrar(1L, "POLITICA_PUBLICADA", "v1.2", null);
         assertThrows(IllegalStateException.class, () -> termos.publicar(documento("Revisao"), 1L));
         assertEquals(1, versoes.findById("TERMOS").orElseThrow().getNumero());
-        assertTrue(politicas.findByVersao("2.0").isEmpty());
-        assertTrue(politicas.findByVersao("1.0").orElseThrow().isAtiva());
+        assertTrue(politicas.findByVersao("v1.2").isEmpty());
+        assertTrue(politicas.findByVersao("v1.0").orElseThrow().isAtiva());
         reset(auditoria);
-        assertEquals("2.0", termos.publicar(documento("Revisao"), 1L).versao());
+        assertEquals("v1.2", termos.publicar(documento("Revisao"), 1L).versao());
     }
 
     @Test
     void publicacoesConcorrentesGeramVersoesUnicasEUmaUnicaAtiva() throws Exception {
-        var prontas = new CountDownLatch(4);
+        var prontas = new CountDownLatch(6);
         var iniciar = new CountDownLatch(1);
-        try (var executor = Executors.newFixedThreadPool(4)) {
+        try (var executor = Executors.newFixedThreadPool(6)) {
             List<Future<String>> resultados = new ArrayList<>();
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 6; i++) {
                 final int numero = i;
                 resultados.add(executor.submit(() -> {
                     prontas.countDown();
@@ -97,23 +97,23 @@ class VersionamentoDocumentosTest {
             iniciar.countDown();
             Set<String> geradas = new HashSet<>();
             for (var resultado : resultados) geradas.add(resultado.get(20, TimeUnit.SECONDS));
-            assertEquals(Set.of("1.0", "2.0", "3.0", "4.0"), geradas);
+            assertEquals(Set.of("v1.0", "v1.2", "v1.4", "v1.6", "v1.8", "v2.0"), geradas);
         }
-        assertEquals(4, politicas.count());
-        assertEquals(List.of("4.0"), termos.listarAtivas().stream().map(PoliticaResponse::versao).toList());
+        assertEquals(6, politicas.count());
+        assertEquals(List.of("v2.0"), termos.listarAtivas().stream().map(PoliticaResponse::versao).toList());
     }
 
     @Test
     void usaContadorPersistidoENaoEstadoDaInstancia() {
         versoes.saveAndFlush(new VersaoDocumento("TERMOS", 12));
-        assertEquals("13.0", termos.publicar(documento("Persistencia"), 1L).versao());
+        assertEquals("v3.4", termos.publicar(documento("Persistencia"), 1L).versao());
     }
 
     @Test
     void novaPublicacaoNaoReutilizaCabecalhoComVersaoManualLegada() {
         var publicado = termos.publicar(documento("<h1>Termo antigo</h1>"
                 + "<p><strong>Versão 99.0</strong></p><h2>Regras</h2><p>Texto revisado</p>"), 1L);
-        assertEquals("1.0", publicado.versao());
+        assertEquals("v1.0", publicado.versao());
         assertEquals("<h2>Regras</h2><p>Texto revisado</p>", publicado.conteudo());
     }
 

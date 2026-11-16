@@ -16,8 +16,7 @@ public interface TokenEmailRepository extends JpaRepository<TokenEmail, Long> {
         @Lock(LockModeType.PESSIMISTIC_WRITE)
         Optional<TokenEmail> findByTokenHashAndFinalidade(String tokenHash, String finalidade);
 
-        boolean existsByUsuarioIdAndFinalidadeAndUtilizadoFalseAndExpiraEmAfter(
-                        Long usuarioId, String finalidade, LocalDateTime agora);
+        Optional<TokenEmail> findFirstByUsuarioIdAndFinalidadeOrderByCriadoEmDescIdDesc(Long usuarioId, String finalidade);
 
         long countByUsuarioIdAndFinalidadeAndCriadoEmAfter(Long usuarioId, String finalidade, LocalDateTime criadoEm);
 

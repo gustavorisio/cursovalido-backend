@@ -38,7 +38,7 @@ public class TokenJwtService {
     // Gera um JWT com os dados basicos do usuario.
     @org.springframework.transaction.annotation.Transactional
     public String gerar(Usuario usuario) {
-        return criar(usuario, "ACESSO", expiracaoMs);
+        return criar(usuario, "ACESSO", Math.min(expiracaoMs, 86_400_000L));
     }
 
     @org.springframework.transaction.annotation.Transactional
