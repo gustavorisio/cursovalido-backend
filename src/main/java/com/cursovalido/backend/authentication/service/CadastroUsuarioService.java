@@ -23,18 +23,14 @@ public class CadastroUsuarioService {
     private final PasswordEncoder codificadorSenha;
     private final LogAuditoriaService auditoria;
     private final PoliticaService politicas;
-    private final TokenEmailService tokensEmail;
-    private final EmailService emails;
     private final ValidacaoEmailService validacaoEmail;
-    private final LimiteCadastroService limiteCadastro;
     private final SecureRandom geradorRa = new SecureRandom();
 
     @Transactional
-    // Cria uma conta de aluno e envia o primeiro codigo de acesso.
+    // Cria uma conta de aluno. O codigo de acesso e enviado no primeiro login.
     public Usuario cadastrar(CadastroUsuarioRequest requisicao, String enderecoIp) {
         validacaoEmail.validar(requisicao.email());
         CadastroValidation.validar(requisicao, enderecoIp, politicas, repositorio, auditoria);
-        limiteCadastro.reservar(enderecoIp);
 
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(requisicao.nomeCompleto());
@@ -48,8 +44,6 @@ public class CadastroUsuarioService {
         usuario.setVersaoTermos(requisicao.versaoTermos());
         usuario.setPerfil(Perfil.ALUNO);
         Usuario salvo = repositorio.save(usuario);
-        String codigo = tokensEmail.criarCodigo2fa(salvo);
-        emails.enviarCodigo2fa(salvo, codigo);
         auditoria.registrar(salvo.getId(), "CADASTRO_USUARIO", "Cadastro realizado", enderecoIp);
         return salvo;
     }

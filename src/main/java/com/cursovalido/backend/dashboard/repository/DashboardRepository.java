@@ -24,12 +24,11 @@ public class DashboardRepository {
                                                   (SELECT count(*) FROM tb_aulas a JOIN tb_modulos m ON m.id=a.modulo_id
                                                      JOIN tb_cursos c ON c.id=m.curso_id WHERE a.ativo AND m.ativo AND c.ativo) AS aulas,
                                                   (SELECT count(*) FROM tb_matriculas m JOIN tb_cursos c ON c.id=m.curso_id WHERE c.ativo) AS matriculas,
-                                                  (SELECT count(*) FROM tb_topics WHERE active) AS topicos,
-                                                  (SELECT count(*) FROM tb_noticias WHERE ativo) AS noticias
+                                                  (SELECT count(*) FROM tb_topics WHERE active) AS topicos
                                                 """,
                                 (rs, row) -> new Resumo(rs.getLong("alunos"), rs.getLong("professores"),
                                                 rs.getLong("cursos"), rs.getLong("aulas"), rs.getLong("matriculas"),
-                                                rs.getLong("topicos"), rs.getLong("noticias")));
+                                                rs.getLong("topicos")));
         }
 
         public AtividadeDia atividadeDia(LocalDate data, LocalDateTime inicio, LocalDateTime fim) {
@@ -41,13 +40,11 @@ public class DashboardRepository {
                                                   (SELECT count(*) FROM tb_matriculas WHERE matriculado_em >= ? AND matriculado_em < ?) AS matriculas,
                                                   (SELECT count(*) FROM tb_cursos WHERE criado_em >= ? AND criado_em < ?) AS cursos,
                                                   (SELECT count(*) FROM tb_aulas WHERE criado_em >= ? AND criado_em < ?) AS aulas,
-                                                  (SELECT count(*) FROM tb_topics WHERE created_at >= ? AND created_at < ?) AS topicos,
-                                                  (SELECT count(*) FROM tb_noticias WHERE criado_em >= ? AND criado_em < ?) AS noticias
+                                                  (SELECT count(*) FROM tb_topics WHERE created_at >= ? AND created_at < ?) AS topicos
                                                 """,
                                 (rs, row) -> new AtividadeDia(data, rs.getLong("matriculas"), rs.getLong("cursos"),
-                                                rs.getLong("aulas"), rs.getLong("topicos"), rs.getLong("noticias")),
-                                inicioSql, fimSql, inicioSql, fimSql, inicioSql, fimSql, inicioSql, fimSql, inicioSql,
-                                fimSql);
+                                                rs.getLong("aulas"), rs.getLong("topicos")),
+                                inicioSql, fimSql, inicioSql, fimSql, inicioSql, fimSql, inicioSql, fimSql);
         }
 
         public List<MatriculasMes> matriculasPorMes(LocalDate inicio, LocalDate fimExclusivo) {

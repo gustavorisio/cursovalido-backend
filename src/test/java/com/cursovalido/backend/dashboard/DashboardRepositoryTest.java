@@ -23,7 +23,6 @@ class DashboardRepositoryTest {
         jdbc.execute("CREATE TABLE tb_aulas (modulo_id BIGINT, ativo BOOLEAN, criado_em TIMESTAMP)");
         jdbc.execute("CREATE TABLE tb_matriculas (curso_id BIGINT, matriculado_em TIMESTAMP)");
         jdbc.execute("CREATE TABLE tb_topics (active BOOLEAN, created_at TIMESTAMP)");
-        jdbc.execute("CREATE TABLE tb_noticias (ativo BOOLEAN, criado_em TIMESTAMP)");
         repository = new DashboardRepository(jdbc);
     }
 
@@ -45,11 +44,10 @@ class DashboardRepositoryTest {
         jdbc.execute("INSERT INTO tb_cursos VALUES (1, FALSE, '2026-05-10 12:00:00')");
         jdbc.execute("INSERT INTO tb_aulas VALUES (1, TRUE, '2026-05-10 12:00:00')");
         jdbc.execute("INSERT INTO tb_topics VALUES (TRUE, '2026-05-10 12:00:00')");
-        jdbc.execute("INSERT INTO tb_noticias VALUES (TRUE, '2026-05-10 12:00:00')");
-        assertEquals(new AtividadeDia(data, 2, 1, 1, 1, 1),
+        assertEquals(new AtividadeDia(data, 2, 1, 1, 1),
                 repository.atividadeDia(data, data.atStartOfDay(), data.plusDays(1).atStartOfDay()));
         LocalDate diaSemAtividade = data.plusDays(2);
-        assertEquals(new AtividadeDia(diaSemAtividade, 0, 0, 0, 0, 0),
+        assertEquals(new AtividadeDia(diaSemAtividade, 0, 0, 0, 0),
                 repository.atividadeDia(diaSemAtividade, diaSemAtividade.atStartOfDay(),
                         diaSemAtividade.plusDays(1).atStartOfDay()));
     }

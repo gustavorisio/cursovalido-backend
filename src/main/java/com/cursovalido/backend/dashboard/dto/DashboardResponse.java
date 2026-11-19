@@ -7,11 +7,11 @@ public final class DashboardResponse {
         }
 
         public record Resumo(long alunosAtivos, long professoresAtivos, long cursosAtivos,
-                        long aulasAtivas, long matriculas, long topicosAtivos, long noticiasAtivas) {
+                        long aulasAtivas, long matriculas, long topicosAtivos) {
         }
 
         public record AtividadeDia(LocalDate data, long matriculas, long cursosCriados,
-                        long aulasCriadas, long topicosCriados, long noticiasPublicadas) {
+                        long aulasCriadas, long topicosCriados) {
         }
 
         public record MatriculasMes(String mes, long matriculas) {

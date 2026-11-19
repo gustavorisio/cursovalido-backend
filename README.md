@@ -2,7 +2,7 @@
 
 O Curso Válido é uma plataforma web gratuita de aprendizagem em tecnologia, desenvolvida como Projeto Final de Curso de Engenharia de Software da Universidade de Mogi das Cruzes (UMC).
 
-A ideia surgiu da dificuldade de organizar os estudos quando as videoaulas, as notícias e os espaços para tirar dúvidas estão espalhados em diferentes sites. O projeto propõe reunir esses recursos em um mesmo ambiente, permitindo que o aluno acompanhe os conteúdos e converse com professores e outros alunos durante o aprendizado.
+A ideia surgiu da dificuldade de organizar os estudos quando as videoaulas e os espaços para tirar dúvidas estão espalhados em diferentes sites. O projeto propõe reunir esses recursos em um mesmo ambiente, permitindo que o aluno acompanhe os conteúdos e converse com professores e outros alunos durante o aprendizado.
 
 Este repositório contém a API da plataforma, responsável pelas regras de negócio, autenticação, controle de acesso e armazenamento dos dados. A interface é desenvolvida separadamente em React e Tailwind CSS.
 
@@ -11,11 +11,11 @@ Este repositório contém a API da plataforma, responsável pelas regras de neg�
 
 ## Sobre o projeto
 
-A plataforma é voltada a interessados em aprender sobre tecnologia e programação. Seu escopo está organizado em três partes: aulas, notícias e comunidade.
+A plataforma é voltada a interessados em aprender sobre tecnologia e programação. Seu escopo está organizado em duas partes: aulas e comunidade.
 
-Os alunos podem estudar por meio de cursos e videoaulas, acompanhar publicações sobre tecnologia e participar do fórum. Os professores organizam os cursos, módulos e aulas sob sua responsabilidade e participam das discussões. Os administradores gerenciam notícias, acessos e operações administrativas da plataforma.
+Os alunos podem estudar por meio de cursos e videoaulas e participar do fórum. Os professores organizam os cursos, módulos e aulas sob sua responsabilidade e participam das discussões. Os administradores gerenciam acessos e operações administrativas da plataforma.
 
-O projeto está em desenvolvimento. A versão atual do back-end possui autenticação, gestão de convites, termos e políticas, cursos, módulos, aulas, matrículas, progresso, notícias, fórum, moderação, dashboard administrativo e formulário de suporte.
+O projeto está em desenvolvimento. A versão atual do back-end possui autenticação, gestão de convites, termos e políticas, cursos, módulos, aulas, matrículas, progresso, fórum, moderação, dashboard administrativo e formulário de suporte.
 
 ## Funcionalidades
 
@@ -37,15 +37,9 @@ O módulo de aprendizagem organiza cursos em módulos e aulas. Os professores po
 
 Os alunos podem se matricular gratuitamente nos cursos disponíveis, acessar as videoaulas, salvar a posição de reprodução e marcar aulas como concluídas. A reprodução pelo player do YouTube é responsabilidade do front-end; o registro de conclusão não comprova, por si só, aprendizagem ou tempo assistido.
 
-### Notícias
-
-As notícias possuem listagem pública com busca e paginação e leitura das publicações ativas. Administradores ativos podem criar notícias; a edição e a exclusão são restritas ao administrador autor. A exclusão é lógica, retirando a publicação das consultas ativas.
-
-Esse módulo complementa as aulas com conteúdos sobre ferramentas, linguagens e outros assuntos relacionados à formação em tecnologia.
-
 ### Administração e suporte
 
-A área administrativa reúne gestão de convites, aprovações, documentos, restrições de usuários e consulta e moderação de aulas. Algumas operações são exclusivas do administrador principal. O dashboard apresenta indicadores operacionais, como quantidades de usuários, cursos, aulas, matrículas, tópicos e notícias, além de matrículas por mês, cursos mais procurados e distribuição de usuários por perfil.
+A área administrativa reúne gestão de convites, aprovações, documentos, restrições de usuários e consulta e moderação de aulas. Algumas operações são exclusivas do administrador principal. O dashboard apresenta indicadores operacionais, como quantidades de usuários, cursos, aulas, matrículas e tópicos, além de matrículas por mês, cursos mais procurados e distribuição de usuários por perfil.
 
 O formulário público de suporte gera um protocolo e encaminha a solicitação por e-mail, sujeito à configuração e aos limites de envio. O recurso não mantém um sistema completo de acompanhamento de chamados.
 
@@ -203,7 +197,7 @@ Execute na raiz do projeto:
 mvn test
 ```
 
-O projeto possui testes unitários e de integração para autenticação, cadastro, administração inicial, suporte, aulas e fórum. Há verificações dos módulos de notícias e dashboard nos testes compartilhados.
+O projeto possui testes unitários e de integração para autenticação, cadastro, administração inicial, suporte, aulas e fórum. Há verificações do dashboard nos testes compartilhados.
 
 O perfil `test` utiliza H2 como configuração base em `src/test/resources/application-test.properties`. Parte dos testes substitui essa configuração por um PostgreSQL temporário e isolado, incluindo verificações de migrações Flyway.
 
@@ -226,7 +220,7 @@ Após executar os testes, os relatórios ficam em:
 
 ## Organização e contexto acadêmico
 
-O back-end segue uma organização em camadas, com controladores, serviços, repositórios, entidades e DTOs. Os principais pacotes são `authentication`, `aulas`, `noticias`, `forum` e `dashboard`. O desenvolvimento é organizado por Kanban com apoio do Asana e versionamento em Git/GitHub.
+O back-end segue uma organização em camadas, com controladores, serviços, repositórios, entidades e DTOs. Os principais pacotes são `authentication`, `aulas`, `forum` e `dashboard`. O desenvolvimento é organizado por Kanban com apoio do Asana e versionamento em Git/GitHub.
 
 **Autor:** Gustavo Di Risio.
 

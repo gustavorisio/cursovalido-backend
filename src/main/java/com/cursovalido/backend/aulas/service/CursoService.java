@@ -85,7 +85,7 @@ public class CursoService {
         curso.setTema(dados.idTema() == null ? null : temas.buscar(dados.idTema()));
         curso.setArea(dados.idArea() == null ? null
                 : areas.findById(dados.idArea()).orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Area do roadmap nao encontrada")));
+                        () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Area de tecnologia nao encontrada")));
     }
 
     private void verificarProfessor(Long idProfessor) {

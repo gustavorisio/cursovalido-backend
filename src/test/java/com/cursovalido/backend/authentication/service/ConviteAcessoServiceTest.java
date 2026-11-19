@@ -31,11 +31,10 @@ class ConviteAcessoServiceTest {
     private final PoliticaService politicas = mock(PoliticaService.class);
     private final EmailService emails = mock(EmailService.class);
     private final UsuarioForumService forum = mock(UsuarioForumService.class);
-    private final LimiteCadastroService limite = mock(LimiteCadastroService.class);
     private final ConviteAcessoService service = new ConviteAcessoService(convites, usuarios, senhas, politicas,
             mock(ResponsabilidadeService.class), emails, mock(ValidacaoEmailService.class),
             mock(ContaUsuarioService.class), mock(LogAuditoriaService.class), forum,
-            mock(PrivilegiosAdministrativosService.class), limite);
+            mock(PrivilegiosAdministrativosService.class));
 
     @Test
     void deveCancelarConviteAnteriorAoCriarOutroParaMesmoEmail() {
@@ -86,7 +85,6 @@ class ConviteAcessoServiceTest {
         assertEquals(StatusAprovacao.PENDENTE_APROVACAO, usuario.getStatusAprovacao());
         assertFalse(usuario.isAtivo());
         assertEquals(StatusConvite.CONCLUIDO, convite.getStatus());
-        verify(limite).reservar("192.0.2.10");
     }
 
     @Test
