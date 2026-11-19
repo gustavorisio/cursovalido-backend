@@ -34,13 +34,7 @@ class CadastroUsuarioServiceTest {
     @Mock
     private PoliticaService politicas;
     @Mock
-    private TokenEmailService tokensEmail;
-    @Mock
-    private EmailService emails;
-    @Mock
     private ValidacaoEmailService validacaoEmail;
-    @Mock
-    private LimiteCadastroService limiteCadastro;
     @InjectMocks
     private CadastroUsuarioService servico;
 
@@ -53,7 +47,7 @@ class CadastroUsuarioServiceTest {
 
         assertThrows(org.springframework.web.server.ResponseStatusException.class,
                 () -> servico.cadastrar(requisicao, "127.0.0.1"));
-        org.mockito.Mockito.verifyNoInteractions(repositorio, emails, tokensEmail, codificadorSenha, politicas);
+        org.mockito.Mockito.verifyNoInteractions(repositorio, codificadorSenha, politicas);
     }
 
     @Test
@@ -66,13 +60,10 @@ class CadastroUsuarioServiceTest {
         when(repositorio.existsByMatricula(any(String.class))).thenReturn(false);
         when(codificadorSenha.encode("senha-segura")).thenReturn("hash");
         when(repositorio.save(any(Usuario.class))).thenReturn(salvo);
-        when(tokensEmail.criarCodigo2fa(salvo)).thenReturn("token");
 
         Usuario resultado = servico.cadastrar(requisicao, "127.0.0.1");
 
         assertEquals(salvo, resultado);
-        verify(limiteCadastro).reservar("127.0.0.1");
-        verify(emails).enviarCodigo2fa(salvo, "token");
         verify(repositorio).save(any(Usuario.class));
     }
 
@@ -110,7 +101,6 @@ class CadastroUsuarioServiceTest {
         when(repositorio.existsByMatricula(any(String.class))).thenReturn(false);
         when(codificadorSenha.encode("senha-segura")).thenReturn("hash");
         when(repositorio.save(any(Usuario.class))).thenReturn(salvo);
-        when(tokensEmail.criarCodigo2fa(salvo)).thenReturn("token");
 
         Usuario resultado = servico.cadastrar(requisicao, "127.0.0.1");
 

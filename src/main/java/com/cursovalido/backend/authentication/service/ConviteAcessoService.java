@@ -42,7 +42,6 @@ public class ConviteAcessoService {
     private final LogAuditoriaService auditoria;
     private final UsuarioForumService usuariosForum;
     private final PrivilegiosAdministrativosService privilegios;
-    private final LimiteCadastroService limiteCadastro;
     private final SecureRandom aleatorio = new SecureRandom();
 
     @Transactional
@@ -93,7 +92,6 @@ public class ConviteAcessoService {
 
         responsabilidade.validar(convite.getPerfil(), cadastro.aceitouResponsabilidade(),
                 cadastro.versaoResponsabilidade(), enderecoIp);
-        limiteCadastro.reservar(enderecoIp);
         Usuario usuario = new Usuario();
         usuario.setNomeCompleto(cadastro.nomeCompleto());
         usuario.setEmail(convite.getEmail());

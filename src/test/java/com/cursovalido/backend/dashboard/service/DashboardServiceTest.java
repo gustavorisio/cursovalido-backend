@@ -29,7 +29,7 @@ class DashboardServiceTest {
     @Test
     void deveRetornarResumoParaAdministrador() {
         cadastrarUsuario(Perfil.ADMINISTRADOR);
-        var resumo = new Resumo(3, 2, 1, 7, 3, 1, 1);
+        var resumo = new Resumo(3, 2, 1, 7, 3, 1);
         when(dashboard.resumo()).thenReturn(resumo);
 
         assertEquals(resumo, service.resumo(1L));
@@ -42,7 +42,7 @@ class DashboardServiceTest {
         ZoneId saoPaulo = ZoneId.of("America/Sao_Paulo");
         var inicio = dia.atStartOfDay(saoPaulo).withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
         when(dashboard.atividadeDia(dia, inicio, inicio.plusDays(1)))
-                .thenReturn(new AtividadeDia(dia, 2, 0, 0, 0, 0));
+                .thenReturn(new AtividadeDia(dia, 2, 0, 0, 0));
 
         assertEquals(2, service.atividadeDia(1L, dia).matriculas());
     }
