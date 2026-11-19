@@ -1,6 +1,7 @@
 package com.cursovalido.backend.forum;
 
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.assertj.core.api.Assertions.*;
@@ -368,8 +369,6 @@ class ForumHttpIntegracaoTest {
                                 .isEqualTo(HttpStatus.UNAUTHORIZED);
                 assertThat(enviar(HttpMethod.GET, caminho + "/comentarios", null, null, String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.UNAUTHORIZED);
-                assertThat(enviar(HttpMethod.GET, "/api/noticias", null, null, String.class).getStatusCode())
-                                .isEqualTo(HttpStatus.OK);
                 assertThat(enviar(HttpMethod.GET, "/api/forum/users", null, null, String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.UNAUTHORIZED);
                 assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", null, new TopicoRequest("Teste", "Descricao"),
@@ -381,9 +380,6 @@ class ForumHttpIntegracaoTest {
                                 .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
                 assertThat(enviar(HttpMethod.DELETE, caminho, null, null, String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.UNAUTHORIZED);
-                assertThat(enviar(HttpMethod.POST, "/api/noticias", null,
-                                Map.of("titulo", "Teste", "conteudo", "Texto"),
-                                String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         }
 
         @Test
@@ -1019,16 +1015,17 @@ class ForumHttpIntegracaoTest {
         }
 
         @Test
-        void cadastroPermiteDuasContasPorIpELoginNaoDuplicaCodigoPendente() {
+        void cadastroNaoEnviaCodigoELoginNaoDuplicaCodigoPendente() {
                 for (int i = 1; i <= 3; i++) {
                         String email = "cadastro-" + i + "@example.com";
                         var cadastro = new CadastroUsuarioRequest("  João 12! da Silva ", email, SENHA, SENHA,
                                         LocalDate.of(2000, 1, 1), true, true, "teste-v1");
                         var resposta = enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, cadastro,
                                         String.class);
-                        assertThat(resposta.getStatusCode())
-                                        .isEqualTo(i <= 2 ? HttpStatus.CREATED : HttpStatus.TOO_MANY_REQUESTS);
+                        assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
                 }
+                verify(emails, never()).enviarCodigo2fa(argThat(u -> u.getEmail().startsWith("cadastro-")),
+                                anyString());
                 String email = "cadastro-1@example.com";
                 var usuario = usuarios.findByEmail(email).orElseThrow();
                 assertThat(usuario.getNomeCompleto()).isEqualTo("João da Silva");
@@ -1041,7 +1038,7 @@ class ForumHttpIntegracaoTest {
                                 String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
                 verify(emails, times(1)).enviarCodigo2fa(argThat(u -> email.equals(u.getEmail())), anyString());
-                assertThat(usuarios.findByEmail("cadastro-3@example.com")).isEmpty();
+                assertThat(usuarios.findByEmail("cadastro-3@example.com")).isPresent();
         }
 
         private Sessao cadastrarEAutenticar(Perfil perfil) {
@@ -1067,6 +1064,9 @@ class ForumHttpIntegracaoTest {
                                 inicializacao.saveAndFlush(registro);
                         }
                 }
+                var login = enviar(HttpMethod.POST, "/api/autenticacao/login", null,
+                                Map.of("email", email, "senha", SENHA), AutenticacaoResponse.class);
+                assertThat(login.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(codigos.get(email)).isNotBlank();
                 var confirmacao = enviar(HttpMethod.POST, "/api/autenticacao/confirmar-2fa", null,
                                 Map.of("email", email, "codigo", codigos.get(email)), AutenticacaoResponse.class);

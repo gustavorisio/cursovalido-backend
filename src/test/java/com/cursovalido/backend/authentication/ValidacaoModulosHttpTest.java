@@ -6,8 +6,6 @@ import com.cursovalido.backend.aulas.controller.CursoController;
 import com.cursovalido.backend.aulas.service.CursoService;
 import com.cursovalido.backend.forum.controller.ForumController;
 import com.cursovalido.backend.forum.service.*;
-import com.cursovalido.backend.noticias.controller.NoticiaController;
-import com.cursovalido.backend.noticias.service.NoticiaService;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -42,14 +40,13 @@ class ValidacaoModulosHttpTest {
     void camposInvalidosRetornamMesmoContratoEntreModulos() throws Exception {
         var forum = mock(TopicoService.class);
         var cursos = mock(CursoService.class);
-        var noticias = mock(NoticiaService.class);
         var mvc = MockMvcBuilders.standaloneSetup(
                 new ForumController(forum, mock(ComentarioService.class), mock(UsuarioForumService.class)),
-                new CursoController(cursos), new NoticiaController(noticias))
+                new CursoController(cursos))
                 .setCustomArgumentResolvers(
                         new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new AutenticacaoExceptionHandler()).build();
-        for (String rota : new String[] { "/api/forum/topicos", "/api/cursos", "/api/noticias" }) {
+        for (String rota : new String[] { "/api/forum/topicos", "/api/cursos" }) {
             mvc.perform(post(rota).contentType(MediaType.APPLICATION_JSON).content("{}"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.codigo").value("CAMPOS_INVALIDOS"))
@@ -65,7 +62,7 @@ class ValidacaoModulosHttpTest {
                 .content("{\"titulo\":\"" + "t".repeat(81) + "\",\"descricao\":\"Texto\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.campos.titulo").value("O titulo deve ter no maximo 80 caracteres"));
-        verifyNoInteractions(forum, cursos, noticias);
+        verifyNoInteractions(forum, cursos);
     }
 
     @Test

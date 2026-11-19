@@ -159,22 +159,6 @@ public class SecurityConfig {
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
                                                 .hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/catalogo/roadmap").permitAll()
-                                                .requestMatchers(HttpMethod.GET,
-                                                                "/api/catalogo/roadmap/questionarios/*")
-                                                .permitAll()
-                                                .requestMatchers(HttpMethod.POST,
-                                                                "/api/catalogo/roadmap/questionarios/*/resultado")
-                                                .permitAll()
-                                                .requestMatchers(HttpMethod.GET,
-                                                                "/api/aluno/roadmap/questionarios/*/resultado")
-                                                .hasRole("ALUNO")
-                                                .requestMatchers(HttpMethod.POST,
-                                                                "/api/aluno/roadmap/questionarios/*/resultado")
-                                                .hasRole("ALUNO")
-                                                .requestMatchers("/api/administracao/caminhos",
-                                                                "/api/administracao/caminhos/**")
-                                                .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/diagnostico",
                                                                 "/api/aluno/cursos/*/modulos/*/questionario",
                                                                 "/api/aluno/cursos/*/plano")
@@ -244,15 +228,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, "/api/cursos/*", "/api/modulos/*",
                                                                 "/api/aulas/*")
                                                 .hasRole("PROFESSOR")
-                                                // Noticias: leitura publica e gestao exclusiva do administrador.
-                                                .requestMatchers(HttpMethod.GET, "/api/noticias", "/api/noticias/*")
-                                                .permitAll()
-                                                .requestMatchers(HttpMethod.POST, "/api/noticias")
-                                                .hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.PUT, "/api/noticias/*")
-                                                .hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.DELETE, "/api/noticias/*")
-                                                .hasRole("ADMINISTRADOR")
                                                 // Forum: autoria e moderacao sao verificadas pelos servicos.
                                                 .requestMatchers(HttpMethod.GET, "/api/forum/topicos",
                                                                 "/api/forum/topicos/*/comentarios",

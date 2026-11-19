@@ -145,12 +145,14 @@ class AutenticacaoHttpTest {
                                 "dataNascimento", "1990-01-01", "declarouMaiorIdade", true,
                                 "aceitouTermosLgpd", true, "versaoTermos", "teste-http"));
                 assertEquals(HttpStatus.CREATED, cadastro.getStatusCode(), String.valueOf(cadastro.getBody()));
-                assertNotNull(codigos.get(email));
+                assertNull(codigos.get(email));
 
                 var login = post("login", Map.of("email", email, "senha", senha));
                 assertEquals(HttpStatus.OK, login.getStatusCode(), String.valueOf(login.getBody()));
                 assertEquals(true, login.getBody().get("requerCodigo2fa"));
                 assertNull(login.getBody().get("token"));
+                assertNotNull(codigos.get(email));
+                verify(emails, times(1)).enviarCodigo2fa(any(), anyString());
 
                 var confirmacao = post("confirmar-2fa", Map.of("email", email, "codigo", codigos.get(email)));
                 assertEquals(HttpStatus.OK, confirmacao.getStatusCode(), String.valueOf(confirmacao.getBody()));
