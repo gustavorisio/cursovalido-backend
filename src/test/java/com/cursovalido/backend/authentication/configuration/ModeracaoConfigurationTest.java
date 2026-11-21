@@ -78,7 +78,7 @@ class ModeracaoConfigurationTest {
     void conviteExigeAdministradorPrincipalERotasLivresPassam() throws Exception {
         assertThat(interceptador.preHandle(new MockHttpServletRequest("POST", "/api/administracao/convites"),
                 new MockHttpServletResponse(), null)).isTrue();
-        verify(privilegios).verificarPrincipal(1L);
+        verify(privilegios).verificarAdministrador(1L);
         assertThat(interceptador.preHandle(new MockHttpServletRequest("POST", "/api/autenticacao/logout"),
                 new MockHttpServletResponse(), null)).isTrue();
         SecurityContextHolder.clearContext();

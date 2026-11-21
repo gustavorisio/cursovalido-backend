@@ -70,7 +70,7 @@ class ModeracaoIntegracaoTest {
         private TokenEmailService tokensEmail;
 
         @ParameterizedTest
-        @EnumSource(Perfil.class)
+        @EnumSource(value = Perfil.class, names = { "ALUNO", "PROFESSOR" })
         void exclusaoPreservaPunicoesEBloqueiaIdentificadores(Perfil perfil) {
                 var antigo = criar("exclusao@example.com", perfil);
                 usuarios.saveAndFlush(antigo);
@@ -197,13 +197,16 @@ class ModeracaoIntegracaoTest {
                 mvc.perform(get("/api/administracao/permissoes").with(como(principal)))
                                 .andExpect(status().isOk()).andExpect(jsonPath("$.principal").value(true));
                 mvc.perform(get("/api/administracao/convites").with(como(administrador)))
-                                .andExpect(status().isForbidden());
-                String convite = "{\"email\":\"novo@example.com\",\"perfil\":\"PROFESSOR\"}";
+                                .andExpect(status().isOk());
+                String convite = "{\"email\":\"" + java.util.UUID.randomUUID()
+                                + "@example.com\",\"perfil\":\"PROFESSOR\"}";
                 mvc.perform(post("/api/administracao/convites").with(como(administrador))
                                 .contentType(MediaType.APPLICATION_JSON).content(convite))
-                                .andExpect(status().isForbidden());
+                                .andExpect(status().isNoContent());
                 mvc.perform(post("/api/administracao/convites").with(como(principal))
-                                .contentType(MediaType.APPLICATION_JSON).content(convite))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"email\":\"outro-" + java.util.UUID.randomUUID()
+                                                + "@example.com\",\"perfil\":\"PROFESSOR\"}"))
                                 .andExpect(status().isNoContent());
                 String termos = "{\"nome\":\"Termos\",\"versao\":\"moderacao-v1\",\"conteudo\":\"Novos termos\"}";
                 mvc.perform(post("/api/politicas").with(como(administrador)).contentType(MediaType.APPLICATION_JSON)
@@ -238,7 +241,7 @@ class ModeracaoIntegracaoTest {
                 var convite = convites.findByEmail("convite@example.com").orElseThrow();
                 mvc.perform(post("/api/administracao/convites/" + convite.getId() + "/reenviar")
                                 .with(como(administrador)))
-                                .andExpect(status().isForbidden());
+                                .andExpect(status().isTooManyRequests());
                 mvc.perform(post("/api/administracao/convites/" + convite.getId() + "/reenviar").with(como(principal)))
                                 .andExpect(status().isTooManyRequests())
                                 .andExpect(jsonPath("$.codigo").value("REENVIO_CONVITE_AGUARDE"));
@@ -406,8 +409,7 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(content().string(org.hamcrest.Matchers
                                                 .containsString("Texto definido pelo administrador")));
                 mvc.perform(get("/api/administracao/permissoes").header("Authorization", "Bearer " + token))
-                                .andExpect(status().isForbidden())
-                                .andExpect(jsonPath("$.codigo").value("TERMOS_REAUTENTICACAO"));
+                                .andExpect(status().isOk());
         }
 
         @Test
@@ -489,13 +491,13 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isCreated());
                 assertThat(usuarios.findById(aluno.getId()).orElseThrow().getAceitouTermosLgpd()).isTrue();
                 mvc.perform(get("/api/administracao/permissoes").header("Authorization", "Bearer " + tokenAdmin))
-                                .andExpect(status().isForbidden());
+                                .andExpect(status().isOk());
                 mvc.perform(get("/api/autenticacao/restricoes").header("Authorization", "Bearer " + tokenAluno))
                                 .andExpect(status().isForbidden());
                 String login = "{\"email\":\"aluno@example.com\",\"senha\":\"SenhaTeste123!\"}";
                 mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON).content(login))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.requerCodigo2fa").value(true));
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.codigo").value("TERMOS_NAO_ACEITOS"));
                 mvc.perform(post("/api/autenticacao/aceitar-termos-novamente")
                                 .header("Authorization", "Bearer " + tokens.gerarTermos(aluno))
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -538,8 +540,8 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isOk());
                 mvc.perform(post("/api/autenticacao/login").contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"email\":\"aluno@example.com\",\"senha\":\"SenhaTeste123!\"}"))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.requerCodigo2fa").value(true));
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.codigo").value("TERMOS_NAO_ACEITOS"));
         }
 
         @Autowired

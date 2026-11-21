@@ -38,7 +38,11 @@ public final class RegrasSenha {
     }
 
     public static Optional<String> primeiroProblema(String senha) {
-        return problemas(senha).stream().findFirst();
+        List<String> problemas = problemas(senha);
+        return List.of(MENSAGEM_MAIUSCULA, MENSAGEM_MINUSCULA, MENSAGEM_ESPECIAL,
+                MENSAGEM_MINIMO, MENSAGEM_MAXIMO).stream()
+                .filter(problemas::contains)
+                .findFirst();
     }
 
     public static boolean valida(String senha) {

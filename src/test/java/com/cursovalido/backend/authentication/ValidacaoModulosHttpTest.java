@@ -21,7 +21,7 @@ class ValidacaoModulosHttpTest {
         var regra = new SenhaValidaValidator();
         for (String senha : new String[] { "abcdefgh!", "ABCDEFG!", "Abcdefgh", "Abcdefg ", "A!" + "á".repeat(36) })
             assertFalse(regra.isValid(senha, null), senha);
-        assertTrue(regra.isValid("Aa!", null));
+        assertTrue(regra.isValid("Aa!xxxxx", null));
         assertTrue(regra.isValid("A!" + "a".repeat(70), null));
     }
 

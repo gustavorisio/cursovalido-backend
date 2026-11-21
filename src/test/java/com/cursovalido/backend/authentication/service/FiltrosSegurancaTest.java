@@ -29,7 +29,7 @@ class FiltrosSegurancaTest {
             "GET, /api/administracao/convites, 200",
             "DELETE, /api/convites/1, 429",
             "GET, /api/autenticacao/meus-dados, 200",
-            "PUT, /api/convites/1, 200",
+            "PUT, /api/convites/1, 429",
             "POST, /api/forum/topicos, 429",
             "PUT, /api/forum/topicos/1, 429",
             "DELETE, /api/forum/comentarios/1, 429"

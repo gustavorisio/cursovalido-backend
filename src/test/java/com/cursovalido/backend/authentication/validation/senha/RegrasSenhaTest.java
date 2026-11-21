@@ -62,17 +62,17 @@ class RegrasSenhaTest {
         PasswordEncoder senhas = mock(PasswordEncoder.class);
         Usuario usuario = new Usuario();
         usuario.setSenha("hash");
-        when(senhas.matches("Atual@1", "hash")).thenReturn(true);
+        when(senhas.matches("Atual@123", "hash")).thenReturn(true);
 
-        assertThatThrownBy(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "errada", "Nova@1", "Nova@1", senhas))
+        assertThatThrownBy(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "errada", "Nova@123", "Nova@123", senhas))
                 .hasMessage("Senha atual incorreta.");
-        assertThatThrownBy(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "Atual@1", "nova@1", "nova@1", senhas))
+        assertThatThrownBy(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "Atual@123", "nova@123", "nova@123", senhas))
                 .hasMessage(RegrasSenha.MENSAGEM_MAIUSCULA);
-        assertThatThrownBy(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "Atual@1", "Nova@1", "Outra@1", senhas))
+        assertThatThrownBy(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "Atual@123", "Nova@123", "Outra@123", senhas))
                 .hasMessage(SenhaUsuarioValidation.MENSAGEM_CONFIRMACAO);
-        assertThatThrownBy(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "Atual@1", "Atual@1", "Atual@1", senhas))
+        assertThatThrownBy(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "Atual@123", "Atual@123", "Atual@123", senhas))
                 .hasMessage("A nova senha deve ser diferente da senha atual.");
-        assertThatCode(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "Atual@1", "Nova@1", "Nova@1", senhas))
+        assertThatCode(() -> SenhaUsuarioValidation.validarAlteracao(usuario, "Atual@123", "Nova@123", "Nova@123", senhas))
                 .doesNotThrowAnyException();
     }
 
@@ -80,12 +80,12 @@ class RegrasSenhaTest {
     void recuperacaoAuditaConfirmacaoDiferenteEAplicaAsRegras() {
         LogAuditoriaService auditoria = mock(LogAuditoriaService.class);
 
-        assertThatThrownBy(() -> SenhaUsuarioValidation.validarRecuperacao("Nova@1", "Outra@1", auditoria))
+        assertThatThrownBy(() -> SenhaUsuarioValidation.validarRecuperacao("Nova@123", "Outra@123", auditoria))
                 .hasMessage(SenhaUsuarioValidation.MENSAGEM_CONFIRMACAO);
         verify(auditoria).registrar(null, "RECUPERACAO_FALHOU", "Senhas diferentes", null);
         assertThatThrownBy(() -> SenhaUsuarioValidation.validarRecuperacao("nova", "nova", auditoria))
                 .hasMessage(RegrasSenha.MENSAGEM_MAIUSCULA);
-        assertThatCode(() -> SenhaUsuarioValidation.validarRecuperacao("Nova@1", "Nova@1", auditoria))
+        assertThatCode(() -> SenhaUsuarioValidation.validarRecuperacao("Nova@123", "Nova@123", auditoria))
                 .doesNotThrowAnyException();
     }
 }

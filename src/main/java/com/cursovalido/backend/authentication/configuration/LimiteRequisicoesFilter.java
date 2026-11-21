@@ -21,15 +21,23 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
             "/api/autenticacao/alterar-senha-autenticado");
     private final Map<String, Janela> janelas = new HashMap<>();
     private final int limite;
+    private final int limiteAutenticacao;
 
     public LimiteRequisicoesFilter() {
-        this(30);
+        this(30, 30);
     }
 
     public LimiteRequisicoesFilter(int limite) {
+        this(limite, limite);
+    }
+
+    public LimiteRequisicoesFilter(int limite, int limiteAutenticacao) {
         if (limite < 1)
             throw new IllegalArgumentException("O limite de solicitacoes deve ser positivo");
+        if (limiteAutenticacao < 1)
+            throw new IllegalArgumentException("O limite de autenticacao deve ser positivo");
         this.limite = limite;
+        this.limiteAutenticacao = limiteAutenticacao;
     }
 
     @Override
@@ -37,7 +45,7 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String caminho = request.getRequestURI();
         if (deveLimitar(request)) {
-            int limiteDaRota = ROTAS_AUTENTICACAO_RESTRITAS.contains(caminho) ? 5 : limite;
+            int limiteDaRota = ROTAS_AUTENTICACAO_RESTRITAS.contains(caminho) ? limiteAutenticacao : limite;
             int aguardar = 60;
             if (!permitir(request.getRemoteAddr() + ":" + caminho, limiteDaRota, Instant.now())) {
                 response.setHeader("Retry-After", String.valueOf(aguardar));

@@ -27,7 +27,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "security.bcrypt.strength=10")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+                "security.bcrypt.strength=10",
+                "seguranca.limite-requisicoes=10000",
+                "seguranca.limite-autenticacao=10000"
+})
 @ActiveProfiles("test")
 class AutenticacaoHttpTest {
         @Autowired
@@ -64,6 +68,8 @@ class AutenticacaoHttpTest {
                 cliente = RestClient.builder().baseUrl("http://localhost:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
                                 }).build();
+                if (politicas.findByVersao("teste-http").isEmpty())
+                        politicas.save(new Politica("Termos", "teste-http", "Termos do teste"));
                 usuario = new Usuario();
                 usuario.setNomeCompleto("Aluno Teste");
                 usuario.setEmail(UUID.randomUUID() + "@example.com");
@@ -75,9 +81,9 @@ class AutenticacaoHttpTest {
                 usuario.setDeclarouMaiorIdade(true);
                 usuario.setVersaoTermos("teste-http");
                 usuario.setDataHoraAceite(LocalDateTime.now());
+                usuario.setDoisFatoresAtivos(true);
                 usuario = usuarios.save(usuario);
-                if (politicas.findByVersao("teste-http").isEmpty())
-                        politicas.save(new Politica("Termos", "teste-http", "Termos do teste"));
+                responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
                 doAnswer(chamada -> {
                         Usuario destinatario = chamada.getArgument(0);
                         codigos.put(destinatario.getEmail(), chamada.getArgument(1));
