@@ -22,14 +22,19 @@ class FiltrosSegurancaTest {
             "GET, /termos-aceite.html, 429",
             "GET, /politica-privacidade.html, 429",
             "DELETE, /api/autenticacao/conta, 429",
-            "POST, /api/convites/confirmar-email, 429",
+            "POST, /api/convites/completar-cadastro, 429",
+            "POST, /api/administracao/convites, 429",
+            "POST, /api/administracao/convites/1/reenviar, 429",
+            "DELETE, /api/administracao/convites/1/cancelar, 429",
+            "GET, /api/administracao/convites, 200",
             "DELETE, /api/convites/1, 429",
             "GET, /api/autenticacao/meus-dados, 200",
-            "PUT, /api/convites/1, 200",
-            "POST, /api/forum/topicos, 200",
-            "DELETE, /api/forum/comentarios/1, 200"
+            "PUT, /api/convites/1, 429",
+            "POST, /api/forum/topicos, 429",
+            "PUT, /api/forum/topicos/1, 429",
+            "DELETE, /api/forum/comentarios/1, 429"
     })
-    void limitaSomenteMetodosERotasProtegidos(String metodo, String caminho, int statusEsperado) throws Exception {
+    void limitaAlteracoesDeDadosEAutenticacao(String metodo, String caminho, int statusEsperado) throws Exception {
         var filtro = new LimiteRequisicoesFilter(1);
         var cadeia = mock(FilterChain.class);
         filtro.doFilter(new MockHttpServletRequest(metodo, caminho), new MockHttpServletResponse(), cadeia);

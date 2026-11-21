@@ -71,7 +71,7 @@ class AutenticacaoControllerTest {
     @Test
     void deveEncaminharIpAoCadastrarUsuario() {
         var dados = new CadastroUsuarioRequest("Aluno Teste", EMAIL, "Senha@123", "Senha@123",
-                LocalDate.now().minusYears(25), true, true, "v1.2");
+                true, true, "v1.2", null, null);
 
         controller.cadastrar(dados, requisicao());
 

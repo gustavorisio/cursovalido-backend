@@ -7,20 +7,23 @@ import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.StatusConvite;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException;
-import com.cursovalido.backend.authentication.exception.MenorDeIdadeException;
+import com.cursovalido.backend.authentication.repository.ConviteAcessoRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.service.PoliticaService;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import org.springframework.http.HttpStatus;
 
 public final class ConviteValidation {
+    // Limites contra cliques repetidos e envio em massa de convites.
+    public static final int SEGUNDOS_ENTRE_ENVIOS = 120;
+    public static final int MAXIMO_ENVIOS_POR_CONVITE = 5;
+    public static final int MAXIMO_CONVITES_POR_HORA = 20;
+
     private ConviteValidation() {
     }
 
     public static void validarCriacao(String endereco, Perfil perfil, UsuarioRepository usuarios) {
-        if (perfil == Perfil.ALUNO) {
+        if (perfil == null || !perfil.equipe()) {
             throw new ConviteAcessoInvalidoException(HttpStatus.BAD_REQUEST, "PERFIL_CONVITE_INVALIDO",
                     "Convites sao permitidos apenas para professores e administradores.");
         }
@@ -30,50 +33,66 @@ public final class ConviteValidation {
         }
     }
 
-    public static void validarIdade(CadastroUsuarioRequest cadastro) {
-        if (Period.between(cadastro.dataNascimento(), LocalDate.now()).getYears() < 18)
-            throw new MenorDeIdadeException();
-        if (Period.between(cadastro.dataNascimento(), LocalDate.now()).getYears() > 90)
-            throw new IllegalArgumentException("A idade maxima permitida e 90 anos.");
+    // Um segundo clique em "Enviar convite" nao gera outro e-mail: o convite pendente deve ser reenviado.
+    public static void validarConvitePendente(ConviteAcesso pendente) {
+        if (pendente == null || pendente.expirado())
+            return;
+        throw new ConviteAcessoInvalidoException(HttpStatus.CONFLICT, "CONVITE_JA_PENDENTE",
+                "Já existe um convite pendente para este e-mail. Use a opção Reenviar ou cancele o convite atual.");
+    }
+
+    public static void validarLimiteDoAdministrador(Long administradorId, ConviteAcessoRepository convites) {
+        long enviadosNaUltimaHora = convites.countByCriadoPorAndCriadoEmAfter(administradorId,
+                LocalDateTime.now().minusHours(1));
+        if (enviadosNaUltimaHora >= MAXIMO_CONVITES_POR_HORA)
+            throw new ConviteAcessoInvalidoException(HttpStatus.TOO_MANY_REQUESTS, "LIMITE_CONVITES",
+                    "Limite de " + MAXIMO_CONVITES_POR_HORA + " convites por hora atingido. Tente novamente mais tarde.");
+    }
+
+    public static void validarReenvio(ConviteAcesso convite) {
+        validarPendente(convite);
+        if (convite.getEnviadoEm().plusSeconds(SEGUNDOS_ENTRE_ENVIOS).isAfter(LocalDateTime.now()))
+            throw new ConviteAcessoInvalidoException(HttpStatus.TOO_MANY_REQUESTS, "REENVIO_CONVITE_AGUARDE",
+                    "O convite acabou de ser enviado. Aguarde 2 minutos para reenviar.");
+        if (convite.getQuantidadeEnvios() >= MAXIMO_ENVIOS_POR_CONVITE)
+            throw new ConviteAcessoInvalidoException(HttpStatus.TOO_MANY_REQUESTS, "LIMITE_REENVIO_CONVITE",
+                    "Este convite atingiu o limite de reenvios. Cancele e crie um novo convite.");
+    }
+
+    // Professores e administradores confirmam a maioridade ao concluir o convite.
+    public static void validarMaioridadeDeclarada(CadastroUsuarioRequest cadastro) {
         if (!Boolean.TRUE.equals(cadastro.declarouMaiorIdade()))
-            throw new MenorDeIdadeException();
+            throw new IllegalArgumentException("É necessário confirmar que você tem 18 anos ou mais.");
     }
 
     public static void validarCadastro(ConviteAcesso convite, CadastroUsuarioRequest cadastro,
             PoliticaService politicas, UsuarioRepository usuarios) {
-        if (expirado(convite))
-            throw new IllegalArgumentException("Convite expirado");
-        if (!convite.isEmailConfirmado())
-            throw new IllegalArgumentException("E-mail ainda nao confirmado");
+        validarPrazo(convite);
         if (!convite.getEmail().equalsIgnoreCase(cadastro.email())) {
-            throw new IllegalArgumentException("E-mail diferente do convite");
+            throw new IllegalArgumentException("Use o mesmo e-mail que recebeu o convite.");
         }
         if (!politicas.versaoAtiva(cadastro.versaoTermos()))
-            throw new IllegalArgumentException("Versao dos termos invalida");
+            throw new IllegalArgumentException("Os termos foram atualizados. Recarregue a página e aceite a versão atual.");
         if (!Boolean.TRUE.equals(cadastro.aceitouTermosLgpd()))
-            throw new IllegalArgumentException("Termos nao aceitos");
+            throw new IllegalArgumentException("Aceite os Termos de Uso e a Política de Privacidade para continuar.");
         if (usuarios.existsByEmail(convite.getEmail())) {
-            throw new IllegalArgumentException("Dados ja utilizados");
+            throw new IllegalArgumentException("Este e-mail já possui uma conta. Entre com seu e-mail e senha.");
         }
     }
 
     public static void validarPendente(ConviteAcesso convite) {
         if (!StatusConvite.PENDENTE.equals(convite.getStatus()))
-            throw new IllegalArgumentException("Convite indisponivel");
+            throw new IllegalArgumentException("Este convite já foi usado ou cancelado. Peça um novo convite à administração.");
     }
 
     public static void validarPrazo(ConviteAcesso convite) {
-        if (expirado(convite))
-            throw new IllegalArgumentException("Convite expirado");
-    }
-
-    private static boolean expirado(ConviteAcesso convite) {
-        return convite.getExpiraEm().isBefore(LocalDateTime.now());
+        if (convite.expirado())
+            throw new IllegalArgumentException("Convite expirado. Peça um novo convite à administração.");
     }
 
     public static void validarUsuarioPendente(Usuario usuario) {
         if (usuario.getStatusAprovacao() != StatusAprovacao.PENDENTE_APROVACAO) {
-            throw new IllegalArgumentException("Pendencia indisponivel");
+            throw new IllegalArgumentException("Este cadastro não está mais aguardando aprovação.");
         }
     }
 }

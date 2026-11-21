@@ -5,6 +5,8 @@ import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class SenhaUsuarioValidation {
+    public static final String MENSAGEM_CONFIRMACAO = "A confirmação deve ser igual à nova senha.";
+
     private SenhaUsuarioValidation() {
     }
 
@@ -13,18 +15,28 @@ public final class SenhaUsuarioValidation {
         if (!codificadorSenha.matches(senhaAtual, usuario.getSenha())) {
             throw new IllegalArgumentException("Senha atual incorreta.");
         }
-        if (!novaSenha.equals(confirmacaoSenha)) {
-            throw new IllegalArgumentException("As senhas nao conferem.");
-        }
-        if (!new SenhaValidaValidator().isValid(novaSenha, null)) {
-            throw new IllegalArgumentException(SenhaValida.MENSAGEM);
+        validarNovaSenha(novaSenha, confirmacaoSenha);
+        if (codificadorSenha.matches(novaSenha, usuario.getSenha())) {
+            throw new IllegalArgumentException("A nova senha deve ser diferente da senha atual.");
         }
     }
 
     public static void validarRecuperacao(String novaSenha, String confirmacaoSenha, LogAuditoriaService auditoria) {
-        if (!novaSenha.equals(confirmacaoSenha)) {
+        if (novaSenha == null || !novaSenha.equals(confirmacaoSenha)) {
             auditoria.registrar(null, "RECUPERACAO_FALHOU", "Senhas diferentes", null);
-            throw new IllegalArgumentException("As senhas nao conferem");
+            throw new IllegalArgumentException(MENSAGEM_CONFIRMACAO);
+        }
+        RegrasSenha.primeiroProblema(novaSenha).ifPresent(problema -> {
+            throw new IllegalArgumentException(problema);
+        });
+    }
+
+    private static void validarNovaSenha(String novaSenha, String confirmacaoSenha) {
+        RegrasSenha.primeiroProblema(novaSenha).ifPresent(problema -> {
+            throw new IllegalArgumentException(problema);
+        });
+        if (!novaSenha.equals(confirmacaoSenha)) {
+            throw new IllegalArgumentException(MENSAGEM_CONFIRMACAO);
         }
     }
 }

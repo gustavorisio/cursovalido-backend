@@ -26,13 +26,24 @@ public class PrivilegiosAdministrativosService {
     }
 
     public boolean ehPrincipal(Usuario usuario) {
-        return inicializacao.findById(1L)
-                .map(registro -> usuario.getId().equals(registro.getIdUsuario()))
+        return usuario != null && ehPrincipal(usuario.getId());
+    }
+
+    public boolean ehPrincipal(Long idUsuario) {
+        return idUsuario != null && inicializacao.findById(1L)
+                .map(registro -> idUsuario.equals(registro.getIdUsuario()))
                 .orElse(false);
     }
 
+    public void verificarPodeGerenciarPerfil(Long idAdministrador, Perfil perfilAlvo) {
+        verificarAdministrador(idAdministrador);
+        if (perfilAlvo == Perfil.ADMINISTRADOR && !ehPrincipal(idAdministrador))
+            throw negado();
+    }
+
     public void verificarPrincipal(Long id) {
-        if (!ehPrincipal(verificarAdministrador(id)))
+        verificarAdministrador(id);
+        if (!ehPrincipal(id))
             throw negado();
     }
 

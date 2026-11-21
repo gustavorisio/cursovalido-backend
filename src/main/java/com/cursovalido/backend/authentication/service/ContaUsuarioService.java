@@ -59,9 +59,10 @@ public class ContaUsuarioService {
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
         return new DadosPessoaisResponse(usuario.getId(),
-                usuario.getNomeCompleto(), usuario.getEmail(), usuario.getDataNascimento(),
+                usuario.getNomeCompleto(), usuario.getEmail(),
                 usuario.getMatricula(), usuario.getPerfil(),
-                usuario.isAtivo(), usuario.isEmailConfirmado(), usuario.getStatusAprovacao(),
+                usuario.isAtivo(), usuario.isEmailConfirmado(),
+                usuario.isDoisFatoresAtivos() || usuario.getPerfil().equipe(), usuario.getStatusAprovacao(),
                 usuario.getDeclarouMaiorIdade(), usuario.getAceitouTermosLgpd(), usuario.getVersaoTermos(),
                 usuario.getDataHoraAceite(),
                 repositorioAceitesArquivados.findByUsuarioIdOriginalOrderByDataHoraArquivamentoAsc(idUsuario).stream()
@@ -76,24 +77,41 @@ public class ContaUsuarioService {
     }
 
     @Transactional
+    public void configurarDoisFatores(Long idUsuario, boolean ativo) {
+        Usuario usuario = repositorio.findById(idUsuario)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
+        if (usuario.getPerfil().equipe() && !ativo) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "A autenticação em duas etapas é obrigatória para professores e administradores.");
+        }
+        usuario.setDoisFatoresAtivos(ativo);
+        repositorio.save(usuario);
+        auditoria.registrar(idUsuario, ativo ? "SEGUNDO_FATOR_ATIVADO" : "SEGUNDO_FATOR_DESATIVADO",
+                ativo ? "Autenticacao em duas etapas ativada" : "Autenticacao em duas etapas desativada", null);
+    }
+
+    @Transactional
     // Remove a conta e trata os registros ligados ao usuario.
     public void solicitarExclusao(Long idUsuario) {
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
+        impedirExclusaoAutonomaDeAdministrador(usuario);
         emails.enviarExclusaoConta(usuario, tokensEmail.criarExclusao(usuario));
     }
 
     @Transactional
     public void excluirConta(Long idUsuario, String codigo) {
-        tokensEmail.validarExclusao(idUsuario, codigo);
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));
+        impedirExclusaoAutonomaDeAdministrador(usuario);
+        tokensEmail.validarExclusao(idUsuario, codigo);
         encerrarConta(usuario);
     }
 
     @Transactional
     public void excluirPelaAdministracao(Long idUsuario, Long idAdministrador) {
-        privilegios.verificarPrincipal(idAdministrador);
+        privilegios.verificarAdministrador(idAdministrador);
+        boolean administradorPrincipal = privilegios.ehPrincipal(idAdministrador);
         if (idUsuario.equals(idAdministrador)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Nao e permitido excluir a propria conta pelo painel");
@@ -104,14 +122,24 @@ public class ContaUsuarioService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Nao e permitido excluir o administrador principal");
         }
-        if (usuario.getPerfil() != Perfil.PROFESSOR && usuario.getPerfil() != Perfil.ADMINISTRADOR) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A exclusao administrativa e restrita a equipe");
+        if (usuario.getPerfil() == Perfil.ADMINISTRADOR && !administradorPrincipal) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Somente o root pode remover outro administrador");
         }
         if (usuario.getExcluidoEm() != null)
             return;
         encerrarConta(usuario);
         auditoria.registrar(idAdministrador, "EXCLUSAO_ADMINISTRATIVA_CONTA",
-                "Usuario " + idUsuario + "; perfil " + usuario.getPerfil(), null);
+                "Conta removida; perfil " + usuario.getPerfil(), null);
+    }
+
+    private void impedirExclusaoAutonomaDeAdministrador(Usuario usuario) {
+        if (usuario.getPerfil() != Perfil.ADMINISTRADOR)
+            return;
+        if (privilegios.ehPrincipal(usuario))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A conta root nao pode ser excluida");
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Contas de administrador so podem ser removidas pelo root");
     }
 
     @Transactional
@@ -127,7 +155,9 @@ public class ContaUsuarioService {
         Long idUsuario = usuario.getId();
         ContaValidation.validarExclusao(usuario);
         identidades.registrar(usuario);
-        auditoria.registrar(idUsuario, "EXCLUSAO_CONTA", "Conta anonimizada e acessos revogados", null);
+        auditoria.registrar(idUsuario, "EXCLUSAO_CONTA",
+                "Conta desativada; identificadores substituidos e acessos revogados", null);
+        repositorioAuditoria.anonimizarPorUsuarioId(idUsuario);
         repositorioTokens.deleteByUsuarioId(idUsuario);
         sessoes.deleteByUsuarioId(idUsuario);
         arquivarAceite(usuario);
@@ -137,7 +167,6 @@ public class ContaUsuarioService {
         usuario.setNomeCompleto("Usuario excluido");
         usuario.setEmail("excluido-" + idUsuario + "@conta.invalid");
         usuario.setSenha("");
-        usuario.setDataNascimento(null);
         usuario.setMatricula("excluido-" + idUsuario);
         repositorio.saveAndFlush(usuario);
         usuariosForumRepositorio.findById(idUsuario)

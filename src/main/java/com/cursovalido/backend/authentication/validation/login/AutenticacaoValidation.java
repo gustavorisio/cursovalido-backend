@@ -36,10 +36,15 @@ public final class AutenticacaoValidation {
     }
 
     public static void validarConfirmacao(Usuario usuario, ModeracaoUsuarioService moderacao) {
+        if (usuario == null)
+            throw new IllegalArgumentException(
+                    "O código está incorreto ou venceu. Confira o código mais recente enviado ao seu e-mail ou peça um novo.");
         verificarSuspensao(usuario, moderacao);
+        if (usuario.getStatusAprovacao() == StatusAprovacao.PENDENTE_APROVACAO)
+            throw new PendenteAprovacaoException();
+        if (usuario.getStatusAprovacao() == StatusAprovacao.REJEITADO)
+            throw new AcessoRejeitadoException();
         if (!usuario.isAtivo())
-            throw new CredenciaisInvalidasException();
-        if (usuario.getStatusAprovacao() != StatusAprovacao.APROVADO)
             throw new CredenciaisInvalidasException();
     }
 

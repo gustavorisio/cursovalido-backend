@@ -36,6 +36,8 @@ public class SecurityConfig {
         private int custoSenha;
         @Value("${seguranca.limite-requisicoes:30}")
         private int limiteRequisicoes;
+        @Value("${seguranca.limite-autenticacao:5}")
+        private int limiteAutenticacao;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -248,7 +250,7 @@ public class SecurityConfig {
                                 .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(new HttpsFilter(httpsObrigatorio),
                                                 TokenJwtFilter.class)
-                                .addFilterBefore(new LimiteRequisicoesFilter(limiteRequisicoes),
+                                .addFilterBefore(new LimiteRequisicoesFilter(limiteRequisicoes, limiteAutenticacao),
                                                 TokenJwtFilter.class);
                 return http.build();
         }

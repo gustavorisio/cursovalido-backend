@@ -11,11 +11,11 @@ public final class ContaValidation {
         if (usuario
                 .getStatusAprovacao() != com.cursovalido.backend.authentication.entity.StatusAprovacao.PENDENTE_APROVACAO
                 || usuario.getExcluidoEm() != null)
-            throw new IllegalArgumentException("Pendencia indisponivel");
+            throw new IllegalArgumentException("Este cadastro não está mais aguardando aprovação.");
     }
 
     public static void validarExclusao(Usuario usuario) {
         if (usuario.getExcluidoEm() != null)
-            throw new IllegalArgumentException("Conta ja excluida");
+            throw new IllegalArgumentException("Esta conta já foi excluída.");
     }
 }

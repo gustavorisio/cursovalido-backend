@@ -18,6 +18,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class ModeracaoConfiguration implements WebMvcConfigurer {
     private final ModeracaoUsuarioService moderacao;
     private final PrivilegiosAdministrativosService privilegios;
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON = new com.fasterxml.jackson.databind.ObjectMapper();
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -39,8 +40,12 @@ public class ModeracaoConfiguration implements WebMvcConfigurer {
                     return bloquear(response, "CONTA_SUSPENSA",
                             moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.CONTA));
                 }
-                if (caminho.startsWith("/api/administracao/convites"))
-                    privilegios.verificarPrincipal(usuario.getId());
+                if (caminho.startsWith("/api/administracao/convites")) {
+                    if (caminho.equals("/api/administracao/convites/auditoria/integridade"))
+                        privilegios.verificarPrincipal(usuario.getId());
+                    else
+                        privilegios.verificarAdministrador(usuario.getId());
+                }
                 if (caminho.equals("/api/politicas")) {
                     if (request.getMethod().equals("POST"))
                         privilegios.verificarPrincipal(usuario.getId());
@@ -51,7 +56,9 @@ public class ModeracaoConfiguration implements WebMvcConfigurer {
                     return bloquear(response, "FORUM_SUSPENSO",
                             moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.FORUM));
                 }
-                boolean conteudoForum = caminhoDeConteudoForum(caminho);
+                // Denunciar continua possivel com restricao de topicos ou comentarios: e uma ferramenta de protecao.
+                boolean denuncia = caminho.endsWith("/denuncias");
+                boolean conteudoForum = !denuncia && caminhoDeConteudoForum(caminho);
                 if (conteudoForum) {
                     if (moderacao.restrito(usuario.getId(), EscopoSuspensao.TOPICOS)) {
                         return bloquear(response, "TOPICOS_SUSPENSOS",
@@ -59,7 +66,7 @@ public class ModeracaoConfiguration implements WebMvcConfigurer {
                     }
                     if (moderacao.restrito(usuario.getId(), EscopoSuspensao.COMENTARIOS)) {
                         return bloquear(response, "COMENTARIOS_SUSPENSOS",
-                                moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.TOPICOS));
+                                moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.COMENTARIOS));
                     }
                 }
                 return true;
@@ -81,7 +88,11 @@ public class ModeracaoConfiguration implements WebMvcConfigurer {
         response.setStatus(403);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        response.getWriter().write("{\"codigo\":\"" + codigo + "\",\"mensagem\":\"" + mensagem + "\"}");
+        // O motivo da suspensao e escrito pelo administrador: a serializacao evita JSON quebrado por aspas.
+        var corpo = new java.util.LinkedHashMap<String, String>();
+        corpo.put("codigo", codigo);
+        corpo.put("mensagem", mensagem);
+        JSON.writeValue(response.getWriter(), corpo);
         return false;
     }
 }

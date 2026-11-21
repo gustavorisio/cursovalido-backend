@@ -1,5 +1,6 @@
 package com.cursovalido.backend.forum;
 
+import com.cursovalido.backend.authentication.security.AnonimizacaoDados;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -43,7 +44,10 @@ import org.springframework.web.client.RestClient;
  * HTTP real, seguranca e persistencia reais. Apenas o envio externo de email e
  * mockado.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "seguranca.limite-requisicoes=10000")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+                "seguranca.limite-requisicoes=10000",
+                "seguranca.limite-autenticacao=10000"
+})
 @ActiveProfiles("test")
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -151,18 +155,18 @@ class ForumHttpIntegracaoTest {
                 String rota = "/api/administracao/usuarios/";
                 assertThat(enviar(HttpMethod.DELETE, rota + principal.id(), principal.token(), null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-                assertThat(enviar(HttpMethod.DELETE, rota + professor.id(), comum.token(), null, String.class)
-                                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
                 assertThat(enviar(HttpMethod.DELETE, rota + principal.id(), comum.token(), null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
                 assertThat(enviar(HttpMethod.DELETE, rota + autor.id(), principal.token(), null, String.class)
-                                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
                 assertThat(enviar(HttpMethod.DELETE, rota + comum.id(), professor.token(), null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                assertThat(enviar(HttpMethod.DELETE, rota + professor.id(), comum.token(), null, String.class)
+                                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
                 assertThat(enviar(HttpMethod.DELETE, rota + comum.id(), null, null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
                 assertThat(usuarios.findById(principal.id()).orElseThrow().getExcluidoEm()).isNull();
-                assertThat(usuarios.findById(professor.id()).orElseThrow().getExcluidoEm()).isNull();
+                assertThat(usuarios.findById(professor.id()).orElseThrow().getExcluidoEm()).isNotNull();
                 assertThat(enviar(HttpMethod.DELETE, rota + Long.MAX_VALUE, principal.token(), null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         }
@@ -191,7 +195,6 @@ class ForumHttpIntegracaoTest {
                 assertThat(excluido.getNomeCompleto()).isEqualTo("Usuario excluido");
                 assertThat(excluido.getEmail()).isEqualTo("excluido-" + alvo.id() + "@conta.invalid");
                 assertThat(excluido.getSenha()).isEmpty();
-                assertThat(excluido.getDataNascimento()).isNull();
                 assertThat(excluido.getMatricula()).isEqualTo("excluido-" + alvo.id());
                 assertThat(usuarios.findByEmail(email)).isEmpty();
                 assertThat(jdbc.queryForObject("select count(*) from tb_sessoes where usuario_id=?", Long.class,
@@ -244,7 +247,7 @@ class ForumHttpIntegracaoTest {
                 assertThat(enviar(HttpMethod.GET, usuariosUrl, comum.token(), null, lista).getBody())
                                 .filteredOn(u -> u.id().equals(professor.id())).singleElement().satisfies(u -> {
                                         assertThat(u.podeModerar()).isTrue();
-                                        assertThat(u.podeExcluir()).isFalse();
+                                        assertThat(u.podeExcluir()).isTrue();
                                 });
                 for (var admin : new Sessao[] { principal, outroAdmin, comum }) {
                         assertThat(enviar(HttpMethod.POST, usuariosUrl + "/" + admin.id() + "/suspensoes",
@@ -270,7 +273,7 @@ class ForumHttpIntegracaoTest {
         }
 
         @Test
-        void listagensMascaramAlunosEExibemEquipeSomenteParaAdministradores() {
+        void listagemDeModeracaoMascaraEmailsETrocaNomeCompletoPeloPrimeiroNome() {
                 var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-listagem@example.com");
                 var comum = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
                 var professor = cadastrarEAutenticar(Perfil.PROFESSOR);
@@ -283,26 +286,30 @@ class ForumHttpIntegracaoTest {
                                 .satisfies(u -> {
                                         assertThat(u.email())
                                                         .isEqualTo(emailAluno.substring(0, 1) + "*******@example.com");
-                                        assertThat(u.podeExcluir()).isFalse();
+                                        assertThat(u.nome()).isEqualTo("Participante");
+                                        assertThat(u.podeExcluir()).isTrue();
                                 });
                 assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(professor.id())).singleElement()
                                 .satisfies(u -> {
-                                        assertThat(u.email()).isEqualTo(emailProfessor);
+                                        assertThat(u.email()).isEqualTo(emailProfessor.substring(0, 1) + "*******@example.com");
+                                        assertThat(u.nome()).isEqualTo("Participante");
                                         assertThat(u.podeExcluir()).isTrue();
                                 });
                 assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(comum.id())).singleElement()
                                 .satisfies(u -> {
-                                        assertThat(u.email()).isEqualTo(emailComum);
+                                        assertThat(u.email()).isEqualTo(emailComum.substring(0, 1) + "*******@example.com");
+                                        assertThat(u.nome()).isEqualTo("Participante");
                                         assertThat(u.podeExcluir()).isTrue();
                                 });
                 assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(principal.id())).singleElement()
                                 .satisfies(u -> assertThat(u.podeExcluir()).isFalse());
                 assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", comum.token(), null,
                                 UsuarioAdministracaoResposta[].class).getBody())
-                                .allSatisfy(u -> assertThat(u.podeExcluir()).isFalse());
+                                .allSatisfy(u -> assertThat(u.podeExcluir())
+                                                .isEqualTo(u.perfil() != Perfil.ADMINISTRADOR));
                 for (String token : new String[] { principal.token(), comum.token() }) {
                         assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
-                                        .doesNotContain(emailAluno).contains(emailProfessor, emailComum);
+                                        .doesNotContain(emailAluno, emailProfessor, emailComum);
                 }
                 for (String token : new String[] { autor.token(), professor.token() }) {
                         assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
@@ -916,7 +923,7 @@ class ForumHttpIntegracaoTest {
                                 .isEqualTo(HttpStatus.UNAUTHORIZED);
                 long idNovo = cadastrarConvidado(email, principal.token());
                 assertThat(idNovo).isNotEqualTo(idAnterior);
-                assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", linkAnterior),
+                assertThat(enviar(HttpMethod.POST, "/api/convites/consultar", null, Map.of("token", linkAnterior),
                                 String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.BAD_REQUEST);
                 assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", sessaoAnterior, null, String.class)
@@ -929,9 +936,25 @@ class ForumHttpIntegracaoTest {
                                 .isEqualTo(HttpStatus.OK);
         }
 
-        @ParameterizedTest
-        @ValueSource(strings = { "PENDENTE", "CONCLUIDO" })
-        void novoConviteReaproveitaRegistroAntigoSemContaEInvalidaLinkAnterior(String statusAnterior) {
+        @Test
+        void segundoConviteParaEmailComConvitePendenteRetornaConflitoSemNovoEmail() {
+                var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-convite@example.com");
+                String email = "sem-conta@example.com";
+                assertThat(enviar(HttpMethod.POST, "/api/administracao/convites", principal.token(),
+                                new ConviteAcessoRequest(email, Perfil.PROFESSOR), String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.NO_CONTENT);
+                String tokenAnterior = convitesEnviados.get(email);
+                var resposta = enviar(HttpMethod.POST, "/api/administracao/convites", principal.token(),
+                                new ConviteAcessoRequest(email, Perfil.ADMINISTRADOR), Map.class);
+                assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                assertThat(resposta.getBody()).containsEntry("codigo", "CONVITE_JA_PENDENTE");
+                assertThat(convites.count()).isEqualTo(1);
+                assertThat(convitesEnviados.get(email)).isEqualTo(tokenAnterior);
+                verify(emails, times(1)).enviarConvite(any(), anyString());
+        }
+
+        @Test
+        void novoConviteAposConviteConcluidoSemContaGeraNovoLinkEInvalidaOAnterior() {
                 var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-convite@example.com");
                 String email = "sem-conta@example.com";
                 assertThat(enviar(HttpMethod.POST, "/api/administracao/convites", principal.token(),
@@ -940,8 +963,7 @@ class ForumHttpIntegracaoTest {
                 String tokenAnterior = convitesEnviados.get(email);
                 var conviteAnterior = convites.findByEmail(email).orElseThrow();
                 Long idConvite = conviteAnterior.getId();
-                conviteAnterior.setStatus(StatusConvite.valueOf(statusAnterior));
-                conviteAnterior.setEmailConfirmado(true);
+                conviteAnterior.concluir();
                 convites.saveAndFlush(conviteAnterior);
                 assertThat(enviar(HttpMethod.POST, "/api/administracao/convites", principal.token(),
                                 new ConviteAcessoRequest(email, Perfil.ADMINISTRADOR), String.class).getStatusCode())
@@ -953,7 +975,7 @@ class ForumHttpIntegracaoTest {
                 assertThat(novo.isEmailConfirmado()).isFalse();
                 assertThat(convites.count()).isEqualTo(2);
                 assertThat(convitesEnviados.get(email)).isNotEqualTo(tokenAnterior);
-                assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null,
+                assertThat(enviar(HttpMethod.POST, "/api/convites/consultar", null,
                                 Map.of("token", tokenAnterior),
                                 String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.BAD_REQUEST);
@@ -986,20 +1008,14 @@ class ForumHttpIntegracaoTest {
                 assertThat(dadosConvite.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(dadosConvite.getBody().email()).isEqualTo(email);
                 assertThat(dadosConvite.getBody().perfil()).isEqualTo(Perfil.PROFESSOR);
-                assertThat(enviar(HttpMethod.POST, "/api/convites/confirmar-email", null, Map.of("token", token),
-                                String.class)
-                                .getStatusCode())
-                                .isEqualTo(HttpStatus.NO_CONTENT);
                 var cadastro = new CadastroUsuarioRequest("Professor Convidado", email, SENHA, SENHA,
-                                LocalDate.of(1990, 1, 1),
                                 true, true, "teste-v1", true, "1.0");
                 assertThat(enviar(HttpMethod.POST, "/api/convites/completar-cadastro", null,
                                 Map.of("token", token, "cadastro", cadastro), String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.NO_CONTENT);
+                // O cadastro pelo link ja libera o acesso, sem aprovacao manual.
                 var usuario = usuarios.findByEmail(email).orElseThrow();
-                assertThat(enviar(HttpMethod.POST, "/api/administracao/convites/" + usuario.getId() + "/aprovar",
-                                tokenPrincipal, null, String.class).getStatusCode())
-                                .isEqualTo(HttpStatus.NO_CONTENT);
+                assertThat(usuario.isAtivo()).isTrue();
                 return usuario.getId();
         }
 
@@ -1019,7 +1035,7 @@ class ForumHttpIntegracaoTest {
                 for (int i = 1; i <= 3; i++) {
                         String email = "cadastro-" + i + "@example.com";
                         var cadastro = new CadastroUsuarioRequest("  João 12! da Silva ", email, SENHA, SENHA,
-                                        LocalDate.of(2000, 1, 1), true, true, "teste-v1");
+                                        true, true, "teste-v1", null, null);
                         var resposta = enviar(HttpMethod.POST, "/api/autenticacao/cadastro", null, cadastro,
                                         String.class);
                         assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -1050,7 +1066,7 @@ class ForumHttpIntegracaoTest {
                 String email = emailPrincipal == null ? "forum-" + numero + "@example.com" : emailPrincipal;
                 String nome = "Participante " + Character.toString((int) ('A' + numero % 26));
                 var requisicao = new CadastroUsuarioRequest(nome, email, SENHA, SENHA,
-                                LocalDate.of(2000, 1, 1), true, true, "teste-v1");
+                                true, true, "teste-v1", null, null);
                 cadastroUsuarios.cadastrar(requisicao, "2001:db8::" + Long.toHexString(numero));
                 // Bootstrap do administrador: o cadastro publico cria somente ALUNO.
                 if (perfil != Perfil.ALUNO) {
@@ -1072,7 +1088,9 @@ class ForumHttpIntegracaoTest {
                                 Map.of("email", email, "codigo", codigos.get(email)), AutenticacaoResponse.class);
                 assertThat(confirmacao.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(confirmacao.getBody().token()).isNotBlank();
-                return new Sessao(confirmacao.getBody().idUsuario(), nome, confirmacao.getBody().token());
+                // No forum, alunos aparecem com o sobrenome abreviado.
+                String nomeExibido = perfil == Perfil.ALUNO ? AnonimizacaoDados.abreviarNome(nome) : nome;
+                return new Sessao(confirmacao.getBody().idUsuario(), nomeExibido, confirmacao.getBody().token());
         }
 
         private TopicoResponse criarTopico(String titulo) {
@@ -1080,6 +1098,9 @@ class ForumHttpIntegracaoTest {
                                 new TopicoRequest(titulo, "Descricao " + titulo), TopicoResponse.class);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resposta.getBody().id()).isPositive();
+                // Libera o limite de criação entre tópicos dentro dos cenários de paginação.
+                jdbc.update("UPDATE tb_topics SET created_at = CURRENT_TIMESTAMP - INTERVAL '11 minutes' WHERE id = ?",
+                                resposta.getBody().id());
                 return resposta.getBody();
         }
 

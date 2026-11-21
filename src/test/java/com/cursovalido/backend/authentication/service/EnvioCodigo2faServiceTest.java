@@ -45,6 +45,32 @@ class EnvioCodigo2faServiceTest {
     }
 
     @Test
+    void novoLoginDepoisDeUmMinutoEnviaCodigoNovo() {
+        Usuario usuario = cadastrarUsuario();
+        TokenEmail token = new TokenEmail("hash", usuario, "CODIGO_2FA", LocalDateTime.now().plusMinutes(5));
+        ReflectionTestUtils.setField(token, "criadoEm", LocalDateTime.now().minusSeconds(61));
+        when(tokens.ultimoCodigo2fa(usuario)).thenReturn(Optional.of(token));
+        when(tokens.criarCodigo2fa(usuario)).thenReturn("654321");
+
+        service.enviar(1L, null, false);
+
+        verify(emails).enviarCodigo2fa(usuario, "654321");
+    }
+
+    @Test
+    void novoLoginDepoisDeUsarOCodigoEnviaCodigoNovo() {
+        Usuario usuario = cadastrarUsuario();
+        TokenEmail token = new TokenEmail("hash", usuario, "CODIGO_2FA", LocalDateTime.now().plusMinutes(5));
+        token.setUtilizado(true);
+        when(tokens.ultimoCodigo2fa(usuario)).thenReturn(Optional.of(token));
+        when(tokens.criarCodigo2fa(usuario)).thenReturn("654321");
+
+        service.enviar(1L, null, false);
+
+        verify(emails).enviarCodigo2fa(usuario, "654321");
+    }
+
+    @Test
     void deveAguardarIntervaloMinimoEntreEnvios() {
         Usuario usuario = cadastrarUsuario();
         TokenEmail token = new TokenEmail("hash", usuario, "CODIGO_2FA", LocalDateTime.now().plusMinutes(5));

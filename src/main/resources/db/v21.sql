@@ -39,7 +39,6 @@ CREATE TABLE tb_usuarios (
     nome_completo VARCHAR(120) NOT NULL,
     email VARCHAR(254) NOT NULL,
     senha VARCHAR(60) NOT NULL,
-    data_nascimento DATE,
     matricula VARCHAR(50) NOT NULL,
     declarou_maior_idade BOOLEAN NOT NULL,
     aceitou_termos_lgpd BOOLEAN NOT NULL,
@@ -55,7 +54,7 @@ CREATE TABLE tb_usuarios (
     CONSTRAINT uk_tb_usuarios_matricula UNIQUE (matricula),
     CONSTRAINT ck_tb_usuarios_dados_cadastro CHECK (
         excluido_em IS NOT NULL OR perfil = 'ADMINISTRADOR' OR (
-            data_nascimento IS NOT NULL AND data_hora_aceite IS NOT NULL AND versao_termos IS NOT NULL
+            data_hora_aceite IS NOT NULL AND versao_termos IS NOT NULL
         )
     )
 );

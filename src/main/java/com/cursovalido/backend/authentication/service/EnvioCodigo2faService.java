@@ -29,7 +29,9 @@ public class EnvioCodigo2faService {
                 return;
             if (ultimo.getCriadoEm().plusSeconds(60).isAfter(agora))
                 throw new LimiteReenvioException();
-        } else if (ultimo != null && !ultimo.isUtilizado() && ultimo.getExpiraEm().isAfter(agora)) {
+        } else if (ultimo != null && !ultimo.isUtilizado() && ultimo.getExpiraEm().isAfter(agora)
+                && ultimo.getCriadoEm().plusSeconds(60).isAfter(agora)) {
+            // Evita dois e-mails quando o login e enviado duas vezes seguidas.
             return;
         }
 

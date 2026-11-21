@@ -21,10 +21,10 @@ class AutenticacaoErrosHttpTest {
                 for (var status : new HttpStatus[] { HttpStatus.BAD_REQUEST, HttpStatus.FORBIDDEN,
                                 HttpStatus.SERVICE_UNAVAILABLE }) {
                         doThrow(new ResponseStatusException(status, "Motivo da recusa"))
-                                        .when(convites).confirmarEmail("token");
+                                        .when(convites).consultar("token");
                         MockMvcBuilders.standaloneSetup(new ConviteController(convites))
                                         .setControllerAdvice(new AutenticacaoExceptionHandler()).build()
-                                        .perform(post("/api/convites/confirmar-email")
+                                        .perform(post("/api/convites/consultar")
                                                         .contentType(MediaType.APPLICATION_JSON)
                                                         .content("{\"token\":\"token\"}"))
                                         .andExpect(status().is(status.value()))
@@ -41,10 +41,34 @@ class AutenticacaoErrosHttpTest {
         void jsonInvalidoRetornaErroLegivel() throws Exception {
                 MockMvcBuilders.standaloneSetup(new ConviteController(convites))
                                 .setControllerAdvice(new AutenticacaoExceptionHandler()).build()
-                                .perform(post("/api/convites/confirmar-email").contentType(MediaType.APPLICATION_JSON)
+                                .perform(post("/api/convites/consultar").contentType(MediaType.APPLICATION_JSON)
                                                 .content("{"))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.codigo").value("JSON_INVALIDO"));
                 verifyNoInteractions(convites);
+        }
+
+        @Test
+        void conviteNaoTemMaisEtapaSeparadaDeConfirmacaoDeEmail() throws Exception {
+                MockMvcBuilders.standaloneSetup(new ConviteController(convites))
+                                .setControllerAdvice(new AutenticacaoExceptionHandler()).build()
+                                .perform(post("/api/convites/confirmar-email").contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"token\":\"token\"}"))
+                                .andExpect(status().isNotFound());
+                verifyNoInteractions(convites);
+        }
+
+        @Test
+        void conflitoDeConviteChegaComCodigoEMensagem() throws Exception {
+                doThrow(new com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException(
+                                HttpStatus.CONFLICT, "CONVITE_JA_PENDENTE", "Já existe um convite pendente para este e-mail."))
+                                .when(convites).consultar("token");
+                MockMvcBuilders.standaloneSetup(new ConviteController(convites))
+                                .setControllerAdvice(new AutenticacaoExceptionHandler()).build()
+                                .perform(post("/api/convites/consultar").contentType(MediaType.APPLICATION_JSON)
+                                                .content("{\"token\":\"token\"}"))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.codigo").value("CONVITE_JA_PENDENTE"))
+                                .andExpect(jsonPath("$.erro").value("Já existe um convite pendente para este e-mail."));
         }
 }

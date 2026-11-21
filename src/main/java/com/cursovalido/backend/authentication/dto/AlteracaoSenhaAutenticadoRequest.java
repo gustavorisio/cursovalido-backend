@@ -1,11 +1,23 @@
 package com.cursovalido.backend.authentication.dto;
 
 import com.cursovalido.backend.authentication.validation.senha.SenhaValida;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record AlteracaoSenhaAutenticadoRequest(
-                @NotBlank @Size(max = 1024, message = "Informe uma senha valida.") String senhaAtual,
-                @NotBlank @Size(max = 72, message = SenhaValida.MENSAGEM) @SenhaValida String novaSenha,
-                @NotBlank @Size(max = 72, message = SenhaValida.MENSAGEM) @SenhaValida String confirmacaoSenha) {
+        @NotBlank(message = "Informe sua senha atual.") @Size(max = 72, message = "A senha atual deve ter no máximo 72 caracteres.") String senhaAtual,
+        @NotBlank(message = "Informe a nova senha.") @SenhaValida String novaSenha,
+        @NotBlank(message = "Confirme a nova senha.") @Size(max = 72, message = "A confirmação deve ter no máximo 72 caracteres.") String confirmacaoSenha) {
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @AssertTrue(message = "A confirmação deve ser igual à nova senha.")
+    public boolean isConfirmacaoSenhaValida() {
+        return novaSenha == null || confirmacaoSenha == null || novaSenha.equals(confirmacaoSenha);
+    }
+
+    @Override
+    public String toString() {
+        return "AlteracaoSenhaAutenticadoRequest[]";
+    }
 }

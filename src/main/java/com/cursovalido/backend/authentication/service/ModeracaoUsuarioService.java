@@ -4,6 +4,7 @@ import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.security.VisibilidadeEmail;
+import com.cursovalido.backend.authentication.security.AnonimizacaoDados;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.authentication.validation.moderacao.ModeracaoValidation;
 import java.time.Instant;
@@ -103,11 +104,11 @@ public class ModeracaoUsuarioService {
             Usuario usuario) {
         boolean podeModerar = ModeracaoValidation.podeModerar(administrador, usuario, administradorPrincipal,
                 privilegios);
-        boolean podeExcluir = administradorPrincipal && podeModerar
-                && (usuario.getPerfil() == Perfil.PROFESSOR || usuario.getPerfil() == Perfil.ADMINISTRADOR);
-        return new UsuarioAdministracaoResposta(usuario.getId(), usuario.getNomeCompleto(),
-                VisibilidadeEmail.paraListagem(usuario.getEmail(), usuario.getPerfil().name(), true),
-                usuario.getPerfil(), usuario.isAtivo(), podeModerar, podeExcluir,
+        boolean podeExcluir = podeModerar
+                && (administradorPrincipal || usuario.getPerfil() != Perfil.ADMINISTRADOR);
+        return new UsuarioAdministracaoResposta(usuario.getId(), AnonimizacaoDados.primeiroNome(usuario.getNomeCompleto()),
+                VisibilidadeEmail.mascarar(usuario.getEmail()),
+                usuario.getPerfil(), privilegios.ehPrincipal(usuario), usuario.isAtivo(), podeModerar, podeExcluir,
                 vigentes(usuario.getId(), usuario).stream().map(SuspensaoResponse::de).toList());
     }
 

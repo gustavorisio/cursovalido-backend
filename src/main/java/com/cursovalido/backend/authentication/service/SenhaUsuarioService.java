@@ -23,7 +23,7 @@ public class SenhaUsuarioService {
     public void alterarSenhaAutenticado(Long idUsuario, String senhaAtual, String novaSenha, String confirmacaoSenha) {
         var usuario = repositorio.findById(idUsuario)
                 .filter(conta -> conta.isAtivo())
-                .orElseThrow(() -> new IllegalArgumentException("Conta indisponivel."));
+                .orElseThrow(() -> new IllegalArgumentException("Conta indisponível."));
         SenhaUsuarioValidation.validarAlteracao(usuario, senhaAtual, novaSenha, confirmacaoSenha, codificadorSenha);
         usuario.setSenha(codificadorSenha.encode(novaSenha));
         repositorio.save(usuario);
