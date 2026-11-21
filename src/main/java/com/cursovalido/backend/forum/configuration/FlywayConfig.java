@@ -14,13 +14,9 @@ import org.springframework.context.annotation.Profile;
 @Profile("!test")
 public class FlywayConfig {
     @Bean(initMethod = "migrate")
-    public Flyway flyway(DataSource dataSource,
-            @Value("${spring.flyway.baseline-on-migrate:false}") boolean baselineOnMigrate,
-            @Value("${spring.flyway.baseline-version:1}") String baselineVersion) {
+    public Flyway flyway(DataSource dataSource) {
         return configuracao()
                 .dataSource(dataSource)
-                .baselineOnMigrate(baselineOnMigrate)
-                .baselineVersion(baselineVersion)
                 .validateOnMigrate(true)
                 .cleanDisabled(true)
                 .load();
