@@ -32,7 +32,10 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+                "seguranca.limite-requisicoes=10000",
+                "seguranca.limite-autenticacao=10000"
+})
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Transactional
@@ -587,7 +590,6 @@ class AulasIntegracaoTest {
                 usuario.setEmail(nome + "@aulas.example.com");
                 usuario.setSenha("hash-teste");
                 usuario.setMatricula("aulas-" + nome);
-                usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
                 usuario.setDeclarouMaiorIdade(true);
                 usuario.setAceitouTermosLgpd(true);
                 usuario.setDataHoraAceite(LocalDateTime.now());
