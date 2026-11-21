@@ -24,7 +24,7 @@ class SchemaInicialPostgresTest {
 
     @DynamicPropertySource
     static void banco(DynamicPropertyRegistry registry) {
-        PostgresTeste.configurar(registry, "schema_unificado");
+        PostgresTeste.configurar(registry, "schema_inicial_contexto");
     }
 
     @Test
