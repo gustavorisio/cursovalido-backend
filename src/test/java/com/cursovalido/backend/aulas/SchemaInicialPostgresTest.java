@@ -13,7 +13,13 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-@SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=validate")
+@SpringBootTest(properties = {
+        "spring.jpa.hibernate.ddl-auto=validate",
+        "JWT_SECRET=chave-jwt-apenas-para-testes-com-mais-de-32-caracteres",
+        "AUDITORIA_CHAVE=chave-auditoria-apenas-para-testes",
+        "RESEND_API_KEY=chave-ficticia-de-teste",
+        "RESEND_FROM_EMAIL=testes@example.com"
+})
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class SchemaInicialPostgresTest {
