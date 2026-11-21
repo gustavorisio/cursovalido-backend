@@ -87,7 +87,7 @@ No pgAdmin ou em outro cliente PostgreSQL, crie o banco:
 CREATE DATABASE cursovalido;
 ```
 
-No Supabase, crie um projeto e use o banco `postgres` fornecido pelo projeto; não execute `CREATE DATABASE`. O Flyway aplica as migrações da aplicação durante a inicialização do backend.
+Em um serviço PostgreSQL gerenciado, crie o banco pelo painel do provedor e use os dados de conexão fornecidos por ele. O Flyway aplica as migrações da aplicação durante a inicialização do backend.
 
 Utilize um usuário com permissão para conectar ao banco e criar os objetos das migrações. O Flyway cria as tabelas na inicialização, a partir dos scripts em `src/main/resources/db/migration`. Depois, o Hibernate valida a estrutura do banco.
 
@@ -101,33 +101,15 @@ A V2 remove CPF e seu hash do cadastro e das contas excluídas, preserva contas,
 
 No Windows, pesquise **Editar as variáveis de ambiente do sistema**, clique em **Variáveis de Ambiente** e adicione os valores em **Variáveis de usuário**. Cadastre cada nome e valor separadamente, sem aspas.
 
-Para conectar a um PostgreSQL local, use:
+Configure a conexão com PostgreSQL pelas variáveis de ambiente abaixo. Elas funcionam com banco local, VPS ou serviço gerenciado:
 
 ```text
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=cursovalido
-DB_USERNAME=seu_usuario
-DB_PASSWORD=sua_senha
-DB_SSL_MODE=disable
+SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/banco?sslmode=require
+SPRING_DATASOURCE_USERNAME=usuario_do_banco
+SPRING_DATASOURCE_PASSWORD=senha_do_banco
 ```
 
-Para usar o Supabase, abra **Connect** no painel do projeto e copie os dados de conexão. Este backend Spring Boot mantém conexões e transações entre requisições: use a conexão **Direct** se o host de implantação tiver IPv6; em ambientes IPv4, use **Session pooler** (porta `5432`). O modo **Transaction pooler** (porta `6543`) é voltado a conexões curtas e tem limitações de estado/prepared statements que não combinam com a configuração atual do Hibernate.
-
-Configure os campos copiados do Supabase nas variáveis abaixo. Para o Session pooler, o usuário normalmente tem o formato `postgres.<project-ref>`; para Direct, normalmente é `postgres`. Use o nome do banco fornecido pelo painel, geralmente `postgres`.
-
-```text
-SUPABASE_DB_HOST=host_copiado_do_painel
-SUPABASE_DB_PORT=5432
-SUPABASE_DB_NAME=postgres
-SUPABASE_DB_USERNAME=usuario_copiado_do_painel
-SUPABASE_DB_PASSWORD=senha_do_banco
-SUPABASE_DB_SSL_MODE=require
-DB_POOL_MAX_SIZE=5
-DB_POOL_MIN_IDLE=1
-```
-
-Também é possível definir `SUPABASE_DB_URL` como URL **JDBC** (`jdbc:postgresql://host:porta/banco?sslmode=require`); nesse caso, ela substitui host, porta, banco e SSL, mas usuário e senha continuam nas variáveis próprias. Para validar também o certificado do servidor, use `sslmode=verify-full` e acrescente `sslrootcert=caminho/do/ca-certificate.pem` à URL, com o certificado raiz baixado nas configurações do banco Supabase. `require` criptografa a conexão; `verify-full` também valida a identidade do servidor. Mantenha as credenciais somente no ambiente do backend, nunca em variáveis `VITE_` do frontend.
+Use `sslmode=require` quando o provedor exigir conexão TLS. Para validar também a identidade do servidor, use `sslmode=verify-full` e configure o certificado raiz conforme a documentação do provedor. Não coloque usuário ou senha dentro da URL: mantenha-os nas variáveis próprias. Defina também `DB_POOL_MAX_SIZE` e `DB_POOL_MIN_IDLE` para ajustar o pool de conexões quando necessário. Guarde os valores no ambiente do servidor ou em um arquivo `.env` local ignorado pelo Git; nunca os inclua no frontend nem em commits.
 
 Para autenticação e auditoria:
 
