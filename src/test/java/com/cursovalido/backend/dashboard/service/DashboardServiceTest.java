@@ -88,6 +88,30 @@ class DashboardServiceTest {
         verifyNoInteractions(dashboard);
     }
 
+    @Test
+    void validaPeriodoDeMesesEDataFutura() {
+        cadastrarUsuario(Perfil.ADMINISTRADOR);
+
+        assertThrows(ResponseStatusException.class, () -> service.matriculasPorMes(1L, 0));
+        assertThrows(ResponseStatusException.class, () -> service.matriculasPorMes(1L, 25));
+        assertThrows(ResponseStatusException.class,
+                () -> service.atividadeDia(1L, LocalDate.now(ZoneId.of("America/Sao_Paulo")).plusDays(2)));
+    }
+
+    @Test
+    void recusaAdministradorInativoAusenteOuSemIdentificacao() {
+        Usuario inativo = new Usuario();
+        inativo.setPerfil(Perfil.ADMINISTRADOR);
+        inativo.setAtivo(false);
+        when(usuarios.findById(1L)).thenReturn(Optional.of(inativo));
+        when(usuarios.findById(2L)).thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> service.resumo(1L));
+        assertThrows(ResponseStatusException.class, () -> service.resumo(2L));
+        assertThrows(ResponseStatusException.class, () -> service.resumo(null));
+        verifyNoInteractions(dashboard);
+    }
+
     private void cadastrarUsuario(Perfil perfil) {
         Usuario usuario = new Usuario();
         usuario.setPerfil(perfil);

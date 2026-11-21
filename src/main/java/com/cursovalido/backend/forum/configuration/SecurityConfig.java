@@ -69,9 +69,6 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**",
-                                                                "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml")
-                                                .permitAll()
                                                 // Rotas publicas de autenticacao e cadastro.
                                                 .requestMatchers(HttpMethod.POST, "/api/suporte/solicitacoes")
                                                 .permitAll()
@@ -150,11 +147,15 @@ public class SecurityConfig {
                                                                 "/api/autenticacao/conta/solicitar-exclusao",
                                                                 "/api/autenticacao/alterar-senha-autenticado")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/autenticacao/segundo-fator")
+                                                .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos",
-                                                                "/api/catalogo/temas")
+                                                                "/api/catalogo/temas", "/api/inicio/video")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/inicio/video")
+                                                .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/temas")
                                                 .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/temas/*")
