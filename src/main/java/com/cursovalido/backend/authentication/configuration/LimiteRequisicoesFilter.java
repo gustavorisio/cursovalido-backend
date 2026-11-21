@@ -6,10 +6,19 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.cursovalido.backend.authentication.security.RespostaErroHttp;
 
 public class LimiteRequisicoesFilter extends OncePerRequestFilter {
+    private static final Set<String> ROTAS_AUTENTICACAO_RESTRITAS = Set.of(
+            "/api/autenticacao/login",
+            "/api/autenticacao/cadastro",
+            "/api/autenticacao/confirmar-2fa",
+            "/api/autenticacao/reenviar-2fa",
+            "/api/autenticacao/solicitar-alteracao-senha",
+            "/api/autenticacao/alterar-senha",
+            "/api/autenticacao/alterar-senha-autenticado");
     private final Map<String, Janela> janelas = new HashMap<>();
     private final int limite;
 
@@ -28,9 +37,11 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String caminho = request.getRequestURI();
         if (deveLimitar(request)) {
-            if (!permitir(request.getRemoteAddr() + ":" + caminho)) {
-                response.setHeader("Retry-After", "60");
-                RespostaErroHttp.escrever(response, 429, "Muitas solicitacoes. Aguarde um minuto.",
+            int limiteDaRota = ROTAS_AUTENTICACAO_RESTRITAS.contains(caminho) ? 5 : limite;
+            int aguardar = 60;
+            if (!permitir(request.getRemoteAddr() + ":" + caminho, limiteDaRota, Instant.now())) {
+                response.setHeader("Retry-After", String.valueOf(aguardar));
+                RespostaErroHttp.escrever(response, 429, "Muitas solicitações em sequência. Aguarde um minuto e tente novamente.",
                         "LIMITE_REQUISICOES_ATINGIDO");
                 return;
             }
@@ -43,25 +54,13 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
         if ("GET".equals(request.getMethod()) && ("/termos-aceite.html".equals(documento)
                 || "/politica-privacidade.html".equals(documento)))
             return true;
-        boolean metodoLimitado = "POST".equals(request.getMethod());
-        if ("DELETE".equals(request.getMethod())) {
-            metodoLimitado = true;
-        }
-        if (!metodoLimitado) {
-            return false;
-        }
-        String caminho = request.getRequestURI();
-        if ("/api/suporte/solicitacoes".equals(caminho)) {
-            return true;
-        }
-        if (caminho.startsWith("/api/autenticacao/")) {
-            return true;
-        }
-        return caminho.startsWith("/api/convites/");
+        String metodo = request.getMethod();
+        boolean alteracao = "POST".equals(metodo) || "PUT".equals(metodo)
+                || "PATCH".equals(metodo) || "DELETE".equals(metodo);
+        return alteracao && request.getRequestURI().startsWith("/api/");
     }
 
-    private synchronized boolean permitir(String identificador) {
-        Instant agora = Instant.now();
+    private synchronized boolean permitir(String identificador, int limiteDaRota, Instant agora) {
         janelas.entrySet().removeIf(item -> item.getValue().inicio.plusSeconds(60).isBefore(agora));
         Janela janela = janelas.get(identificador);
         if (janela == null) {
@@ -71,7 +70,7 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
             janelas.put(identificador, janela);
         }
         janela.quantidade++;
-        return janela.quantidade <= limite;
+        return janela.quantidade <= limiteDaRota;
     }
 
     private static class Janela {

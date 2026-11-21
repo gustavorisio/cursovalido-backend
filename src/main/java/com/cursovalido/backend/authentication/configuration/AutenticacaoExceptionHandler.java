@@ -54,6 +54,14 @@ public class AutenticacaoExceptionHandler {
                 "Seu cadastro está aguardando aprovação. Aguarde a liberação do administrador.", "PENDENTE_APROVACAO");
     }
 
+    @ExceptionHandler(com.cursovalido.backend.forum.exception.ConteudoOfensivoException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Codigo2faErroResponse conteudoOfensivo(
+            com.cursovalido.backend.forum.exception.ConteudoOfensivoException excecao) {
+        return new Codigo2faErroResponse(excecao.getReason(),
+                com.cursovalido.backend.forum.exception.ConteudoOfensivoException.CODIGO);
+    }
+
     @ExceptionHandler(AcessoRejeitadoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Codigo2faErroResponse cadastroRejeitado(AcessoRejeitadoException excecao) {
@@ -87,9 +95,18 @@ public class AutenticacaoExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Codigo2faErroResponse> operacaoRecusada(ResponseStatusException excecao) {
+        String motivo = excecao.getReason() == null ? "Operacao recusada" : excecao.getReason();
+        if (excecao.getStatusCode().value() == HttpStatus.SERVICE_UNAVAILABLE.value()
+                && (motivo.startsWith("Integracao com YouTube")
+                        || motivo.startsWith("Canal autorizado do YouTube"))) {
+            log.warn("Cadastro de vídeo do YouTube indisponível: configuração necessária ausente ou inválida");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(new Codigo2faErroResponse(
+                            "Integração do YouTube não configurada. Defina YOUTUBE_API_KEY e YOUTUBE_ALLOWED_CHANNEL_ID para usar vídeos do YouTube.",
+                            "YOUTUBE_NAO_CONFIGURADO"));
+        }
         if (excecao.getStatusCode().is5xxServerError())
             return falhaInterna(excecao, excecao.getStatusCode());
-        String motivo = excecao.getReason() == null ? "Operacao recusada" : excecao.getReason();
         return ResponseEntity.status(excecao.getStatusCode()).headers(excecao.getHeaders())
                 .body(new Codigo2faErroResponse(motivo, "OPERACAO_RECUSADA"));
     }
@@ -111,10 +128,17 @@ public class AutenticacaoExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> camposInvalidos(MethodArgumentNotValidException excecao) {
         Map<String, String> campos = new LinkedHashMap<>();
-        for (var erro : excecao.getBindingResult().getFieldErrors())
-            campos.put(erro.getField(), erro.getDefaultMessage());
+        // Um campo pode violar mais de uma regra; o aviso de preenchimento obrigatorio tem prioridade.
+        for (var erro : excecao.getBindingResult().getFieldErrors()) {
+            if (!campos.containsKey(erro.getField()) || campoObrigatorio(erro.getCode()))
+                campos.put(erro.getField(), erro.getDefaultMessage());
+        }
         return Map.of("erro", "Confira os campos indicados e tente novamente.", "codigo", "CAMPOS_INVALIDOS", "campos",
                 campos);
+    }
+
+    private static boolean campoObrigatorio(String codigo) {
+        return "NotBlank".equals(codigo) || "NotNull".equals(codigo);
     }
 
     @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)

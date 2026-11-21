@@ -1,7 +1,6 @@
 package com.cursovalido.backend.authentication.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,8 +23,6 @@ public class Usuario {
     private String email;
     @Column(nullable = false, length = 60)
     private String senha;
-    @Column(name = "data_nascimento")
-    private LocalDate dataNascimento;
     @Column(nullable = false, unique = true, length = 50)
     private String matricula;
     @Column(name = "declarou_maior_idade", nullable = false)
@@ -45,6 +42,8 @@ public class Usuario {
     private LocalDateTime excluidoEm;
     @Column(name = "email_confirmado", nullable = false)
     private boolean emailConfirmado = false;
+    @Column(name = "dois_fatores_ativos", nullable = false)
+    private boolean doisFatoresAtivos = false;
     @Enumerated(EnumType.STRING)
     @Column(name = "status_aprovacao", nullable = false)
     private StatusAprovacao statusAprovacao = StatusAprovacao.APROVADO;

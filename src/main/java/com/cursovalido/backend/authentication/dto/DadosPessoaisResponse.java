@@ -2,13 +2,13 @@ package com.cursovalido.backend.authentication.dto;
 
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record DadosPessoaisResponse(Long id, String nomeCompleto, String email,
-                LocalDate dataNascimento, String matricula,
+                String matricula,
                 Perfil perfil, boolean ativo, boolean emailConfirmado,
+                boolean doisFatoresAtivos,
                 StatusAprovacao statusAprovacao,
                 Boolean declarouMaiorIdade, Boolean aceitouTermosLgpd, String versaoTermos,
                 LocalDateTime dataHoraAceite, List<Consentimento> historicoConsentimentos,
