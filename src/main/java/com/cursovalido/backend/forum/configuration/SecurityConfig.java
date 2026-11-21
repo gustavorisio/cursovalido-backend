@@ -153,8 +153,10 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos",
-                                                                "/api/catalogo/temas")
+                                                                "/api/catalogo/temas", "/api/inicio/video")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/inicio/video")
+                                                .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/temas")
                                                 .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/temas/*")
