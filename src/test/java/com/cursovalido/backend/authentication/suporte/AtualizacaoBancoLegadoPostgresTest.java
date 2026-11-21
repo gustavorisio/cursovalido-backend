@@ -15,7 +15,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 class AtualizacaoBancoLegadoPostgresTest {
     @Test
-    void bancoVazioRecebeSomenteSchemaUnificadoV21() {
+    void bancoVazioRecebeSchemaInicialV1() {
         var propriedades = new HashMap<String, Supplier<?>>();
         PostgresTeste.configurar(propriedades::put, "schema_unificado");
         var fonte = new DriverManagerDataSource(
@@ -23,8 +23,9 @@ class AtualizacaoBancoLegadoPostgresTest {
                 propriedades.get("spring.datasource.username").get().toString(),
                 propriedades.get("spring.datasource.password").get().toString());
         Flyway flyway = FlywayConfig.configuracao().dataSource(fonte).load();
+        flyway.migrate();
 
-        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("21");
+        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("1");
         assertThat(flyway.info().pending()).isEmpty();
 
         var jdbc = new JdbcTemplate(fonte);

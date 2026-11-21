@@ -16,7 +16,7 @@ import org.springframework.test.context.DynamicPropertySource;
 @SpringBootTest(properties = "spring.jpa.hibernate.ddl-auto=validate")
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class SchemaV3PostgresTest {
+class SchemaInicialPostgresTest {
     @Autowired
     JdbcTemplate jdbc;
     @Autowired
@@ -28,8 +28,8 @@ class SchemaV3PostgresTest {
     }
 
     @Test
-    void bancoNovoInicializaComUmaUnicaV21EDeixaDocumentosParaOPublicacaoDoRoot() {
-        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("21");
+    void bancoNovoInicializaComUmaUnicaV1EDeixaDocumentosParaOPublicacaoDoRoot() {
+        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("1");
         assertThat(flyway.info().pending()).isEmpty();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tb_politicas", Long.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tb_politicas_privacidade", Long.class)).isZero();

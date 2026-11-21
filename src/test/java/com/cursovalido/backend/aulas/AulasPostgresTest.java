@@ -216,7 +216,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 var flyway = FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
                 var pendentes = flyway.info().pending();
                 assertThat(pendentes).extracting(item -> item.getVersion().getVersion())
-                                .containsExactly("21");
+                                .containsExactly("1");
                 assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
                 assertThat(flyway.info().pending()).isEmpty();
                 assertThat(flyway.info().current().getVersion())
