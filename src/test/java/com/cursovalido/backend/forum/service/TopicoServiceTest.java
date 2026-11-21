@@ -1,5 +1,6 @@
 package com.cursovalido.backend.forum.service;
 
+import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,7 +53,7 @@ class TopicoServiceTest {
         Topico topico = new Topico();
         topico.setTitulo("Java");
         topico.setDescricao("Duvida");
-        when(usuarios.buscarAtivo(7L)).thenReturn(usuario);
+        when(usuarios.bloquearAtivo(7L)).thenReturn(usuario);
         when(repositorio.save(topico)).thenReturn(topico);
 
         Topico resultado = servico.criar(topico, 7L);
@@ -116,7 +117,7 @@ class TopicoServiceTest {
         topico.setAtivo(false);
         topico.setFechado(true);
         topico.setQuantidadeRespostas(12);
-        when(usuarios.buscarAtivo(7L)).thenReturn(usuario);
+        when(usuarios.bloquearAtivo(7L)).thenReturn(usuario);
         when(repositorio.save(topico)).thenReturn(topico);
         var antes = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC);
         Topico resultado = servico.criar(topico, 7L);
@@ -213,5 +214,37 @@ class TopicoServiceTest {
             assertThat(topico.isAtivo()).isFalse();
         else
             assertThat(topico.isFechado()).isTrue();
+    }
+
+    @Test
+    void topicoComPalavraoNaoESalvoEFicaRegistradoNaAuditoria() {
+        Topico topico = new Topico();
+        topico.setTitulo("Duvida");
+        topico.setDescricao("que porra de erro");
+        when(usuarios.bloquearAtivo(7L)).thenReturn(usuario);
+
+        assertThrows(ConteudoOfensivoException.class, () -> servico.criar(topico, 7L));
+
+        verify(repositorio, never()).save(any());
+        verify(auditoria).registrar(7L, "CONTEUDO_OFENSIVO_BLOQUEADO", "Topico", null);
+    }
+
+    @Test
+    void edicaoComTermoOfensivoNoTituloERecusada() {
+        Topico existente = new Topico();
+        existente.setId(3L);
+        existente.setIdAutor(7L);
+        existente.setTitulo("Antes");
+        existente.setDescricao("Texto");
+        Topico dados = new Topico();
+        dados.setTitulo("seu idiota");
+        dados.setDescricao("Texto");
+        when(usuarios.buscarAtivo(7L)).thenReturn(usuario);
+        when(repositorio.findById(3L)).thenReturn(Optional.of(existente));
+
+        assertThrows(ConteudoOfensivoException.class, () -> servico.editar(3L, dados, 7L));
+
+        assertEquals("Antes", existente.getTitulo());
+        verify(repositorio, never()).save(any());
     }
 }

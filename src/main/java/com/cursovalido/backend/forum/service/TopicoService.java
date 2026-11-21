@@ -8,6 +8,7 @@ import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
 import com.cursovalido.backend.forum.repository.TopicoRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
+import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
@@ -25,6 +28,7 @@ public class TopicoService {
     private final TopicoRepository repositorioTopicos;
     private final UsuarioForumService servicoUsuarios;
     private final LogAuditoriaService auditoria;
+    private final FiltroConteudoOfensivo filtroConteudo = new FiltroConteudoOfensivo();
 
     // Lista os topicos mais recentes.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho) {
@@ -62,10 +66,16 @@ public class TopicoService {
     // Cria um novo topico para o usuario informado.
     @Transactional
     public Topico criar(Topico topico, Long idUsuario) {
-        UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
+        UsuarioForum usuario = servicoUsuarios.bloquearAtivo(idUsuario);
+        LocalDateTime agora = LocalDateTime.now(ZoneOffset.UTC);
+        if (repositorioTopicos.existsByIdAutorAndCriadoEmAfter(usuario.getId(), agora.minusMinutes(10))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Você já criou um tópico recentemente. Aguarde 10 minutos antes de criar outro.");
+        }
+        validarConteudo(idUsuario, topico.getTitulo(), topico.getDescricao());
         topico.setIdAutor(usuario.getId());
         topico.setUsuarioAutor(usuario);
-        topico.setCriadoEm(LocalDateTime.now(ZoneOffset.UTC));
+        topico.setCriadoEm(agora);
         topico.setAtivo(true);
         topico.setFechado(false);
         Topico topicoSalvo = repositorioTopicos.save(topico);
@@ -80,6 +90,7 @@ public class TopicoService {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);
         verificarAutoria(topico, usuario);
+        validarConteudo(idUsuario, dadosAtualizados.getTitulo(), dadosAtualizados.getDescricao());
         topico.setTitulo(dadosAtualizados.getTitulo());
         topico.setDescricao(dadosAtualizados.getDescricao());
         Topico topicoSalvo = repositorioTopicos.save(topico);
@@ -129,6 +140,15 @@ public class TopicoService {
     private void verificarAutoria(Topico topico, UsuarioForum usuario) {
         if (topico.getIdAutor() == null || !topico.getIdAutor().equals(usuario.getId())) {
             throw AcessoNegadoException.autorEditarTopico();
+        }
+    }
+
+    private void validarConteudo(Long idUsuario, String... textos) {
+        try {
+            filtroConteudo.validar(textos);
+        } catch (ConteudoOfensivoException excecao) {
+            registrar(idUsuario, "CONTEUDO_OFENSIVO_BLOQUEADO", "Topico");
+            throw excecao;
         }
     }
 

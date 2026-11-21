@@ -138,6 +138,14 @@ public class SecurityConfig {
                                                                 "/api/autenticacao/exportar-dados",
                                                                 "/api/autenticacao/restricoes")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                                                // Denuncias do forum.
+                                                .requestMatchers(HttpMethod.GET, "/api/administracao/forum/denuncias")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/forum/denuncias/*")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.POST, "/api/forum/topicos/*/denuncias",
+                                                                "/api/forum/comentarios/*/denuncias")
+                                                .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/autenticacao/revogar-termos",
                                                                 "/api/autenticacao/conta/solicitar-exclusao",
                                                                 "/api/autenticacao/alterar-senha-autenticado")

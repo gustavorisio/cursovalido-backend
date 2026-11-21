@@ -142,9 +142,18 @@ class ForumControllerTest {
     }
 
     @Test
-    void listarUsuarios_comUsuariosAtivos_deveConverterEContar() {
+    void listarUsuarios_comAluno_naoExibeEmail() {
         when(usuarios.listarAtivos()).thenReturn(List.of(autor));
         assertThat(controlador.listarUsuarios(principal)).isEqualTo(new UsuariosForumResponse(
+                List.of(new UsuarioForumResponse(7L, "Autor", null, "ALUNO")), 1));
+    }
+
+    @Test
+    void listarUsuarios_comAdministrador_exibeEmailMascarado() {
+        var administrador = new UsuarioAutenticado(1L, "admin@example.com", "senha", Perfil.ADMINISTRADOR, true,
+                true, true);
+        when(usuarios.listarAtivos()).thenReturn(List.of(autor));
+        assertThat(controlador.listarUsuarios(administrador)).isEqualTo(new UsuariosForumResponse(
                 List.of(new UsuarioForumResponse(7L, "Autor", "a*******@example.com", "ALUNO")), 1));
     }
 }

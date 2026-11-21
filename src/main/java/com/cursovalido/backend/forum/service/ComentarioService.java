@@ -9,6 +9,7 @@ import com.cursovalido.backend.forum.repository.ComentarioRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.ConflitoException;
+import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class ComentarioService {
     private final TopicoService servicoTopicos;
     private final UsuarioForumService servicoUsuarios;
     private final LogAuditoriaService auditoria;
+    private final FiltroConteudoOfensivo filtroConteudo = new FiltroConteudoOfensivo();
 
     // Lista os comentarios de um topico, incluindo os excluidos logicamente.
     public List<Comentario> listarPorTopico(Long idTopico) {
@@ -48,6 +50,7 @@ public class ComentarioService {
         if (topico.isFechado()) {
             throw ConflitoException.topicoFechado();
         }
+        validarConteudo(idUsuario, comentario.getConteudo());
 
         comentario.setIdAutor(usuario.getId());
         comentario.setUsuarioAutor(usuario);
@@ -73,6 +76,7 @@ public class ComentarioService {
         if (!comentario.isAtivo()) {
             throw RequisicaoInvalidaException.comentarioApagado();
         }
+        validarConteudo(idUsuario, dadosAtualizados.getConteudo());
 
         comentario.setConteudo(dadosAtualizados.getConteudo());
         Comentario comentarioSalvo = repositorioComentarios.save(comentario);
@@ -111,6 +115,15 @@ public class ComentarioService {
     private Comentario buscar(Long idComentario) {
         return repositorioComentarios.findById(idComentario)
                 .orElseThrow(RecursoNaoEncontradoException::comentarioNaoEncontrado);
+    }
+
+    private void validarConteudo(Long idUsuario, String texto) {
+        try {
+            filtroConteudo.validar(texto);
+        } catch (ConteudoOfensivoException excecao) {
+            registrar(idUsuario, "CONTEUDO_OFENSIVO_BLOQUEADO", "Comentario");
+            throw excecao;
+        }
     }
 
     private void registrar(Long idUsuario, String tipo, String detalhes) {
