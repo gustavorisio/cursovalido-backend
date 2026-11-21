@@ -45,6 +45,12 @@ public class ConviteAcesso {
     @Setter
     private StatusConvite status;
 
+    @Column(name = "enviado_em", nullable = false)
+    private LocalDateTime enviadoEm;
+
+    @Column(name = "quantidade_envios", nullable = false)
+    private int quantidadeEnvios;
+
     public ConviteAcesso(String email, Perfil perfil, String tokenHash, LocalDateTime expiraEm) {
         this.email = email;
         this.perfil = perfil;
@@ -52,17 +58,27 @@ public class ConviteAcesso {
         this.criadoEm = LocalDateTime.now();
         this.expiraEm = expiraEm;
         this.status = StatusConvite.PENDENTE;
+        this.enviadoEm = this.criadoEm;
+        this.quantidadeEnvios = 1;
     }
 
+    // Cada reenvio gera um novo link; o anterior deixa de funcionar.
     public void renovar(String novoTokenHash, LocalDateTime novaExpiracao) {
         tokenHash = novoTokenHash;
         expiraEm = novaExpiracao;
         emailConfirmado = false;
         status = StatusConvite.PENDENTE;
+        enviadoEm = LocalDateTime.now();
+        quantidadeEnvios++;
     }
 
-    public void prepararNovoConvite(Perfil novoPerfil, String novoTokenHash, LocalDateTime novaExpiracao) {
-        perfil = novoPerfil;
-        renovar(novoTokenHash, novaExpiracao);
+    public boolean expirado() {
+        return expiraEm.isBefore(LocalDateTime.now());
+    }
+
+    // O link recebido por e-mail comprova o acesso ao endereco; o convite so pode ser usado uma vez.
+    public void concluir() {
+        emailConfirmado = true;
+        status = StatusConvite.CONCLUIDO;
     }
 }

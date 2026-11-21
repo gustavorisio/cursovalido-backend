@@ -32,6 +32,31 @@ class TokenEmailServiceTest {
     }
 
     @Test
+    void conferirCodigo2faNaoConsomeOCodigo() {
+        Usuario usuario = new Usuario();
+        ReflectionTestUtils.setField(usuario, "id", 4L);
+        usuario.setEmail("aluno@example.com");
+        var registro = new TokenEmail("hash", usuario, "CODIGO_2FA", LocalDateTime.now().plusMinutes(5));
+        when(repositorio.findByTokenHashAndFinalidade(anyString(), eq("CODIGO_2FA")))
+                .thenReturn(Optional.of(registro));
+
+        assertEquals(4L, servico.conferirCodigo2fa(" Aluno@Example.com ", "123456"));
+        assertFalse(registro.isUtilizado());
+        verify(repositorio, never()).save(any());
+    }
+
+    @Test
+    void conferirCodigo2faRecusaCodigoDeOutroEmail() {
+        Usuario usuario = new Usuario();
+        usuario.setEmail("outro@example.com");
+        var registro = new TokenEmail("hash", usuario, "CODIGO_2FA", LocalDateTime.now().plusMinutes(5));
+        when(repositorio.findByTokenHashAndFinalidade(anyString(), eq("CODIGO_2FA")))
+                .thenReturn(Optional.of(registro));
+
+        assertThrows(IllegalArgumentException.class, () -> servico.conferirCodigo2fa("aluno@example.com", "123456"));
+    }
+
+    @Test
     void deveGerarTokenDeRecuperacaoSemGuardarValorEmTexto() {
         Usuario usuario = new Usuario();
         String finalidade = servico.finalidadeAlteracaoSenha();

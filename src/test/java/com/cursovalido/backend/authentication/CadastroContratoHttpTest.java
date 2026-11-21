@@ -1,5 +1,6 @@
 package com.cursovalido.backend.authentication;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import com.cursovalido.backend.authentication.configuration.AutenticacaoExceptionHandler;
 import com.cursovalido.backend.authentication.controller.AutenticacaoController;
 import com.cursovalido.backend.authentication.controller.ConviteController;
@@ -26,7 +27,7 @@ class CadastroContratoHttpTest {
         private String dados() {
                 return """
                                 {"nomeCompleto":"Aluno Teste","email":"aluno@example.com","senha":"SenhaTeste123!","confirmacaoSenha":"SenhaTeste123!",
-                                "dataNascimento":"1990-01-01","declarouMaiorIdade":true,
+                                "declarouMaiorIdade":true,
                                 "aceitouTermosLgpd":true,"versaoTermos":"1.0"}
                                 """;
         }
@@ -56,7 +57,7 @@ class CadastroContratoHttpTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = { "nomeCompleto", "email", "senha", "confirmacaoSenha", "dataNascimento",
+        @ValueSource(strings = { "nomeCompleto", "email", "senha", "confirmacaoSenha",
                         "declarouMaiorIdade", "aceitouTermosLgpd", "versaoTermos" })
         void ambosCadastrosRecusamCampoObrigatorioNulo(String campo) throws Exception {
                 String incompleto = dados().replaceAll("\"" + campo + "\"\\s*:\\s*(\"[^\"]*\"|true)",
@@ -67,5 +68,36 @@ class CadastroContratoHttpTest {
                                 .content("{\"token\":\"convite\",\"cadastro\":" + incompleto + "}"))
                                 .andExpect(status().isBadRequest());
                 verifyNoInteractions(cadastro, convites);
+        }
+
+        @Test
+        void senhaSemCaractereEspecialInformaExatamenteARegraQueFaltou() throws Exception {
+                String fraca = dados().replace("SenhaTeste123!", "SenhaTeste123");
+                mvc.perform(post("/api/autenticacao/cadastro").contentType(MediaType.APPLICATION_JSON)
+                                .content(fraca))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.codigo").value("CAMPOS_INVALIDOS"))
+                                .andExpect(jsonPath("$.campos.senha")
+                                                .value("A senha deve ter pelo menos um caractere especial, como ! ou @."));
+                verifyNoInteractions(cadastro);
+        }
+
+        @Test
+        void campoVazioMostraSomenteQueEObrigatorio() throws Exception {
+                String vazia = dados().replace("\"senha\":\"SenhaTeste123!\"", "\"senha\":\"\"");
+                mvc.perform(post("/api/autenticacao/cadastro").contentType(MediaType.APPLICATION_JSON)
+                                .content(vazia))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.campos.senha").value("Informe uma senha."));
+        }
+
+        @Test
+        void confirmacaoDiferenteTemMensagemPropria() throws Exception {
+                String divergente = dados().replace("\"confirmacaoSenha\":\"SenhaTeste123!\"",
+                                "\"confirmacaoSenha\":\"OutraSenha!\"");
+                mvc.perform(post("/api/autenticacao/cadastro").contentType(MediaType.APPLICATION_JSON)
+                                .content(divergente))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.campos.confirmacaoSenhaValida").value("As senhas devem coincidir."));
         }
 }

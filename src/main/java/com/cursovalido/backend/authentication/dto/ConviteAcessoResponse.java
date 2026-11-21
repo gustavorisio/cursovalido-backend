@@ -2,8 +2,7 @@ package com.cursovalido.backend.authentication.dto;
 
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
-import java.time.LocalDate;
 
 public record ConviteAcessoResponse(Long id, String email, Perfil perfil, StatusAprovacao status,
-                String nomeCompleto, LocalDate dataNascimento) {
+                String nomeCompleto) {
 }

@@ -2,6 +2,7 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.cadastro.CadastroValidation;
@@ -26,8 +27,9 @@ public class CadastroUsuarioService {
     private final ValidacaoEmailService validacaoEmail;
     private final SecureRandom geradorRa = new SecureRandom();
 
+    // A recusa por idade minima mantem o registro de auditoria: nada mais foi gravado antes dela.
     @Transactional
-    // Cria uma conta de aluno. O codigo de acesso e enviado no primeiro login.
+    // Cria uma conta de aluno após a declaração de elegibilidade para adultos.
     public Usuario cadastrar(CadastroUsuarioRequest requisicao, String enderecoIp) {
         validacaoEmail.validar(requisicao.email());
         CadastroValidation.validar(requisicao, enderecoIp, politicas, repositorio, auditoria);
@@ -36,13 +38,14 @@ public class CadastroUsuarioService {
         usuario.setNomeCompleto(requisicao.nomeCompleto());
         usuario.setEmail(requisicao.email());
         usuario.setSenha(codificadorSenha.encode(requisicao.senha()));
-        usuario.setDataNascimento(requisicao.dataNascimento());
         usuario.setMatricula(gerarRa());
-        usuario.setDeclarouMaiorIdade(requisicao.declarouMaiorIdade());
+        usuario.setDeclarouMaiorIdade(true);
         usuario.setAceitouTermosLgpd(requisicao.aceitouTermosLgpd());
         usuario.setDataHoraAceite(LocalDateTime.now());
         usuario.setVersaoTermos(requisicao.versaoTermos());
         usuario.setPerfil(Perfil.ALUNO);
+        usuario.setAtivo(true);
+        usuario.setStatusAprovacao(StatusAprovacao.APROVADO);
         Usuario salvo = repositorio.save(usuario);
         auditoria.registrar(salvo.getId(), "CADASTRO_USUARIO", "Cadastro realizado", enderecoIp);
         return salvo;

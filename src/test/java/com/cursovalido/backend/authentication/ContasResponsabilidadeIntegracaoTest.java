@@ -81,10 +81,12 @@ class ContasResponsabilidadeIntegracaoTest {
                 assertThat(historico.isAtivo()).isFalse();
                 assertThat(historico.isEmailConfirmado()).isFalse();
                 assertThat(historico.getSenha()).isEmpty();
-                assertThat(historico.getDataNascimento()).isNull();
                 assertThat(usuarios.existsByEmail(email)).isFalse();
                 assertThat(aceites.existsByUsuarioIdAndPerfilAndVersao(usuario.getId(), perfil, "1.0")).isTrue();
-                assertThat(logs.findByUsuarioIdOrderByDataHoraAsc(usuario.getId())).containsAll(logsAntes);
+                assertThat(logs.findByUsuarioIdOrderByDataHoraAsc(usuario.getId())).isEmpty();
+                var idsLogsAntes = logsAntes.stream().map(LogAuditoria::getId).collect(java.util.stream.Collectors.toSet());
+                assertThat(logs.findAll().stream().filter(log -> idsLogsAntes.contains(log.getId())))
+                                .allSatisfy(log -> assertThat(log.getUsuarioId()).isNull());
                 assertThat(auditoria.verificarIntegridade()).isTrue();
                 assertThat(convites.findById(convite.getId()).orElseThrow().getCriadoPor()).isEqualTo(usuario.getId());
                 assertThatThrownBy(() -> tokens.extrairEmail(jwt)).isInstanceOf(IllegalArgumentException.class);
@@ -156,14 +158,14 @@ class ContasResponsabilidadeIntegracaoTest {
                                                 .jsonPath("$.perfil").value(perfil.name()));
                 politicas.save(new Politica("Termos", "convite-responsabilidade", "Termos gerais"));
                 var semAceite = new com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest(
-                                "Convidado", email, "SenhaTeste123!", "SenhaTeste123!", LocalDate.of(1990, 1, 1),
-                                true, true, "convite-responsabilidade");
+                                "Convidado", email, "SenhaTeste123!", "SenhaTeste123!",
+                                true, true, "1.0", null, null);
                 assertThatThrownBy(() -> servicoConvites.completar(token, semAceite, "127.0.0.1"))
                                 .isInstanceOf(IllegalArgumentException.class);
                 assertThat(usuarios.existsByEmail(email)).isFalse();
                 var comAceite = new com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest(
-                                "Convidado", email, "SenhaTeste123!", "SenhaTeste123!", LocalDate.of(1990, 1, 1),
-                                true, true, "convite-responsabilidade", true, "1.0");
+                                "Convidado", email, "SenhaTeste123!", "SenhaTeste123!",
+                                true, true, "1.0", true, "convite-responsabilidade");
                 servicoConvites.completar(token, comAceite, "127.0.0.1");
                 var usuario = usuarios.findByEmail(email).orElseThrow();
                 assertThat(usuario.getPerfil()).isEqualTo(perfil);
@@ -204,7 +206,6 @@ class ContasResponsabilidadeIntegracaoTest {
                 usuario.setEmail(UUID.randomUUID() + "@example.com");
                 usuario.setMatricula(UUID.randomUUID().toString());
                 usuario.setSenha("hash");
-                usuario.setDataNascimento(LocalDate.of(1990, 1, 1));
                 usuario.setDeclarouMaiorIdade(true);
                 usuario.setAceitouTermosLgpd(true);
                 usuario.setVersaoTermos("1.0");

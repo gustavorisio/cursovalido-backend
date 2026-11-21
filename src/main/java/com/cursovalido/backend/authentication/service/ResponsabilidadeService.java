@@ -30,13 +30,13 @@ public class ResponsabilidadeService {
                     + "No tratamento de dados de terceiros, observarei a LGPD, a finalidade, a necessidade e as "
                     + "permissoes de acesso. Sou responsavel pelas operacoes administrativas que realizar, pela "
                     + "guarda das minhas credenciais e pela comunicacao de incidentes a administracao.";
-            case ALUNO -> throw new IllegalArgumentException("Aluno nao possui termo de responsabilidade por perfil");
+            case ALUNO -> throw new IllegalArgumentException("Este perfil não possui termo de responsabilidade.");
         };
         return new TermoResponsabilidadeResponse(perfil, "1.0", conteudo);
     }
 
     public boolean atualizado(Usuario usuario) {
-        return usuario.getPerfil() == Perfil.ALUNO || aceites.existsByUsuarioIdAndPerfilAndVersao(
+        return !usuario.getPerfil().exigeTermoResponsabilidade() || aceites.existsByUsuarioIdAndPerfilAndVersao(
                 usuario.getId(), usuario.getPerfil(), documento(usuario.getPerfil()).versao());
     }
 
@@ -47,7 +47,7 @@ public class ResponsabilidadeService {
     @Transactional
     public void registrar(Usuario usuario, Boolean aceitou, String versao, String ip) {
         validar(usuario.getPerfil(), aceitou, versao, ip);
-        if (usuario.getPerfil() == Perfil.ALUNO)
+        if (!usuario.getPerfil().exigeTermoResponsabilidade())
             return;
         aceites.save(new AceiteResponsabilidade(usuario.getId(), usuario.getPerfil(), versao, ip));
         auditoria.registrar(usuario.getId(), "ACEITE_RESPONSABILIDADE",

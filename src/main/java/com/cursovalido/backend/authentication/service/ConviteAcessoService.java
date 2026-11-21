@@ -8,6 +8,8 @@ import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.StatusConvite;
 import com.cursovalido.backend.authentication.entity.Usuario;
+import com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException;
+import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
 import com.cursovalido.backend.authentication.repository.ConviteAcessoRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
@@ -23,6 +25,8 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,21 +46,33 @@ public class ConviteAcessoService {
     private final LogAuditoriaService auditoria;
     private final UsuarioForumService usuariosForum;
     private final PrivilegiosAdministrativosService privilegios;
+    private final TokenEmailService tokensEmail;
     private final SecureRandom aleatorio = new SecureRandom();
 
     @Transactional
-    // Cria um convite de acesso para um novo usuario.
+    // Cria um convite de acesso. Cliques repetidos nao geram novos convites nem novos e-mails.
     public void criar(String email, Perfil perfil, Long administradorId) {
-        privilegios.verificarPrincipal(administradorId);
+        privilegios.verificarPodeGerenciarPerfil(administradorId, perfil);
         validacaoEmail.validar(email);
         String endereco = email.trim().toLowerCase(Locale.ROOT);
         ConviteValidation.validarCriacao(endereco, perfil, usuarios);
+        ConviteValidation.validarLimiteDoAdministrador(administradorId, convites);
+        ConviteAcesso pendente = convites.findFirstByEmailAndStatusOrderByIdDesc(endereco, PENDENTE).orElse(null);
+        ConviteValidation.validarConvitePendente(pendente);
+        if (pendente != null) {
+            pendente.setStatus(StatusConvite.CANCELADO);
+            convites.saveAndFlush(pendente);
+        }
         String token = gerarToken();
-        convites.findByEmail(endereco).filter(anterior -> anterior.getStatus() == PENDENTE)
-                .ifPresent(anterior -> anterior.setStatus(StatusConvite.CANCELADO));
         ConviteAcesso convite = new ConviteAcesso(endereco, perfil, hash(token), LocalDateTime.now().plusHours(48));
         convite.setCriadoPor(administradorId);
-        convites.saveAndFlush(convite);
+        try {
+            // O indice unico de convites pendentes por e-mail barra requisicoes simultaneas.
+            convites.saveAndFlush(convite);
+        } catch (DataIntegrityViolationException excecao) {
+            throw new ConviteAcessoInvalidoException(HttpStatus.CONFLICT, "CONVITE_JA_PENDENTE",
+                    "Já existe um convite pendente para este e-mail. Use a opção Reenviar ou cancele o convite atual.");
+        }
         emails.enviarConvite(convite, token);
         auditoria.registrar(administradorId, "CONVITE_ACESSO_CRIADO", endereco, null);
     }
@@ -69,16 +85,7 @@ public class ConviteAcessoService {
     }
 
     @Transactional
-    // Confirma o e-mail usado no convite.
-    public void confirmarEmail(String token) {
-        ConviteAcesso convite = localizar(token);
-        ConviteValidation.validarPrazo(convite);
-        convite.setEmailConfirmado(true);
-        convites.save(convite);
-    }
-
-    @Transactional
-    // Completa o cadastro e deixa o usuario aguardando aprovacao.
+    // O cadastro pelo link do convite ja libera o acesso: o link comprova o e-mail e e de uso unico.
     public void completar(String token, CadastroUsuarioRequest cadastro) {
         completar(token, cadastro, null);
     }
@@ -86,7 +93,7 @@ public class ConviteAcessoService {
     @Transactional
     public void completar(String token, CadastroUsuarioRequest cadastro, String enderecoIp) {
         validacaoEmail.validar(cadastro.email());
-        ConviteValidation.validarIdade(cadastro);
+        ConviteValidation.validarMaioridadeDeclarada(cadastro);
         ConviteAcesso convite = localizar(token);
         ConviteValidation.validarCadastro(convite, cadastro, politicas, usuarios);
 
@@ -96,28 +103,37 @@ public class ConviteAcessoService {
         usuario.setNomeCompleto(cadastro.nomeCompleto());
         usuario.setEmail(convite.getEmail());
         usuario.setSenha(codificadorSenha.encode(cadastro.senha()));
-        usuario.setDataNascimento(cadastro.dataNascimento());
         usuario.setMatricula(gerarMatricula());
-        usuario.setDeclarouMaiorIdade(cadastro.declarouMaiorIdade());
+        usuario.setDeclarouMaiorIdade(true);
         usuario.setAceitouTermosLgpd(true);
         usuario.setDataHoraAceite(LocalDateTime.now());
         usuario.setVersaoTermos(cadastro.versaoTermos());
         usuario.setPerfil(convite.getPerfil());
+        usuario.setDoisFatoresAtivos(convite.getPerfil().equipe());
         usuario.setEmailConfirmado(true);
-        usuario.setAtivo(false);
-        usuario.setStatusAprovacao(StatusAprovacao.PENDENTE_APROVACAO);
-        usuarios.save(usuario);
+        usuario.setAtivo(true);
+        usuario.setStatusAprovacao(StatusAprovacao.APROVADO);
+        usuarios.saveAndFlush(usuario);
         responsabilidade.registrar(usuario, cadastro.aceitouResponsabilidade(),
                 cadastro.versaoResponsabilidade(), enderecoIp);
-        convite.setStatus(StatusConvite.CONCLUIDO);
+        convite.concluir();
         convites.save(convite);
-        auditoria.registrar(usuario.getId(), "CADASTRO_PENDENTE_APROVACAO", convite.getPerfil().name(), enderecoIp);
+        usuariosForum.sincronizar(usuario);
+        auditoria.registrar(usuario.getId(), "CADASTRO_POR_CONVITE", convite.getPerfil().name(), enderecoIp);
     }
 
     // Lista os usuarios que aguardam aprovacao.
     public List<Usuario> pendentes() {
         return usuarios.findAll().stream()
                 .filter(usuario -> usuario.getStatusAprovacao() == StatusAprovacao.PENDENTE_APROVACAO)
+                .toList();
+    }
+
+    public List<Usuario> pendentes(Long administradorId) {
+        privilegios.verificarAdministrador(administradorId);
+        boolean principal = privilegios.ehPrincipal(administradorId);
+        return pendentes().stream()
+                .filter(usuario -> principal || usuario.getPerfil() != Perfil.ADMINISTRADOR)
                 .toList();
     }
 
@@ -129,23 +145,39 @@ public class ConviteAcessoService {
                 .toList();
     }
 
+    public List<ConviteResumoResponse> convitesPendentes(Long administradorId) {
+        privilegios.verificarAdministrador(administradorId);
+        boolean principal = privilegios.ehPrincipal(administradorId);
+        return convitesPendentes().stream()
+                .filter(convite -> principal || convite.perfil() != Perfil.ADMINISTRADOR)
+                .toList();
+    }
+
     @Transactional
     // Aprova o acesso de um usuario pendente.
     public void aprovar(Long idUsuario, Long administradorId) {
-        privilegios.verificarPrincipal(administradorId);
         Usuario usuario = usuarioPendente(idUsuario);
+        privilegios.verificarPodeGerenciarPerfil(administradorId, usuario.getPerfil());
         usuario.setStatusAprovacao(StatusAprovacao.APROVADO);
         usuario.setAtivo(true);
+        usuario.setEmailConfirmado(true);
         usuarios.save(usuario);
+        tokensEmail.invalidarAcessos(usuario);
         usuariosForum.sincronizar(usuario);
         auditoria.registrar(administradorId, "ACESSO_APROVADO", "Usuario " + idUsuario, null);
+        try {
+            emails.enviarAcessoAprovado(usuario);
+        } catch (ServicoEmailIndisponivelException excecao) {
+            // A aprovacao continua valida; o login envia o codigo de acesso normalmente.
+            auditoria.registrar(administradorId, "AVISO_APROVACAO_NAO_ENVIADO", "Usuario " + idUsuario, null);
+        }
     }
 
     @Transactional
     // Rejeita o cadastro de um usuario pendente.
     public void rejeitar(Long idUsuario, Long administradorId) {
-        privilegios.verificarPrincipal(administradorId);
         Usuario usuario = usuarioPendente(idUsuario);
+        privilegios.verificarPodeGerenciarPerfil(administradorId, usuario.getPerfil());
         auditoria.registrar(administradorId, "ACESSO_REJEITADO", "Usuario " + idUsuario, null);
         contas.excluirPendencia(usuario.getId());
     }
@@ -153,8 +185,8 @@ public class ConviteAcessoService {
     @Transactional
     // Remove uma pendencia de cadastro.
     public void remover(Long idUsuario, Long administradorId) {
-        privilegios.verificarPrincipal(administradorId);
         Usuario usuario = usuarioPendente(idUsuario);
+        privilegios.verificarPodeGerenciarPerfil(administradorId, usuario.getPerfil());
         contas.excluirPendencia(usuario.getId());
         auditoria.registrar(administradorId, "PENDENCIA_REMOVIDA", "Usuario " + idUsuario, null);
     }
@@ -162,10 +194,10 @@ public class ConviteAcessoService {
     @Transactional
     // Reenvia um convite que ainda esta pendente.
     public void reenviar(Long idConvite, Long administradorId) {
-        privilegios.verificarPrincipal(administradorId);
-        ConviteAcesso convite = convites.findById(idConvite)
-                .orElseThrow(() -> new IllegalArgumentException("Convite nao encontrado"));
-        ConviteValidation.validarPendente(convite);
+        ConviteAcesso convite = convites.bloquearPorId(idConvite)
+                .orElseThrow(() -> new IllegalArgumentException("Convite não encontrado."));
+        privilegios.verificarPodeGerenciarPerfil(administradorId, convite.getPerfil());
+        ConviteValidation.validarReenvio(convite);
         String token = gerarToken();
         convite.renovar(hash(token), LocalDateTime.now().plusHours(48));
         convites.save(convite);
@@ -176,9 +208,10 @@ public class ConviteAcessoService {
     @Transactional
     // Cancela um convite existente.
     public void cancelarConvite(Long idConvite, Long administradorId) {
-        privilegios.verificarPrincipal(administradorId);
-        ConviteAcesso convite = convites.findById(idConvite)
-                .orElseThrow(() -> new IllegalArgumentException("Convite nao encontrado"));
+        ConviteAcesso convite = convites.bloquearPorId(idConvite)
+                .orElseThrow(() -> new IllegalArgumentException("Convite não encontrado."));
+        privilegios.verificarPodeGerenciarPerfil(administradorId, convite.getPerfil());
+        ConviteValidation.validarPendente(convite);
         convite.setStatus(StatusConvite.CANCELADO);
         convites.save(convite);
         auditoria.registrar(administradorId, "CONVITE_REMOVIDO", convite.getEmail(), null);
@@ -186,14 +219,14 @@ public class ConviteAcessoService {
 
     private Usuario usuarioPendente(Long id) {
         Usuario usuario = usuarios.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Pendencia nao encontrada"));
+                .orElseThrow(() -> new IllegalArgumentException("Cadastro pendente não encontrado."));
         ConviteValidation.validarUsuarioPendente(usuario);
         return usuario;
     }
 
     private ConviteAcesso localizar(String token) {
         ConviteAcesso convite = convites.findByTokenHash(hash(token))
-                .orElseThrow(() -> new IllegalArgumentException("Convite invalido"));
+                .orElseThrow(() -> new IllegalArgumentException("O link do convite é inválido. Peça um novo convite à administração."));
         ConviteValidation.validarPendente(convite);
         return convite;
     }
