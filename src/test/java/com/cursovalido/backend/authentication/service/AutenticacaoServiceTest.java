@@ -4,10 +4,12 @@ import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import java.util.Optional;
 import com.cursovalido.backend.authentication.dto.LoginRequest;
+import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.exception.CredenciaisInvalidasException;
 import com.cursovalido.backend.authentication.exception.AcessoRejeitadoException;
+import com.cursovalido.backend.authentication.exception.BanimentoException;
 import com.cursovalido.backend.authentication.exception.PendenteAprovacaoException;
 import com.cursovalido.backend.authentication.validation.login.ProtecaoForcaBrutaService;
 import com.cursovalido.backend.forum.service.UsuarioForumService;
@@ -32,8 +34,9 @@ class AutenticacaoServiceTest {
     private final ProtecaoForcaBrutaService protecao = mock(ProtecaoForcaBrutaService.class);
     private final PoliticaService politicas = mock(PoliticaService.class);
     private final ResponsabilidadeService responsabilidade = mock(ResponsabilidadeService.class);
+    private final ModeracaoUsuarioService moderacao = mock(ModeracaoUsuarioService.class);
     private final AutenticacaoService service = new AutenticacaoService(usuarios, tokens, tokensEmail, envio,
-            senhas, auditoria, forum, protecao, mock(ModeracaoUsuarioService.class), politicas,
+            senhas, auditoria, forum, protecao, moderacao, politicas,
             responsabilidade, mock(PrivacidadeService.class));
 
     @Test
@@ -88,6 +91,8 @@ class AutenticacaoServiceTest {
         Usuario usuario = usuarioAprovado();
         usuario.setAceitouTermosLgpd(true);
         usuario.setVersaoTermos("v1.2");
+        when(tokensEmail.conferirCodigo2fa(EMAIL, "123456")).thenReturn(1L);
+        when(usuarios.findById(1L)).thenReturn(Optional.of(usuario));
         when(tokensEmail.validarCodigo2fa(EMAIL, "123456")).thenReturn(usuario);
         when(politicas.versaoAtiva("v1.2")).thenReturn(true);
         when(responsabilidade.atualizado(usuario)).thenReturn(true);
@@ -103,12 +108,39 @@ class AutenticacaoServiceTest {
 
     @Test
     void deveRegistrarFalhaQuandoCodigoForInvalido() {
-        when(tokensEmail.validarCodigo2fa(EMAIL, "123456")).thenThrow(IllegalArgumentException.class);
+        when(tokensEmail.conferirCodigo2fa(EMAIL, "123456")).thenThrow(IllegalArgumentException.class);
 
         assertThrows(IllegalArgumentException.class, () -> service.confirmarCodigo(EMAIL, "123456", IP));
 
         verify(protecao).registrarFalha(EMAIL + ":2fa");
+        verify(tokensEmail, never()).validarCodigo2fa(anyString(), anyString());
         verifyNoInteractions(tokens);
+    }
+
+    @Test
+    void contaSuspensaRecusaCodigoSemConsumiLo() {
+        Usuario usuario = usuarioAprovado();
+        when(tokensEmail.conferirCodigo2fa(EMAIL, "123456")).thenReturn(1L);
+        when(usuarios.findById(1L)).thenReturn(Optional.of(usuario));
+        when(moderacao.restrito(1L, EscopoSuspensao.CONTA)).thenReturn(true);
+        when(moderacao.mensagemBanimento(1L, EscopoSuspensao.CONTA)).thenReturn("Conta suspensa");
+
+        assertThrows(BanimentoException.class, () -> service.confirmarCodigo(EMAIL, "123456", IP));
+
+        verify(tokensEmail, never()).validarCodigo2fa(anyString(), anyString());
+        verifyNoInteractions(tokens);
+    }
+
+    @Test
+    void contaPendenteRecusaCodigoSemConsumiLo() {
+        Usuario usuario = usuarioAprovado();
+        usuario.setStatusAprovacao(StatusAprovacao.PENDENTE_APROVACAO);
+        when(tokensEmail.conferirCodigo2fa(EMAIL, "123456")).thenReturn(1L);
+        when(usuarios.findById(1L)).thenReturn(Optional.of(usuario));
+
+        assertThrows(PendenteAprovacaoException.class, () -> service.confirmarCodigo(EMAIL, "123456", IP));
+
+        verify(tokensEmail, never()).validarCodigo2fa(anyString(), anyString());
     }
 
     @Test

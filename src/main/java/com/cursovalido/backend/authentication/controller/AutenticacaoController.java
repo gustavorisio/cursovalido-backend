@@ -6,6 +6,7 @@ import com.cursovalido.backend.authentication.dto.AlteracaoSenhaAutenticadoReque
 import com.cursovalido.backend.authentication.dto.AutenticacaoResponse;
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.dto.Codigo2faRequest;
+import com.cursovalido.backend.authentication.dto.ConfiguracaoSegundoFatorRequest;
 import com.cursovalido.backend.authentication.dto.DadosPessoaisResponse;
 import com.cursovalido.backend.authentication.dto.DecisaoTermosRequest;
 import com.cursovalido.backend.authentication.dto.EmailRequest;
@@ -42,6 +43,13 @@ public class AutenticacaoController {
     public DadosPessoaisResponse meusDados(
             @AuthenticationPrincipal UsuarioAutenticado usuario) {
         return contaUsuarios.consultarDados(usuario.getId());
+    }
+
+    @PutMapping("/segundo-fator")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void configurarSegundoFator(@AuthenticationPrincipal UsuarioAutenticado usuario,
+            @Valid @RequestBody ConfiguracaoSegundoFatorRequest requisicao) {
+        contaUsuarios.configurarDoisFatores(usuario.getId(), requisicao.ativo());
     }
 
     @GetMapping("/exportar-dados")
