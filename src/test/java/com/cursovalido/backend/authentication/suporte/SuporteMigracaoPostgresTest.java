@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.*;
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 class SuporteMigracaoPostgresTest {
     @Test
-    void v21EmBancoNovoCriaLimiteEBloqueiaSegundoEnvio() {
+    void v1EmBancoNovoCriaLimiteEBloqueiaSegundoEnvio() {
         var propriedades = new HashMap<String, Supplier<?>>();
         PostgresTeste.configurar(propriedades::put, "suporte_migracao");
         var fonte = new DriverManagerDataSource(
