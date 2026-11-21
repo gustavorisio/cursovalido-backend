@@ -69,9 +69,6 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**",
-                                                                "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml")
-                                                .permitAll()
                                                 // Rotas publicas de autenticacao e cadastro.
                                                 .requestMatchers(HttpMethod.POST, "/api/suporte/solicitacoes")
                                                 .permitAll()
@@ -149,6 +146,8 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/api/autenticacao/revogar-termos",
                                                                 "/api/autenticacao/conta/solicitar-exclusao",
                                                                 "/api/autenticacao/alterar-senha-autenticado")
+                                                .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/autenticacao/segundo-fator")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
