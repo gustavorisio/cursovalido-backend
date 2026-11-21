@@ -68,7 +68,7 @@ public class AlunoAulasController {
 
     private AulaResponse converter(Aula aula) {
         return new AulaResponse(aula.getId(), aula.getTitulo(), aula.getDescricao(),
-                aula.getIdModulo(), aula.getOrdem(), aula.getYoutubeVideoId());
+                aula.getIdModulo(), aula.getOrdem(), aula.getYoutubeVideoId(), aula.getVimeoVideoUrl());
     }
 
     private MatriculaResponse converter(Matricula matricula) {

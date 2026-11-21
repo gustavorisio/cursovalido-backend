@@ -4,6 +4,7 @@ import com.cursovalido.backend.aulas.dto.ProgressoAulaRequest;
 import com.cursovalido.backend.aulas.entity.ProgressoAula;
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,10 @@ class ProgressoAulaServiceTest {
     private ProgressoAulaRepository progressos;
     @Mock
     private LogAuditoriaService auditoria;
+    @Mock
+    private GamificacaoService gamificacao;
+    @Mock
+    private UsuarioRepository usuarios;
     @InjectMocks
     private ProgressoAulaService servico;
 
@@ -94,12 +99,27 @@ class ProgressoAulaServiceTest {
     @Test
     void concluirSemExigirPosicaoMinima() {
         permitirEscrita();
+        when(progressos.saveAndFlush(any())).thenAnswer(invocacao -> invocacao.getArgument(0));
         var resultado = servico.concluir(30L, 1L);
         assertThat(resultado.isConcluida()).isTrue();
         assertThat(resultado.getPosicaoSegundos()).isZero();
         assertThat(resultado.getConcluidaEm()).isEqualTo(resultado.getAtualizadoEm()).isNotNull();
-        verify(progressos).save(resultado);
+        verify(progressos).saveAndFlush(resultado);
         verify(auditoria).registrar(1L, "CONCLUSAO_AULA", "Aula 30", null);
+        verify(gamificacao).registrarConclusao(1L, 10L, 40L);
+    }
+
+    @Test
+    void concluirComRecompensaDevolveOXpConcedidoPelaGamificacao() {
+        permitirEscrita();
+        when(progressos.saveAndFlush(any())).thenAnswer(invocacao -> invocacao.getArgument(0));
+        var recompensa = new com.cursovalido.backend.aulas.dto.RecompensaCursoResponse(10L, 150, 1, 2, true, null);
+        when(gamificacao.registrarConclusao(1L, 10L, 40L)).thenReturn(recompensa);
+
+        var resultado = servico.concluirComRecompensa(30L, 1L);
+
+        assertThat(resultado.progresso().isConcluida()).isTrue();
+        assertThat(resultado.recompensa()).isSameAs(recompensa);
     }
 
     @Test
@@ -112,6 +132,7 @@ class ProgressoAulaServiceTest {
         when(progressos.findByIdMatriculaAndIdAula(40L, 30L)).thenReturn(Optional.of(progresso));
         assertThat(servico.concluir(30L, 1L).getConcluidaEm()).isEqualTo(data);
         verify(progressos, never()).save(any());
+        verify(progressos, never()).saveAndFlush(any());
         verifyNoInteractions(auditoria);
     }
 
@@ -140,6 +161,6 @@ class ProgressoAulaServiceTest {
     void matriculaAusenteAoBloquearImpedeGravacao() {
         autorizar();
         erro(() -> servico.concluir(30L, 1L), 403);
-        verifyNoInteractions(progressos, auditoria);
+        verifyNoInteractions(progressos, auditoria, gamificacao);
     }
 }
