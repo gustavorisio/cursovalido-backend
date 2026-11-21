@@ -52,9 +52,11 @@ public class AulaService {
     @Transactional
     public Aula editar(Long id, AulaRequest dados, Long idProfessor) {
         Aula aula = buscarAtivo(id, idProfessor);
-        String videoAnterior = aula.getYoutubeVideoId();
+        String youtubeAnterior = aula.getYoutubeVideoId();
+        String vimeoAnterior = aula.getVimeoVideoUrl();
         preencher(aula, dados);
-        if (!videoAnterior.equals(aula.getYoutubeVideoId())) {
+        if (!java.util.Objects.equals(youtubeAnterior, aula.getYoutubeVideoId())
+                || !java.util.Objects.equals(vimeoAnterior, aula.getVimeoVideoUrl())) {
             progressos.deleteByIdAula(id);
         }
         repositorio.save(aula);
@@ -71,10 +73,17 @@ public class AulaService {
     }
 
     private void preencher(Aula aula, AulaRequest dados) {
-        String videoId = youtube.validarVideo(dados.youtubeUrl());
+        String vimeoUrl = VimeoService.validarUrl(dados.vimeoUrl());
+        String videoId = dados.youtubeUrl() == null || dados.youtubeUrl().isBlank()
+                ? null : youtube.validarVideo(dados.youtubeUrl());
+        if (vimeoUrl == null && videoId == null) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Informe um vídeo do Vimeo e/ou um vídeo reserva do YouTube.");
+        }
         aula.setTitulo(dados.titulo().trim());
         aula.setDescricao(dados.descricao().trim());
         aula.setOrdem(dados.ordem());
         aula.setYoutubeVideoId(videoId);
+        aula.setVimeoVideoUrl(vimeoUrl);
     }
 }

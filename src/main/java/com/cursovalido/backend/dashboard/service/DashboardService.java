@@ -8,6 +8,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,6 +30,7 @@ public class DashboardService {
         return dashboard.resumo();
     }
 
+
     public AtividadeDia atividadeDia(Long id, LocalDate data) {
         verificarAdministrador(id);
         if (data.isAfter(LocalDate.now(FUSO_DASHBOARD))) {
@@ -46,12 +49,12 @@ public class DashboardService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Meses deve estar entre 1 e 24");
         LocalDate atual = LocalDate.now(FUSO_DASHBOARD).withDayOfMonth(1);
         LocalDate inicio = atual.minusMonths(meses - 1L);
-        var valores = dashboard.matriculasPorMes(inicio, atual.plusMonths(1)).stream()
-                .collect(Collectors.toMap(MatriculasMes::mes, MatriculasMes::matriculas));
+        Map<String, MatriculasMes> valores = dashboard.matriculasPorMes(inicio, atual.plusMonths(1)).stream()
+                .collect(Collectors.toMap(MatriculasMes::mes, Function.identity()));
         List<MatriculasMes> resultado = new ArrayList<>();
         for (int i = 0; i < meses; i++) {
             String mes = inicio.plusMonths(i).toString().substring(0, 7);
-            resultado.add(new MatriculasMes(mes, valores.getOrDefault(mes, 0L)));
+            resultado.add(valores.getOrDefault(mes, new MatriculasMes(mes, 0, 0)));
         }
         return resultado;
     }
@@ -74,4 +77,5 @@ public class DashboardService {
         if (!usuario.isAtivo() || usuario.getPerfil() != Perfil.ADMINISTRADOR)
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso exclusivo de administrador ativo");
     }
+
 }

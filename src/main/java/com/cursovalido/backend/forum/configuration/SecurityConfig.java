@@ -219,7 +219,7 @@ public class SecurityConfig {
                                                                 "/api/aluno/cursos/*",
                                                                 "/api/aluno/matriculas", "/api/aluno/cursos/*/modulos",
                                                                 "/api/aluno/modulos/*/aulas", "/api/aluno/aulas/*",
-                                                                "/api/aluno/aulas/*/progresso")
+                                                                "/api/aluno/aulas/*/progresso", "/api/aluno/gamificacao")
                                                 .hasRole("ALUNO")
                                                 .requestMatchers("/api/aluno", "/api/aluno/**").denyAll()
                                                 // As rotas de gestao continuam exclusivas do professor.
@@ -253,6 +253,8 @@ public class SecurityConfig {
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/forum/comentarios/*",
                                                                 "/api/forum/topicos/*/comentarios/*")
+                                                .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/ranking/alunos")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .anyRequest().denyAll())
                                 .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class)

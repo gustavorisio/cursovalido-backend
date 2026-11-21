@@ -1,12 +1,15 @@
 package com.cursovalido.backend.aulas.service;
 
 import com.cursovalido.backend.aulas.dto.ProgressoAulaRequest;
+import com.cursovalido.backend.aulas.dto.RecompensaCursoResponse;
 import com.cursovalido.backend.aulas.entity.Matricula;
 import com.cursovalido.backend.aulas.entity.ProgressoAula;
 import com.cursovalido.backend.aulas.repository.MatriculaRepository;
 import com.cursovalido.backend.aulas.repository.ModuloRepository;
 import com.cursovalido.backend.aulas.repository.ProgressoAulaRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,8 @@ public class ProgressoAulaService {
     private final MatriculaRepository matriculas;
     private final ProgressoAulaRepository progressos;
     private final LogAuditoriaService auditoria;
+    private final GamificacaoService gamificacao;
+    private final UsuarioRepository usuarios;
 
     public ProgressoAula buscar(Long idAula, Long idAluno) {
         Matricula matricula = buscarMatriculaAutorizada(idAula, idAluno);
@@ -40,19 +45,38 @@ public class ProgressoAulaService {
 
     @Transactional
     public ProgressoAula concluir(Long idAula, Long idAluno) {
+        return concluirComRecompensa(idAula, idAluno).progresso();
+    }
+
+    // Conclui a aula e, se for a ultima pendente do curso, concede o XP do curso.
+    @Transactional
+    public ResultadoConclusao concluirComRecompensa(Long idAula, Long idAluno) {
+        // Serializa conclusões do mesmo aluno, inclusive entre cursos diferentes.
+        usuarios.buscarParaAtualizar(idAluno);
         Matricula matricula = buscarMatriculaAutorizada(idAula, idAluno);
         bloquearMatricula(matricula.getId());
         ProgressoAula progresso = buscarOuPreparar(idAula, matricula.getId());
-        if (progresso.isConcluida()) {
-            return progresso;
+        if (!progresso.isConcluida()) {
+            LocalDateTime agora = LocalDateTime.now();
+            progressos.buscarUltimaConclusaoDesde(idAluno, agora.minusMinutes(5)).ifPresent(ultima -> {
+                long segundos = Math.max(1, Duration.between(agora, ultima.plusMinutes(5)).toSeconds() + 1);
+                long minutos = Math.max(1, (segundos + 59) / 60);
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                        "Você concluiu uma aula recentemente. Aguarde " + minutos
+                                + " minuto(s) antes de concluir outra.");
+            });
+            progresso.setConcluida(true);
+            progresso.setConcluidaEm(agora);
+            progresso.setAtualizadoEm(agora);
+            progresso = progressos.saveAndFlush(progresso);
+            auditoria.registrar(idAluno, "CONCLUSAO_AULA", "Aula " + idAula, null);
         }
-        LocalDateTime agora = LocalDateTime.now();
-        progresso.setConcluida(true);
-        progresso.setConcluidaEm(agora);
-        progresso.setAtualizadoEm(agora);
-        progressos.save(progresso);
-        auditoria.registrar(idAluno, "CONCLUSAO_AULA", "Aula " + idAula, null);
-        return progresso;
+        RecompensaCursoResponse recompensa = gamificacao.registrarConclusao(idAluno, matricula.getIdCurso(),
+                matricula.getId());
+        return new ResultadoConclusao(progresso, recompensa);
+    }
+
+    public record ResultadoConclusao(ProgressoAula progresso, RecompensaCursoResponse recompensa) {
     }
 
     private Matricula buscarMatriculaAutorizada(Long idAula, Long idAluno) {
