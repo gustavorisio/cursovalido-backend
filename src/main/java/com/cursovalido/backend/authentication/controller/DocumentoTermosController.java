@@ -35,7 +35,10 @@ public class DocumentoTermosController {
         try (var entrada = new ClassPathResource("static/" + recurso).getInputStream()) {
             modelo = new String(entrada.readAllBytes(), StandardCharsets.UTF_8);
         }
-        String html = politica == null ? modelo : renderizarDocumento(modelo, politica);
+        if (politica == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String html = renderizarDocumento(modelo, politica);
         return ResponseEntity.ok().header("Cache-Control", "public, max-age=60")
                 .contentType(new MediaType("text", "html", StandardCharsets.UTF_8)).body(html);
     }

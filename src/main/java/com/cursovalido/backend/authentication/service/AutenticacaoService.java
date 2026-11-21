@@ -9,14 +9,16 @@ import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoExcepti
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.login.AutenticacaoValidation;
 import com.cursovalido.backend.authentication.validation.login.ProtecaoForcaBrutaService;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.forum.service.UsuarioForumService;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class AutenticacaoService {
     private final UsuarioRepository repositorio;
     private final TokenJwtService tokens;
@@ -30,6 +32,16 @@ public class AutenticacaoService {
     private final PoliticaService politicas;
     private final ResponsabilidadeService responsabilidade;
     private final PrivacidadeService privacidade;
+    private final PrivilegiosAdministrativosService privilegios;
+
+    public AutenticacaoService(UsuarioRepository repositorio, TokenJwtService tokens, TokenEmailService tokensEmail,
+            EnvioCodigo2faService envio2fa, PasswordEncoder codificadorSenha, LogAuditoriaService auditoria,
+            UsuarioForumService usuariosForum, ProtecaoForcaBrutaService protecaoForcaBruta,
+            ModeracaoUsuarioService moderacao, PoliticaService politicas,
+            ResponsabilidadeService responsabilidade, PrivacidadeService privacidade) {
+        this(repositorio, tokens, tokensEmail, envio2fa, codificadorSenha, auditoria, usuariosForum,
+                protecaoForcaBruta, moderacao, politicas, responsabilidade, privacidade, null);
+    }
 
     // Valida a senha e pede codigo quando o 2FA esta ativo ou o e-mail ainda nao foi confirmado.
     public AutenticacaoResponse autenticar(LoginRequest requisicao, String enderecoIp) {
@@ -79,7 +91,9 @@ public class AutenticacaoService {
     }
 
     private AutenticacaoResponse concluirLogin(Usuario usuario, String enderecoIp, boolean confirmouCodigo) {
-        AutenticacaoValidation.validarAceite(usuario, politicas, responsabilidade, privacidade, tokens);
+        if (privilegios == null || !privilegios.ehPrincipal(usuario)) {
+            AutenticacaoValidation.validarAceite(usuario, politicas, responsabilidade, privacidade, tokens);
+        }
         usuariosForum.sincronizar(usuario);
         auditoria.registrar(usuario.getId(), "LOGIN",
                 confirmouCodigo ? "Login realizado após código de confirmação" : "Login realizado sem código 2FA",
