@@ -20,7 +20,9 @@ public class PoliticaController {
 
     @GetMapping("/privacidade/ativa")
     public org.springframework.http.ResponseEntity<PoliticaResponse> privacidadeAtiva() {
-        return org.springframework.http.ResponseEntity.ok().body(privacidade.buscarAtiva());
+        PoliticaResponse atual = privacidade.buscarAtiva();
+        return atual == null ? org.springframework.http.ResponseEntity.noContent().build()
+                : org.springframework.http.ResponseEntity.ok(atual);
     }
 
     @PostMapping("/privacidade")

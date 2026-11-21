@@ -2,6 +2,7 @@ package com.cursovalido.backend.notificacoes;
 
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.repository.PoliticaRepository;
 import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.ResponsabilidadeService;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
@@ -44,6 +45,8 @@ class ComunicadosHttpTest {
         @Autowired
         PoliticaService politicas;
         @Autowired
+        PoliticaRepository repositorioPoliticas;
+        @Autowired
         ResponsabilidadeService responsabilidade;
         @Autowired
         JdbcTemplate jdbc;
@@ -61,6 +64,8 @@ class ComunicadosHttpTest {
         @BeforeEach
         void preparar() {
                 jdbc.update("DELETE FROM tb_comunicados");
+                if (politicas.listarAtivas().isEmpty())
+                        repositorioPoliticas.save(new Politica("Termos de teste", "comunicados-teste", "Conteudo de teste"));
                 cliente = RestClient.builder().baseUrl("http://127.0.0.1:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
                                 }).build();
@@ -281,7 +286,6 @@ class ComunicadosHttpTest {
                 usuario.setEmail(UUID.randomUUID() + "@comunicados.example.com");
                 usuario.setSenha("hash-de-teste");
                 usuario.setMatricula(UUID.randomUUID().toString());
-                usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
                 usuario.setDeclarouMaiorIdade(true);
                 usuario.setAceitouTermosLgpd(true);
                 usuario.setDataHoraAceite(LocalDateTime.now());

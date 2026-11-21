@@ -66,7 +66,7 @@ public class AdministradorAulasController {
     }
 
     public record AulaAdministrativaResponse(Long id, String titulo, String descricao, Long idModulo,
-            int ordem, String youtubeVideoId, boolean ativo) {
+            int ordem, String youtubeVideoId, String vimeoVideoUrl, boolean ativo) {
     }
 
     @PutMapping("/aulas/{id}")
@@ -89,6 +89,6 @@ public class AdministradorAulasController {
 
     private AulaAdministrativaResponse converter(Aula aula) {
         return new AulaAdministrativaResponse(aula.getId(), aula.getTitulo(), aula.getDescricao(), aula.getIdModulo(),
-                aula.getOrdem(), aula.getYoutubeVideoId(), aula.isAtivo());
+                aula.getOrdem(), aula.getYoutubeVideoId(), aula.getVimeoVideoUrl(), aula.isAtivo());
     }
 }

@@ -90,6 +90,7 @@ class ContaUsuarioServiceTest {
         assertEquals("", usuario.getSenha());
         verify(tokens).validarExclusao(2L, "123456");
         verify(identidades).registrar(usuario);
+        verify(auditoria).anonimizarPorUsuarioId(2L);
         verify(aceites).save(any(AceiteTermoArquivado.class));
         verify(repositorioTokens).deleteByUsuarioId(2L);
         verify(sessoes).deleteByUsuarioId(2L);

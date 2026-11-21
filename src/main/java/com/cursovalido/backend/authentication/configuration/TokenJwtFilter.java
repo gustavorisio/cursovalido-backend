@@ -5,6 +5,7 @@ import com.cursovalido.backend.authentication.service.TokenJwtService;
 import com.cursovalido.backend.authentication.service.UsuarioDetalhesService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.security.RespostaErroHttp;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -19,11 +21,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class TokenJwtFilter extends OncePerRequestFilter {
     private final TokenJwtService tokens;
     private final UsuarioDetalhesService usuarios;
     private final PoliticaService politicas;
+    private final PrivilegiosAdministrativosService privilegios;
+
+    public TokenJwtFilter(TokenJwtService tokens, UsuarioDetalhesService usuarios, PoliticaService politicas) {
+        this(tokens, usuarios, politicas, null);
+    }
 
     private boolean podeAutenticar(String email) {
         if (email == null) {
@@ -80,6 +87,8 @@ public class TokenJwtFilter extends OncePerRequestFilter {
                             return;
                         }
                     }
+                    boolean root = privilegios != null && detalhes instanceof UsuarioAutenticado usuario
+                            && privilegios.ehPrincipal(usuario.getId());
                     if (!detalhes.isEnabled()) {
                         RespostaErroHttp.escrever(response, 403,
                                 "Sua conta não tem acesso no momento. Entre em contato pelo Suporte.", "ACESSO_NEGADO");
@@ -91,19 +100,21 @@ public class TokenJwtFilter extends OncePerRequestFilter {
                     boolean logout = "POST".equals(request.getMethod()) && caminho.equals("/api/autenticacao/logout");
                     boolean confirmar = "POST".equals(request.getMethod())
                             && caminho.equals("/api/autenticacao/aceitar-termos-novamente");
-                    boolean reautenticar = !termos && precisaReautenticar(detalhes);
+                    boolean reautenticar = !root && !termos && precisaReautenticar(detalhes);
                     if (reautenticar && !decidir && !logout) {
                         RespostaErroHttp.escrever(response, 403,
                                 "Leia os termos vigentes e entre novamente para confirmar sua decisao.",
                                 "TERMOS_REAUTENTICACAO");
                         return;
                     }
-                    if (termos && !decidir && !logout && !confirmar) {
+                    if (!root && termos && !decidir && !logout && !confirmar) {
                         RespostaErroHttp.escrever(response, 403, "Acesso restrito aos termos.", "ACESSO_NEGADO");
                         return;
                     }
                     var autoridades = detalhes.getAuthorities();
-                    if (termos) {
+                    if (root) {
+                        autoridades = List.of(() -> "ROLE_ADMINISTRADOR");
+                    } else if (termos) {
                         autoridades = List.of(() -> "TERMOS_PENDENTES");
                     } else if (reautenticar) {
                         autoridades = List.of(() -> "TERMOS_REAUTENTICACAO");

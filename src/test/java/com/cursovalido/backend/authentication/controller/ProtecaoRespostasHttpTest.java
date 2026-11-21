@@ -88,7 +88,7 @@ class ProtecaoRespostasHttpTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("CAMPOS_INVALIDOS"))
                 .andExpect(jsonPath("$.campos.email").value("Digite um e-mail válido, como nome@exemplo.com."))
-                .andExpect(jsonPath("$.campos.senha").value("Preencha este campo."));
+                .andExpect(jsonPath("$.campos.senha").value("Informe sua senha."));
     }
 
     @RestController

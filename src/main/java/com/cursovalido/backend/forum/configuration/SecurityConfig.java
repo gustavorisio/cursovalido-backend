@@ -36,6 +36,8 @@ public class SecurityConfig {
         private int custoSenha;
         @Value("${seguranca.limite-requisicoes:30}")
         private int limiteRequisicoes;
+        @Value("${seguranca.limite-autenticacao:5}")
+        private int limiteAutenticacao;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -67,9 +69,6 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**",
-                                                                "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml")
-                                                .permitAll()
                                                 // Rotas publicas de autenticacao e cadastro.
                                                 .requestMatchers(HttpMethod.POST, "/api/suporte/solicitacoes")
                                                 .permitAll()
@@ -136,15 +135,27 @@ public class SecurityConfig {
                                                                 "/api/autenticacao/exportar-dados",
                                                                 "/api/autenticacao/restricoes")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                                                // Denuncias do forum.
+                                                .requestMatchers(HttpMethod.GET, "/api/administracao/forum/denuncias")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/forum/denuncias/*")
+                                                .hasRole("ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.POST, "/api/forum/topicos/*/denuncias",
+                                                                "/api/forum/comentarios/*/denuncias")
+                                                .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/autenticacao/revogar-termos",
                                                                 "/api/autenticacao/conta/solicitar-exclusao",
                                                                 "/api/autenticacao/alterar-senha-autenticado")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.PUT, "/api/autenticacao/segundo-fator")
+                                                .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/autenticacao/conta")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.GET, "/api/catalogo/cursos",
-                                                                "/api/catalogo/temas")
+                                                                "/api/catalogo/temas", "/api/inicio/video")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.PUT, "/api/administracao/inicio/video")
+                                                .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.POST, "/api/temas")
                                                 .hasAnyRole("PROFESSOR", "ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/temas/*")
@@ -209,7 +220,7 @@ public class SecurityConfig {
                                                                 "/api/aluno/cursos/*",
                                                                 "/api/aluno/matriculas", "/api/aluno/cursos/*/modulos",
                                                                 "/api/aluno/modulos/*/aulas", "/api/aluno/aulas/*",
-                                                                "/api/aluno/aulas/*/progresso")
+                                                                "/api/aluno/aulas/*/progresso", "/api/aluno/gamificacao")
                                                 .hasRole("ALUNO")
                                                 .requestMatchers("/api/aluno", "/api/aluno/**").denyAll()
                                                 // As rotas de gestao continuam exclusivas do professor.
@@ -244,11 +255,13 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, "/api/forum/comentarios/*",
                                                                 "/api/forum/topicos/*/comentarios/*")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
+                                                .requestMatchers(HttpMethod.GET, "/api/ranking/alunos")
+                                                .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
                                                 .anyRequest().denyAll())
                                 .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(new HttpsFilter(httpsObrigatorio),
                                                 TokenJwtFilter.class)
-                                .addFilterBefore(new LimiteRequisicoesFilter(limiteRequisicoes),
+                                .addFilterBefore(new LimiteRequisicoesFilter(limiteRequisicoes, limiteAutenticacao),
                                                 TokenJwtFilter.class);
                 return http.build();
         }

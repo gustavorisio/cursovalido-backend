@@ -89,13 +89,20 @@ public class AdministradorAulasService {
     @Transactional
     public Aula editarAula(Long id, AulaRequest dados, Long idAdministrador) {
         Aula aula = buscarAula(id, idAdministrador);
-        String videoId = youtube.validarVideo(dados.youtubeUrl());
-        if (!videoId.equals(aula.getYoutubeVideoId()))
+        String vimeoUrl = VimeoService.validarUrl(dados.vimeoUrl());
+        String videoId = dados.youtubeUrl() == null || dados.youtubeUrl().isBlank()
+                ? null : youtube.validarVideo(dados.youtubeUrl());
+        if (vimeoUrl == null && videoId == null)
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Informe um vídeo do Vimeo e/ou um vídeo reserva do YouTube.");
+        if (!java.util.Objects.equals(videoId, aula.getYoutubeVideoId())
+                || !java.util.Objects.equals(vimeoUrl, aula.getVimeoVideoUrl()))
             progressos.deleteByIdAula(id);
         aula.setTitulo(dados.titulo().trim());
         aula.setDescricao(dados.descricao().trim());
         aula.setOrdem(dados.ordem());
         aula.setYoutubeVideoId(videoId);
+        aula.setVimeoVideoUrl(vimeoUrl);
         aulas.save(aula);
         auditoria.registrar(idAdministrador, "EDICAO_AULA_ADMINISTRADOR", "Aula " + id, null);
         return aula;

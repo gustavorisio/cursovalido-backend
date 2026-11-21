@@ -44,15 +44,26 @@ public class TokenEmailService {
     @Transactional
     // Confere o codigo 2FA e marca o token como usado.
     public Usuario validarCodigo2fa(String email, String codigo) {
-        TokenEmail registro = repositorio.findByTokenHashAndFinalidade(
-                hash(email.toLowerCase(Locale.ROOT) + ":" + codigo), CODIGO_2FA)
-                .filter(token -> token.getUsuario().getEmail().equalsIgnoreCase(email))
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "O código está incorreto ou venceu. Confira o código mais recente enviado ao seu e-mail ou peça um novo."));
-        TokenEmailValidation.validarCodigo2fa(registro);
+        TokenEmail registro = localizarCodigo2fa(email, codigo);
         registro.setUtilizado(true);
         repositorio.save(registro);
         return registro.getUsuario();
+    }
+
+    // Confere o codigo sem consumi-lo e devolve o identificador do usuario dono do codigo.
+    @Transactional
+    public Long conferirCodigo2fa(String email, String codigo) {
+        return localizarCodigo2fa(email, codigo).getUsuario().getId();
+    }
+
+    private TokenEmail localizarCodigo2fa(String email, String codigo) {
+        String endereco = email.trim().toLowerCase(Locale.ROOT);
+        TokenEmail registro = repositorio.findByTokenHashAndFinalidade(hash(endereco + ":" + codigo), CODIGO_2FA)
+                .filter(token -> token.getUsuario().getEmail().equalsIgnoreCase(endereco))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "O código está incorreto ou venceu. Confira o código mais recente enviado ao seu e-mail ou peça um novo."));
+        TokenEmailValidation.validarCodigo2fa(registro);
+        return registro;
     }
 
     @Transactional

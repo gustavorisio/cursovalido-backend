@@ -211,21 +211,20 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         }
 
         @Test
-        void bancoNovoAplicaHistoricoOriginalEAAtualizacaoIncremental() {
+        void bancoNovoAplicaSchemaUnificadoSemConteudoLegalPadrao() {
                 String schema = "v3_" + java.util.UUID.randomUUID().toString().replace("-", "");
                 var flyway = FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
                 var pendentes = flyway.info().pending();
                 assertThat(pendentes).extracting(item -> item.getVersion().getVersion())
-                                .startsWith("1", "2", "3", "4", "5", "6");
-                assertThat(flyway.migrate().migrationsExecuted).isEqualTo(pendentes.length);
+                                .containsExactly("21");
+                assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
                 assertThat(flyway.info().pending()).isEmpty();
                 assertThat(flyway.info().current().getVersion())
                                 .isEqualTo(pendentes[pendentes.length - 1].getVersion());
-                // A V1 imutavel contem os documentos originais; V2 e V3 nao os alteram.
                 assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas", Long.class))
-                                .isEqualTo(1);
+                                .isZero();
                 assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_politicas_privacidade",
-                                Long.class)).isEqualTo(1);
+                                Long.class)).isZero();
                 assertThat(jdbc.queryForObject("select concluida from " + schema + ".tb_inicializacao_administrador",
                                 Boolean.class)).isFalse();
                 assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_contas_excluidas", Long.class))

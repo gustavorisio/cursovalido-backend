@@ -9,11 +9,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 public interface TopicoRepository extends JpaRepository<Topico, Long> {
         @Override
         @EntityGraph(attributePaths = "usuarioAutor")
         Optional<Topico> findById(Long id);
+
+        boolean existsByIdAutorAndCriadoEmAfter(Long idAutor, LocalDateTime desde);
 
         List<Topico> findByIdAutor(Long idAutor);
 

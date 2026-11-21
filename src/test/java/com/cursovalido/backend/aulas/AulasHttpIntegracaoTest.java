@@ -34,7 +34,11 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 // Servidor HTTP, filtro JWT, transacoes e PostgreSQL reais; somente YouTube e simulado.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.jpa.hibernate.ddl-auto=validate")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+                "spring.jpa.hibernate.ddl-auto=validate",
+                "seguranca.limite-requisicoes=10000",
+                "seguranca.limite-autenticacao=10000"
+})
 @ActiveProfiles("test")
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @Import(AulasPostgresTest.MigracaoTeste.class)
@@ -74,6 +78,8 @@ class AulasHttpIntegracaoTest {
 
         @BeforeEach
         void preparar() {
+                if (politicas.listarAtivas().isEmpty())
+                        jdbc.update("INSERT INTO tb_politicas (nome, versao, conteudo, ativa, data_publicacao) VALUES ('Termos de teste', 'aulas-http-teste', 'Conteudo de teste', true, CURRENT_TIMESTAMP)");
                 var fabrica = new JdkClientHttpRequestFactory();
                 fabrica.setReadTimeout(Duration.ofSeconds(10));
                 cliente = RestClient.builder().baseUrl("http://127.0.0.1:" + porta).requestFactory(fabrica)
@@ -177,7 +183,6 @@ class AulasHttpIntegracaoTest {
                                 com.cursovalido.backend.authentication.dto.DadosPessoaisResponse.class);
                 assertThat(resposta.getBody().nomeCompleto()).isEqualTo(aluno.getNomeCompleto());
                 assertThat(resposta.getBody().email()).isEqualTo(aluno.getEmail());
-                assertThat(resposta.getBody().dataNascimento()).isEqualTo(aluno.getDataNascimento());
                 var contato = java.util.Map.of("telefone", "21988888888");
                 assertThat(
                                 enviar(HttpMethod.PATCH, "/api/autenticacao/meus-dados", null, contato, String.class)
@@ -433,7 +438,7 @@ class AulasHttpIntegracaoTest {
                                 .isEqualTo(HttpStatus.FORBIDDEN);
                 var atividade = enviar(HttpMethod.GET, rota + data, tokenAdmin, null, AtividadeDia.class);
                 assertThat(atividade.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(atividade.getBody()).isEqualTo(new AtividadeDia(data, 0, 0, 0, 0));
+                assertThat(atividade.getBody()).isEqualTo(new AtividadeDia(data, 0, 0, 0, 0, 0, 0));
                 assertThat(enviar(HttpMethod.GET, rota + "2100-01-01", tokenAdmin, null, String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.BAD_REQUEST);
         }
@@ -487,7 +492,6 @@ class AulasHttpIntegracaoTest {
                 usuario.setEmail(numero + "@aulas.example.com");
                 usuario.setSenha("hash-de-teste");
                 usuario.setMatricula("http-" + numero);
-                usuario.setDataNascimento(LocalDate.of(2000, 1, 1));
                 usuario.setDeclarouMaiorIdade(true);
                 usuario.setAceitouTermosLgpd(true);
                 usuario.setDataHoraAceite(LocalDateTime.now());

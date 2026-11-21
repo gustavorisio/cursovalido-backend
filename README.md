@@ -77,13 +77,17 @@ git clone https://github.com/gustavorisio/cursovalido-backend.git
 cd cursovalido-backend
 ```
 
-### 3. Criar o banco
+### 3. Preparar o banco
+
+Para PostgreSQL local, crie o banco no pgAdmin ou em outro cliente:
 
 No pgAdmin ou em outro cliente PostgreSQL, crie o banco:
 
 ```sql
 CREATE DATABASE cursovalido;
 ```
+
+Em um serviço PostgreSQL gerenciado, crie o banco pelo painel do provedor e use os dados de conexão fornecidos por ele. O Flyway aplica as migrações da aplicação durante a inicialização do backend.
 
 Utilize um usuário com permissão para conectar ao banco e criar os objetos das migrações. O Flyway cria as tabelas na inicialização, a partir dos scripts em `src/main/resources/db/migration`. Depois, o Hibernate valida a estrutura do banco.
 
@@ -97,15 +101,15 @@ A V2 remove CPF e seu hash do cadastro e das contas excluídas, preserva contas,
 
 No Windows, pesquise **Editar as variáveis de ambiente do sistema**, clique em **Variáveis de Ambiente** e adicione os valores em **Variáveis de usuário**. Cadastre cada nome e valor separadamente, sem aspas.
 
-Para conectar ao PostgreSQL:
+Configure a conexão com PostgreSQL pelas variáveis de ambiente abaixo. Elas funcionam com banco local, VPS ou serviço gerenciado:
 
 ```text
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=cursovalido
-DB_USERNAME=seu_usuario
-DB_PASSWORD=sua_senha
+SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/banco?sslmode=require
+SPRING_DATASOURCE_USERNAME=usuario_do_banco
+SPRING_DATASOURCE_PASSWORD=senha_do_banco
 ```
+
+Use `sslmode=require` quando o provedor exigir conexão TLS. Para validar também a identidade do servidor, use `sslmode=verify-full` e configure o certificado raiz conforme a documentação do provedor. Não coloque usuário ou senha dentro da URL: mantenha-os nas variáveis próprias. Defina também `DB_POOL_MAX_SIZE` e `DB_POOL_MIN_IDLE` para ajustar o pool de conexões quando necessário. Guarde os valores no ambiente do servidor ou em um arquivo `.env` local ignorado pelo Git; nunca os inclua no frontend nem em commits.
 
 Para autenticação e auditoria:
 
@@ -131,10 +135,11 @@ Para validar os vídeos vinculados às aulas e receber solicitações de suporte
 
 ```text
 YOUTUBE_API_KEY=sua_chave_da_api_youtube
+YOUTUBE_ALLOWED_CHANNEL_ID=UCabcdefghijklmnopqrstuv
 SUPPORT_EMAIL=email_de_atendimento
 ```
 
-Utilize uma chave com acesso à YouTube Data API v3. Sem ela, os fluxos que validam vídeos retornam indisponibilidade. Sem `SUPPORT_EMAIL`, o envio do formulário de suporte fica indisponível.
+Utilize uma chave com acesso à YouTube Data API v3 e substitua o ID de exemplo pelo ID do canal da plataforma (formato `UC` seguido de 22 caracteres). A validação de vídeos do YouTube confere se o vídeo está público ou não listado, permite incorporação e pertence a esse canal. O Vimeo é o servidor principal e pode ser usado sem configurar essas variáveis quando o campo de YouTube reserva for deixado vazio. Sem a chave ou o ID do canal, o cadastro de vídeos do YouTube fica indisponível. Sem `SUPPORT_EMAIL`, o envio do formulário de suporte fica indisponível.
 
 Para criar o primeiro administrador em um banco novo:
 

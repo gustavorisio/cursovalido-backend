@@ -14,7 +14,6 @@ import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
 import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -89,56 +88,35 @@ class CadastroUsuarioServiceTest {
         verify(repositorio, never()).existsByEmail(any(String.class));
     }
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(ints = { 18, 90 })
-    void aceitaIdadesNosLimites(int idade) {
-        // A idade mínima também precisa ser aceita no limite da regra.
-        CadastroUsuarioRequest requisicao = requisicaoComNascimento(
-                LocalDate.now().minusYears(idade));
-        Usuario salvo = new Usuario();
-        when(politicas.versaoAtiva("1.0")).thenReturn(true);
-        when(repositorio.existsByEmail(requisicao.email())).thenReturn(false);
-        when(repositorio.existsByMatricula(any(String.class))).thenReturn(false);
-        when(codificadorSenha.encode("senha-segura")).thenReturn("hash");
-        when(repositorio.save(any(Usuario.class))).thenReturn(salvo);
-
-        Usuario resultado = servico.cadastrar(requisicao, "127.0.0.1");
-
-        assertEquals(salvo, resultado);
-        verify(repositorio).save(any(Usuario.class));
-    }
-
     private CadastroUsuarioRequest requisicaoPadrao() {
-        // Dados válidos compartilhados pelos cenários de cadastro.
-        return requisicaoComNascimento(LocalDate.now().minusYears(25));
+        return requisicao(true);
     }
 
     @Test
-    void rejeitaCadastroNoDiaAnteriorACompletarDezoitoAnos() {
-        var requisicao = requisicaoComNascimento(LocalDate.now().minusYears(18).plusDays(1));
-        when(politicas.versaoAtiva("1.0")).thenReturn(true);
-        assertThrows(com.cursovalido.backend.authentication.exception.MenorDeIdadeException.class,
-                () -> servico.cadastrar(requisicao, "127.0.0.1"));
-        verify(repositorio, never()).save(any(Usuario.class));
-    }
-
-    private CadastroUsuarioRequest requisicaoComNascimento(LocalDate dataNascimento) {
-        return new CadastroUsuarioRequest(
-                "Aluno Teste",
-                "aluno@teste.com",
-                "senha-segura",
-                "senha-segura",
-                dataNascimento,
-                true,
-                true,
-                "1.0");
-    }
-
-    @Test
-    void rejeitaIdadeAcimaDeNoventaAnos() {
+    void exigeConfirmacaoDeMaioridadeNoCadastro() {
         when(politicas.versaoAtiva("1.0")).thenReturn(true);
         assertThrows(IllegalArgumentException.class,
-                () -> servico.cadastrar(requisicaoComNascimento(LocalDate.now().minusYears(91)), "127.0.0.1"));
+                () -> servico.cadastrar(requisicao(false), "127.0.0.1"));
         verify(repositorio, never()).save(any(Usuario.class));
+    }
+
+    @Test
+    void cadastroPublicoCriaSomenteAlunoAtivo() {
+        when(politicas.versaoAtiva("1.0")).thenReturn(true);
+        when(repositorio.existsByMatricula(any(String.class))).thenReturn(false);
+        when(repositorio.save(any(Usuario.class))).thenAnswer(chamada -> chamada.getArgument(0));
+
+        Usuario resultado = servico.cadastrar(requisicaoPadrao(), "127.0.0.1");
+
+        assertEquals(com.cursovalido.backend.authentication.entity.Perfil.ALUNO, resultado.getPerfil());
+        assertEquals(com.cursovalido.backend.authentication.entity.StatusAprovacao.APROVADO,
+                resultado.getStatusAprovacao());
+        org.junit.jupiter.api.Assertions.assertTrue(resultado.isAtivo());
+        org.junit.jupiter.api.Assertions.assertTrue(resultado.getDeclarouMaiorIdade());
+    }
+
+    private CadastroUsuarioRequest requisicao(boolean declarouMaiorIdade) {
+        return new CadastroUsuarioRequest("Aluno Teste", "aluno@teste.com", "senha-segura", "senha-segura",
+                declarouMaiorIdade, true, "1.0", null, null);
     }
 }

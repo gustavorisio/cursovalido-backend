@@ -2,19 +2,23 @@ package com.cursovalido.backend.authentication.validation.senha;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import java.nio.charset.StandardCharsets;
 
 public class SenhaValidaValidator implements ConstraintValidator<SenhaValida, String> {
     @Override
     public boolean isValid(String valor, ConstraintValidatorContext contexto) {
-        if (valor == null) {
+        // Campo vazio fica a cargo de @NotBlank, que traz a mensagem de preenchimento obrigatorio.
+        if (valor == null || valor.isEmpty()) {
             return true;
         }
-        return valor.getBytes(StandardCharsets.UTF_8).length <= 72
-                && valor.codePoints().anyMatch(Character::isUpperCase)
-                && valor.codePoints().anyMatch(Character::isLowerCase)
-                && valor.codePoints().anyMatch(c -> !Character.isLetterOrDigit(c)
-                        && !Character.isWhitespace(c) && !Character.isSpaceChar(c)
-                        && !Character.isISOControl(c));
+        var problema = RegrasSenha.primeiroProblema(valor);
+        if (problema.isEmpty()) {
+            return true;
+        }
+        // Informa exatamente qual regra faltou, em vez de uma mensagem generica.
+        if (contexto != null) {
+            contexto.disableDefaultConstraintViolation();
+            contexto.buildConstraintViolationWithTemplate(problema.get()).addConstraintViolation();
+        }
+        return false;
     }
 }

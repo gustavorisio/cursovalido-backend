@@ -162,9 +162,8 @@ public class ForumController {
     }
 
     private UsuarioForumResponse converter(UsuarioForum usuario, boolean administrador) {
-        return new UsuarioForumResponse(usuario.getId(), usuario.getNome(),
-                VisibilidadeEmail.paraListagem(usuario.getEmail(), usuario.getPerfil(), administrador),
-                usuario.getPerfil());
+        String email = administrador ? VisibilidadeEmail.mascarar(usuario.getEmail()) : null;
+        return new UsuarioForumResponse(usuario.getId(), usuario.getNome(), email, usuario.getPerfil());
     }
 
 }

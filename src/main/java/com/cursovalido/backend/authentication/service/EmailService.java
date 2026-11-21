@@ -1,6 +1,7 @@
 package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.entity.ConviteAcesso;
+import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
 import java.util.List;
@@ -57,9 +58,23 @@ public class EmailService {
     // Envia o convite para completar o cadastro.
     public void enviarConvite(ConviteAcesso convite, String token) {
         enviar(convite.getEmail(), "Convite para o Curso Valido",
-                "Voce recebeu um convite para concluir seu acesso ao Curso Valido.\n\n"
-                        + "Acesse:\n" + urlAplicacao + "/convites/cadastro?token=" + token + "\n\n"
-                        + "O convite expira em 48 horas.");
+                "Voce foi convidado para acessar o Curso Valido como "
+                        + (convite.getPerfil() == Perfil.ADMINISTRADOR ? "administrador" : "professor") + ".\n\n"
+                        + "Para criar sua conta, abra o link abaixo e preencha o cadastro:\n"
+                        + urlAplicacao + "/convites/cadastro?token=" + token + "\n\n"
+                        + "Ao concluir, a conta ja estara liberada: entre com seu e-mail e senha em "
+                        + urlAplicacao + "/login.\n"
+                        + "O link e pessoal, pode ser usado uma unica vez e expira em 48 horas. "
+                        + "Se voce nao esperava este convite, ignore esta mensagem.");
+    }
+
+    // Avisa o professor ou administrador convidado de que o login ja pode ser feito.
+    public void enviarAcessoAprovado(Usuario usuario) {
+        enviar(usuario.getEmail(), "Seu acesso ao Curso Valido foi aprovado",
+                "Ola, " + usuario.getNomeCompleto() + ".\n\n"
+                        + "Seu cadastro foi aprovado pela administracao.\n"
+                        + "Entre com seu e-mail e senha em " + urlAplicacao + "/login.\n"
+                        + "Depois da senha, enviaremos um codigo de 6 digitos para este e-mail.");
     }
 
     public void enviarExclusaoConta(Usuario usuario, String codigo) {

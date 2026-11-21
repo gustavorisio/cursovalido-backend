@@ -21,12 +21,6 @@ public class ConviteController {
         return convites.consultar(requisicao.token());
     }
 
-    @PostMapping("/confirmar-email")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void confirmarEmail(@Valid @RequestBody TokenEmailRequest requisicao) {
-        convites.confirmarEmail(requisicao.token());
-    }
-
     @PostMapping("/completar-cadastro")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void completar(@Valid @RequestBody ConviteCadastroRequest requisicao,

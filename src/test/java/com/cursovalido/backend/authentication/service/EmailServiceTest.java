@@ -65,6 +65,30 @@ class EmailServiceTest {
     }
 
     @Test
+    void conviteInformaPerfilUsoUnicoEValidade() {
+        var convite = new ConviteAcesso("admin@example.com", Perfil.ADMINISTRADOR, "hash",
+                LocalDateTime.now().plusDays(2));
+        servidor.expect(requestTo("https://emails.example.com/emails"))
+                .andExpect(jsonPath("$.text", org.hamcrest.Matchers.containsString("como administrador")))
+                .andExpect(jsonPath("$.text", org.hamcrest.Matchers.containsString("uma unica vez")))
+                .andExpect(jsonPath("$.text", org.hamcrest.Matchers.containsString("48 horas")))
+                .andRespond(withSuccess());
+
+        service.enviarConvite(convite, "token-teste");
+
+        servidor.verify();
+    }
+
+    @Test
+    void avisaQueOAcessoFoiAprovado() {
+        esperarMensagemCom("https://curso.example.com/login");
+
+        service.enviarAcessoAprovado(usuario());
+
+        servidor.verify();
+    }
+
+    @Test
     void deveEnviarCodigoParaConfirmarExclusao() {
         esperarMensagemCom("123456");
 

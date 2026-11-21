@@ -1,4 +1,7 @@
 package com.cursovalido.backend.forum.dto;
 
-public record UsuarioForumResponse(Long id, String nome, String email, String perfil) {
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+public record UsuarioForumResponse(Long id, String nome,
+        @JsonInclude(JsonInclude.Include.NON_NULL) String email, String perfil) {
 }

@@ -1,5 +1,6 @@
 package com.cursovalido.backend.forum.service;
 
+import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -195,5 +196,18 @@ class ComentarioServiceTest {
     private void prepararEdicao() {
         when(usuarios.buscarAtivo(7L)).thenReturn(autor);
         when(repositorio.findById(20L)).thenReturn(Optional.of(comentario));
+    }
+
+    @Test
+    void comentarioOfensivoNaoESalvoEFicaRegistradoNaAuditoria() {
+        when(usuarios.buscarAtivo(7L)).thenReturn(autor);
+        when(topicos.buscarAtivo(10L)).thenReturn(topico);
+        Comentario novo = new Comentario();
+        novo.setConteudo("v-i-a-d-o");
+
+        assertThatThrownBy(() -> servico.criar(10L, novo, 7L)).isInstanceOf(ConteudoOfensivoException.class);
+
+        verify(repositorio, never()).save(any());
+        verify(auditoria).registrar(7L, "CONTEUDO_OFENSIVO_BLOQUEADO", "Comentario", null);
     }
 }

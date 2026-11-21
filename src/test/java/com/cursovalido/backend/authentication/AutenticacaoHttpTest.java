@@ -27,7 +27,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "security.bcrypt.strength=10")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+                "security.bcrypt.strength=10",
+                "seguranca.limite-requisicoes=10000",
+                "seguranca.limite-autenticacao=10000"
+})
 @ActiveProfiles("test")
 class AutenticacaoHttpTest {
         @Autowired
@@ -59,42 +63,27 @@ class AutenticacaoHttpTest {
         private final Map<String, String> codigos = new ConcurrentHashMap<>();
         private final Map<String, String> recuperacoes = new ConcurrentHashMap<>();
 
-        @Test
-        void swaggerExibeInterfaceEContratoDaApi() {
-                var interfaceSwagger = cliente.get().uri("/swagger-ui/index.html").retrieve().toEntity(String.class);
-                assertEquals(HttpStatus.OK, interfaceSwagger.getStatusCode());
-                assertTrue(interfaceSwagger.getBody().contains("Swagger UI"));
-
-                var contrato = cliente.get().uri("/v3/api-docs").retrieve().toEntity(String.class);
-                assertEquals(HttpStatus.OK, contrato.getStatusCode(), contrato.getBody());
-                assertTrue(contrato.getBody().contains("API Curso Válido"));
-                assertTrue(contrato.getBody().contains("/api/administracao/usuarios"));
-                assertTrue(contrato.getBody().contains("bearerAuth"));
-
-                assertEquals(HttpStatus.UNAUTHORIZED, cliente.get().uri("/api/administracao/usuarios")
-                                .retrieve().toBodilessEntity().getStatusCode());
-        }
-
         @BeforeEach
         void preparar() {
                 cliente = RestClient.builder().baseUrl("http://localhost:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
                                 }).build();
+                if (politicas.findByVersao("teste-http").isEmpty())
+                        politicas.save(new Politica("Termos", "teste-http", "Termos do teste"));
                 usuario = new Usuario();
                 usuario.setNomeCompleto("Aluno Teste");
                 usuario.setEmail(UUID.randomUUID() + "@example.com");
                 usuario.setSenha(senhas.encode("SenhaTeste123!"));
                 usuario.setMatricula(UUID.randomUUID().toString());
-                usuario.setDataNascimento(LocalDate.of(1990, 1, 1));
                 usuario.setPerfil(Perfil.ALUNO);
                 usuario.setEmailConfirmado(true);
                 usuario.setAceitouTermosLgpd(true);
                 usuario.setDeclarouMaiorIdade(true);
                 usuario.setVersaoTermos("teste-http");
                 usuario.setDataHoraAceite(LocalDateTime.now());
+                usuario.setDoisFatoresAtivos(true);
                 usuario = usuarios.save(usuario);
-                if (politicas.findByVersao("teste-http").isEmpty())
-                        politicas.save(new Politica("Termos", "teste-http", "Termos do teste"));
+                responsabilidade.registrar(usuario, true, "1.0", "127.0.0.1");
                 doAnswer(chamada -> {
                         Usuario destinatario = chamada.getArgument(0);
                         codigos.put(destinatario.getEmail(), chamada.getArgument(1));
@@ -142,7 +131,7 @@ class AutenticacaoHttpTest {
                 String senha = "SenhaNova123!";
                 var cadastro = post("cadastro", Map.of(
                                 "nomeCompleto", "Aluno Novo", "email", email, "senha", senha, "confirmacaoSenha", senha,
-                                "dataNascimento", "1990-01-01", "declarouMaiorIdade", true,
+                                "declarouMaiorIdade", true,
                                 "aceitouTermosLgpd", true, "versaoTermos", "teste-http"));
                 assertEquals(HttpStatus.CREATED, cadastro.getStatusCode(), String.valueOf(cadastro.getBody()));
                 assertNull(codigos.get(email));

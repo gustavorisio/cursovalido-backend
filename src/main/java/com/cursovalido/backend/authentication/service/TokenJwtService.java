@@ -35,6 +35,9 @@ public class TokenJwtService {
     @PostConstruct
     // Prepara a chave usada para assinar os tokens.
     public void prepararChave() {
+        if (expiracaoMs < 1) {
+            throw new IllegalStateException("JWT_EXPIRATION deve ser um valor positivo em milissegundos");
+        }
         chave = Keys.hmacShaKeyFor(chaveTexto.getBytes(StandardCharsets.UTF_8));
     }
 

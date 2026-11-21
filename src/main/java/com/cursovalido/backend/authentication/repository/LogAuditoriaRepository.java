@@ -16,7 +16,7 @@ public interface LogAuditoriaRepository extends JpaRepository<LogAuditoria, Long
 
 	List<LogAuditoria> findByUsuarioIdOrderByDataHoraAsc(Long usuarioId);
 
-	@Modifying
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Transactional
 	@Query("update LogAuditoria log set log.usuarioId = null where log.usuarioId = :usuarioId")
 	void anonimizarPorUsuarioId(@Param("usuarioId") Long usuarioId);

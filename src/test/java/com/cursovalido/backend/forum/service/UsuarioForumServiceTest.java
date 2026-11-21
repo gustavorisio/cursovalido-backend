@@ -70,7 +70,19 @@ class UsuarioForumServiceTest {
         when(usuario.getPerfil()).thenReturn(Perfil.PROFESSOR);
         when(usuario.isAtivo()).thenReturn(false);
         servico.sincronizar(usuario);
-        verify(repositorio).sincronizar(7L, "Nome atualizado", "novo@teste.com", "PROFESSOR", false);
+        verify(repositorio).sincronizar(7L, "Nome atualizado", "n*******@teste.com", "PROFESSOR", false);
+    }
+
+    @Test
+    void sincronizar_comAluno_deveAbreviarNomeEMascararEmail() {
+        Usuario usuario = mock(Usuario.class);
+        when(usuario.getId()).thenReturn(8L);
+        when(usuario.getNomeCompleto()).thenReturn("Maria Clara Souza");
+        when(usuario.getEmail()).thenReturn("maria@teste.com");
+        when(usuario.getPerfil()).thenReturn(Perfil.ALUNO);
+        when(usuario.isAtivo()).thenReturn(true);
+        servico.sincronizar(usuario);
+        verify(repositorio).sincronizar(8L, "Maria S.", "m*******@teste.com", "ALUNO", true);
     }
 
     @ParameterizedTest

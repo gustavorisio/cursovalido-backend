@@ -3,8 +3,7 @@ package com.cursovalido.backend.authentication.validation.administracao;
 import com.cursovalido.backend.authentication.dto.ConviteAcessoRequest;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.authentication.validation.senha.SenhaValida;
-import com.cursovalido.backend.authentication.validation.senha.SenhaValidaValidator;
+import com.cursovalido.backend.authentication.validation.senha.RegrasSenha;
 
 public final class AdministradorInicialValidation {
     private AdministradorInicialValidation() {
@@ -16,15 +15,11 @@ public final class AdministradorInicialValidation {
         if (!validador.validate(configuracao).isEmpty()) {
             throw new IllegalStateException("Defina ADMIN_EMAIL com um endereco de e-mail valido.");
         }
-        if (!new SenhaValidaValidator().isValid(senha, null))
-            throw senhaInvalida();
+        RegrasSenha.primeiroProblema(senha).ifPresent(problema -> {
+            throw new IllegalStateException("ADMIN_PASSWORD invalida: " + problema);
+        });
         if (usuarios.existsByEmail(endereco)) {
             throw new IllegalStateException("ADMIN_EMAIL ja pertence a uma conta. Nenhuma conta sera promovida.");
         }
-    }
-
-    private static IllegalStateException senhaInvalida() {
-        return new IllegalStateException(
-                SenhaValida.MENSAGEM);
     }
 }

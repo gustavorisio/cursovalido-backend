@@ -54,8 +54,7 @@ class AdministradorInicialHttpTest {
                 resposta = cliente.post().uri("/api/autenticacao/confirmar-2fa")
                                 .body(Map.of("email", "primeiro-admin@example.com", "codigo", codigo.getValue()))
                                 .retrieve().toEntity(Map.class);
-                assertEquals(403, resposta.getStatusCode().value());
-                assertEquals("TERMOS_NAO_ACEITOS", resposta.getBody().get("codigo"));
+                assertEquals(200, resposta.getStatusCode().value());
                 assertNotNull(resposta.getBody().get("token"));
         }
 }
