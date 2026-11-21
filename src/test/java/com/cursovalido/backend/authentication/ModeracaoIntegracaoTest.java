@@ -1,5 +1,7 @@
 package com.cursovalido.backend.authentication;
 
+import com.cursovalido.backend.authentication.entity.StatusAprovacao;
+import org.springframework.test.util.ReflectionTestUtils;
 import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 
 import static org.assertj.core.api.Assertions.*;
@@ -216,34 +218,48 @@ class ModeracaoIntegracaoTest {
         }
 
         @Test
-        void reenviarMantemConviteUnicoEInvalidaLinkAnterior() throws Exception {
+        void conviteEUnicoReenvioRespeitaIntervaloECadastroPeloLinkLiberaAcesso() throws Exception {
                 AtomicReference<String> token = new AtomicReference<>();
                 doAnswer(chamada -> {
                         token.set(chamada.getArgument(1));
                         return null;
                 }).when(emails).enviarConvite(any(), anyString());
+                String pedido = "{\"email\":\"convite@example.com\",\"perfil\":\"PROFESSOR\"}";
                 mvc.perform(post("/api/administracao/convites").with(como(principal))
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"email\":\"convite@example.com\",\"perfil\":\"PROFESSOR\"}"))
+                                .contentType(MediaType.APPLICATION_JSON).content(pedido))
                                 .andExpect(status().isNoContent());
+                // Segundo clique no mesmo e-mail nao cria outro convite nem envia outro e-mail.
+                mvc.perform(post("/api/administracao/convites").with(como(principal))
+                                .contentType(MediaType.APPLICATION_JSON).content(pedido))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.codigo").value("CONVITE_JA_PENDENTE"));
+                verify(emails, times(1)).enviarConvite(any(), anyString());
                 String anterior = token.get();
                 var convite = convites.findByEmail("convite@example.com").orElseThrow();
                 mvc.perform(post("/api/administracao/convites/" + convite.getId() + "/reenviar")
                                 .with(como(administrador)))
                                 .andExpect(status().isForbidden());
                 mvc.perform(post("/api/administracao/convites/" + convite.getId() + "/reenviar").with(como(principal)))
+                                .andExpect(status().isTooManyRequests())
+                                .andExpect(jsonPath("$.codigo").value("REENVIO_CONVITE_AGUARDE"));
+                var salvo = convites.findById(convite.getId()).orElseThrow();
+                ReflectionTestUtils.setField(salvo, "enviadoEm", java.time.LocalDateTime.now().minusMinutes(5));
+                convites.saveAndFlush(salvo);
+                mvc.perform(post("/api/administracao/convites/" + convite.getId() + "/reenviar").with(como(principal)))
                                 .andExpect(status().isNoContent());
                 convites.flush();
                 assertThat(convites.count()).isEqualTo(1);
                 assertThat(token.get()).isNotEqualTo(anterior);
-                mvc.perform(post("/api/convites/confirmar-email").contentType(MediaType.APPLICATION_JSON)
+                mvc.perform(post("/api/convites/consultar").contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"token\":\"" + anterior + "\"}")).andExpect(status().isBadRequest());
-                mvc.perform(post("/api/convites/confirmar-email").contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"token\":\"" + token.get() + "\"}")).andExpect(status().isNoContent());
+                mvc.perform(post("/api/convites/consultar").contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"token\":\"" + token.get() + "\"}"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.email").value("convite@example.com"));
                 politicas.save(new Politica("Termos", "convite-v1", "Termos do convite"));
                 String cadastro = """
                                 {"token":"%s","cadastro":{"nomeCompleto":"Professor Convidado","email":"convite@example.com",
-                                "senha":"SenhaTeste123!","confirmacaoSenha":"SenhaTeste123!","dataNascimento":"1990-01-01",
+                                "senha":"SenhaTeste123!","confirmacaoSenha":"SenhaTeste123!",
                                 "declarouMaiorIdade":true,"aceitouTermosLgpd":true,"versaoTermos":"convite-v1","aceitouResponsabilidade":true,"versaoResponsabilidade":"1.0"}}
                                 """
                                 .formatted(token.get());
@@ -252,13 +268,16 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isNoContent());
                 var convidado = usuarios.findByEmail("convite@example.com").orElseThrow();
                 assertThat(convidado.getPerfil()).isEqualTo(Perfil.PROFESSOR);
-                assertThat(convidado.isAtivo()).isFalse();
-                mvc.perform(post("/api/administracao/convites/" + convidado.getId() + "/aprovar")
-                                .with(como(administrador)))
-                                .andExpect(status().isForbidden());
-                mvc.perform(post("/api/administracao/convites/" + convidado.getId() + "/aprovar").with(como(principal)))
-                                .andExpect(status().isNoContent());
-                assertThat(usuarios.findById(convidado.getId()).orElseThrow().isAtivo()).isTrue();
+                assertThat(convidado.isAtivo()).isTrue();
+                assertThat(convidado.isEmailConfirmado()).isTrue();
+                assertThat(convidado.getStatusAprovacao()).isEqualTo(StatusAprovacao.APROVADO);
+                // O link vale para um unico cadastro.
+                mvc.perform(post("/api/convites/completar-cadastro").contentType(MediaType.APPLICATION_JSON)
+                                .content(cadastro))
+                                .andExpect(status().isBadRequest());
+                mvc.perform(post("/api/convites/confirmar-email").contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"token\":\"" + token.get() + "\"}"))
+                                .andExpect(status().is4xxClientError());
         }
 
         @Test

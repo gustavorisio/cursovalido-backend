@@ -7,9 +7,6 @@ import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.ContaUsuarioService;
 import com.cursovalido.backend.authentication.service.ModeracaoUsuarioService;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +28,9 @@ public class ModeracaoController {
         return Map.of("principal", privilegios.ehPrincipal(administrador), "idUsuario", administrador.getId());
     }
 
-    @Operation(summary = "Lista usuários para moderação", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/api/administracao/usuarios")
     public List<UsuarioAdministracaoResposta> listar(@AuthenticationPrincipal UsuarioAutenticado principal,
-            @Parameter(description = "Filtra por restrição vigente. Omitir para listar todos.") @RequestParam(required = false) Boolean restrito) {
+            @RequestParam(required = false) Boolean restrito) {
         return moderacao.listarUsuarios(principal.getId(), restrito);
     }
 

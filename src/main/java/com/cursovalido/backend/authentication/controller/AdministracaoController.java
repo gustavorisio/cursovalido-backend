@@ -7,6 +7,7 @@ import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.ConviteAcessoService;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -21,9 +22,12 @@ import org.springframework.web.bind.annotation.*;
 public class AdministracaoController {
     private final ConviteAcessoService convites;
     private final LogAuditoriaService auditoria;
+    private final PrivilegiosAdministrativosService privilegios;
 
     @GetMapping("/auditoria/integridade")
-    public Map<String, Boolean> verificarIntegridadeAuditoria() {
+    public Map<String, Boolean> verificarIntegridadeAuditoria(
+            @AuthenticationPrincipal UsuarioAutenticado administrador) {
+        privilegios.verificarPrincipal(administrador.getId());
         return Map.of("integra", auditoria.verificarIntegridade());
     }
 
@@ -35,13 +39,15 @@ public class AdministracaoController {
     }
 
     @GetMapping("/pendentes")
-    public List<ConviteAcessoResponse> listarPendentes() {
-        return convites.pendentes().stream().map(this::converter).toList();
+    public List<ConviteAcessoResponse> listarPendentes(
+            @AuthenticationPrincipal UsuarioAutenticado administrador) {
+        return convites.pendentes(administrador.getId()).stream().map(this::converter).toList();
     }
 
     @GetMapping
-    public List<ConviteResumoResponse> listarConvites() {
-        return convites.convitesPendentes();
+    public List<ConviteResumoResponse> listarConvites(
+            @AuthenticationPrincipal UsuarioAutenticado administrador) {
+        return convites.convitesPendentes(administrador.getId());
     }
 
     @PostMapping("/{id}/aprovar")
@@ -76,7 +82,6 @@ public class AdministracaoController {
 
     private ConviteAcessoResponse converter(Usuario usuario) {
         return new ConviteAcessoResponse(usuario.getId(), usuario.getEmail(), usuario.getPerfil(),
-                usuario.getStatusAprovacao(), usuario.getNomeCompleto(),
-                usuario.getDataNascimento());
+                usuario.getStatusAprovacao(), usuario.getNomeCompleto());
     }
 }

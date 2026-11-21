@@ -56,11 +56,12 @@ public class AdministradorInicialService {
         AdministradorInicialValidation.validarConfiguracao(endereco, senha, validador, usuarios);
 
         Usuario administrador = new Usuario();
-        administrador.setNomeCompleto("Administrador Curso Valido");
+        administrador.setNomeCompleto("Root Curso Valido");
         administrador.setEmail(endereco);
         administrador.setSenha(senhas.encode(senha));
         administrador.setMatricula("ADMIN-" + UUID.randomUUID());
         administrador.setPerfil(Perfil.ADMINISTRADOR);
+        administrador.setDoisFatoresAtivos(true);
         administrador.setEmailConfirmado(true);
         administrador.setDeclarouMaiorIdade(false);
         administrador.setAceitouTermosLgpd(false);
