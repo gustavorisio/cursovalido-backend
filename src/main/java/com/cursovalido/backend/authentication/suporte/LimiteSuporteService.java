@@ -53,8 +53,8 @@ public class LimiteSuporteService {
             }
             SuporteValidation.validarLimite(agora, liberacao);
             envio.run();
-            // Falha no provedor desfaz a transacao e nao consome a cota diaria.
-            Instant fim = relogio.instant().plus(Duration.ofHours(24));
+            // Falha no provedor desfaz a transacao e nao consome a cota por uma hora.
+            Instant fim = relogio.instant().plus(Duration.ofHours(1));
             jdbc.update("DELETE FROM tb_suporte_limites WHERE expira_em <= ?", Timestamp.from(agora));
             for (String chave : chaves) {
                 jdbc.update("INSERT INTO tb_suporte_limites (chave, expira_em) VALUES (?, ?)", chave,

@@ -9,7 +9,7 @@ public class LimiteSuporteException extends ResponseStatusException {
 
     public LimiteSuporteException(long segundos) {
         super(HttpStatus.TOO_MANY_REQUESTS,
-                "Já existe uma solicitação recente para este IP ou e-mail. Aguarde 24 horas após o último envio para enviar novamente.");
+                "Já existe uma solicitação recente para este IP ou e-mail. Aguarde 1 hora após o último envio para enviar novamente.");
         cabecalhos.set("Retry-After", Long.toString(segundos));
     }
 

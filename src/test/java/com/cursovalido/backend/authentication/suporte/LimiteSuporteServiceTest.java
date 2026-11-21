@@ -57,13 +57,13 @@ class LimiteSuporteServiceTest {
     }
 
     @Test
-    void mantemLimiteAoRecriarServicoELiberaApos24Horas() {
+    void mantemLimiteAoRecriarServicoELiberaAposUmaHora() {
         enviar("1", "a@example.com", "a@example.com");
-        assertThatThrownBy(() -> novo(agora.plusSeconds(86399)).enviar("1", "a@example.com", "a@example.com", () -> {
+        assertThatThrownBy(() -> novo(agora.plusSeconds(3599)).enviar("1", "a@example.com", "a@example.com", () -> {
         }))
                 .isInstanceOfSatisfying(LimiteSuporteException.class,
                         erro -> assertThat(erro.getHeaders().getFirst("Retry-After")).isEqualTo("1"));
-        novo(agora.plusSeconds(86400)).enviar("1", "a@example.com", "a@example.com", () -> {
+        novo(agora.plusSeconds(3600)).enviar("1", "a@example.com", "a@example.com", () -> {
         });
     }
 
