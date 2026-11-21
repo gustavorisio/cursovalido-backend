@@ -36,7 +36,7 @@ class DocumentoVersoesMigracaoTest {
         Flyway flyway = FlywayConfig.configuracao().dataSource(fonte).load();
 
         assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("21");
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("1");
         return new JdbcTemplate(fonte);
     }
 }
