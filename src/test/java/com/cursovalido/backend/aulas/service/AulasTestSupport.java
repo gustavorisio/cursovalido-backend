@@ -35,6 +35,7 @@ final class AulasTestSupport {
         aula.setTitulo("Java");
         aula.setDescricao("Basico");
         aula.setYoutubeVideoId("M7lc1UVf-VE");
+        aula.setVimeoVideoUrl("https://vimeo.com/123456789");
         aula.setOrdem(1);
         return aula;
     }

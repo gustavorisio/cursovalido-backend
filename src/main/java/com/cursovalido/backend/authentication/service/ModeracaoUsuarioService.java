@@ -44,14 +44,9 @@ public class ModeracaoUsuarioService {
     }
 
     public String mensagemBanimento(Long idUsuario, EscopoSuspensao escopo) {
-        var aplicaveis = vigentes(idUsuario).stream().filter(item -> {
-            if (escopoDeConteudo(escopo)) {
-                return escopoDeConteudo(item.getEscopo());
-            }
-            return item.getEscopo() == escopo;
-        }).toList();
+        var aplicaveis = vigentes(idUsuario).stream().filter(item -> item.getEscopo() == escopo).toList();
         String acesso = escopo == EscopoSuspensao.CONTA ? " da plataforma"
-                : escopo == EscopoSuspensao.FORUM ? " do fórum" : " dos tópicos e comentários do fórum";
+                : " do fórum";
         if (aplicaveis.stream().anyMatch(item -> item.getExpiraEm() == null)) {
             return "Você foi banido permanentemente" + acesso + ".";
         }
@@ -123,21 +118,8 @@ public class ModeracaoUsuarioService {
                 .filter(item -> item.vigente(agora)).toList();
     }
 
-    private boolean escopoDeConteudo(EscopoSuspensao escopo) {
-        if (escopo == EscopoSuspensao.TOPICOS) {
-            return true;
-        }
-        return escopo == EscopoSuspensao.COMENTARIOS;
-    }
-
     private boolean substituiSuspensao(EscopoSuspensao novo, EscopoSuspensao anterior) {
-        if (novo == anterior) {
-            return true;
-        }
-        if (!escopoDeConteudo(novo)) {
-            return false;
-        }
-        return escopoDeConteudo(anterior);
+        return novo == anterior;
     }
 
     private boolean suspensaoPertenceAoUsuario(SuspensaoUsuario suspensao, Long idUsuario) {

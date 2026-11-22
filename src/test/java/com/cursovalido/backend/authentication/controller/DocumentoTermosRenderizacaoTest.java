@@ -24,9 +24,9 @@ class DocumentoTermosRenderizacaoTest {
 
     @Test
     void renderizaCorpoSemExibirCabecalhoHtml() {
-        String html = DocumentoTermosController.renderizarConteudo(
+        String texto = DocumentoTermosController.renderizarConteudo(
                 "<!DOCTYPE html><html><head><title>Termos</title></head><body><h2>Objeto</h2><p>Texto <strong>importante</strong></p></body></html>");
-        assertEquals("<h2>Objeto</h2><p>Texto <strong>importante</strong></p>", html);
+        assertEquals("Objeto\nTexto importante", texto);
     }
 
     @Test
@@ -53,8 +53,8 @@ class DocumentoTermosRenderizacaoTest {
             assertTrue(html.contains("onclick=\"voltar()\""));
             assertTrue(html.contains("class=\"navegacao\""));
             assertTrue(html.contains("<style>"));
-            assertTrue(html.contains("<h2>Objeto</h2>"));
-            assertTrue(html.contains("Texto vigente"));
+            assertTrue(html.contains("Objeto\nTexto vigente"));
+            assertFalse(html.contains("<h2>"));
             assertFalse(html.contains("&lt;!DOCTYPE"));
             assertFalse(html.contains("Titulo antigo"));
             assertEquals(1, html.split("<h1>", -1).length - 1);

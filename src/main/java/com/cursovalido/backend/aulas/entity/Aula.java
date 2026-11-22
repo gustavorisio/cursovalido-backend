@@ -27,8 +27,8 @@ public class Aula {
     private Long idModulo;
     @Column(nullable = false)
     private int ordem;
-    @Column(name = "youtube_video_id", length = 11)
+    @Column(name = "youtube_video_id", nullable = false, length = 11)
     private String youtubeVideoId;
-    @Column(name = "vimeo_video_url", length = 2048)
+    @Column(name = "vimeo_video_url", nullable = false, length = 2048)
     private String vimeoVideoUrl;
 }

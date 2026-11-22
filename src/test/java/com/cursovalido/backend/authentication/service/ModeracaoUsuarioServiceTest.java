@@ -76,24 +76,24 @@ class ModeracaoUsuarioServiceTest {
         cadastrarAlvo();
         Instant fim = Instant.now().plus(2, ChronoUnit.DAYS);
         when(suspensoes.findByIdUsuarioInAndRevogadaEmIsNullOrderByIdDesc(List.of(2L)))
-                .thenReturn(List.of(suspensao(2L, EscopoSuspensao.COMENTARIOS, fim)));
+                .thenReturn(List.of(suspensao(2L, EscopoSuspensao.FORUM, fim)));
 
-        String mensagem = service.mensagemBanimento(2L, EscopoSuspensao.TOPICOS);
+        String mensagem = service.mensagemBanimento(2L, EscopoSuspensao.FORUM);
 
         assertTrue(mensagem.contains("temporariamente"));
         assertTrue(mensagem.contains("horário de Brasília"));
     }
 
     @Test
-    void deveSubstituirSuspensaoDeConteudoERevogarAcessos() {
+    void deveSubstituirSuspensaoDoForumERevogarAcessos() {
         autenticarAdministradorComum();
         Usuario alvo = cadastrarAlvo();
         alvo.setPerfil(Perfil.PROFESSOR);
-        var anterior = suspensao(2L, EscopoSuspensao.TOPICOS, null);
+        var anterior = suspensao(2L, EscopoSuspensao.FORUM, null);
         when(suspensoes.findByIdUsuarioInAndRevogadaEmIsNullOrderByIdDesc(List.of(2L)))
                 .thenReturn(List.of(anterior));
 
-        var nova = service.aplicar(2L, new SuspensaoRequest(EscopoSuspensao.COMENTARIOS, " Ofensa ", null), 1L);
+        var nova = service.aplicar(2L, new SuspensaoRequest(EscopoSuspensao.FORUM, " Ofensa ", null), 1L);
 
         assertEquals("Ofensa", nova.motivo());
         assertNotNull(anterior.getRevogadaEm());
