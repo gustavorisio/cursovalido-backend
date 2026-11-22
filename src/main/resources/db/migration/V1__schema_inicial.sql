@@ -53,10 +53,12 @@ CREATE TABLE tb_usuarios (
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     email_confirmado BOOLEAN NOT NULL DEFAULT FALSE,
     status_aprovacao VARCHAR(20) NOT NULL DEFAULT 'APROVADO',
+    gamertag VARCHAR(15) NOT NULL,
     CONSTRAINT pk_tb_usuarios PRIMARY KEY (id),
     CONSTRAINT uk_tb_usuarios_email UNIQUE (email),
     CONSTRAINT uk_tb_usuarios_cpf UNIQUE (cpf_hash),
     CONSTRAINT uk_tb_usuarios_matricula UNIQUE (matricula),
+    CONSTRAINT uk_usuarios_gamertag UNIQUE (gamertag),
     CONSTRAINT ck_tb_usuarios_dados_cadastro CHECK (
         perfil = 'ADMINISTRADOR' OR (
             cpf IS NOT NULL AND cpf_hash IS NOT NULL AND data_nascimento IS NOT NULL
@@ -198,7 +200,7 @@ CREATE TABLE tb_suspensoes_usuarios (
     id BIGSERIAL PRIMARY KEY,
     id_usuario BIGINT NOT NULL,
     id_administrador BIGINT REFERENCES tb_usuarios(id) ON DELETE SET NULL,
-    escopo VARCHAR(20) NOT NULL CHECK (escopo IN ('CONTA', 'FORUM', 'TOPICOS', 'COMENTARIOS')),
+    escopo VARCHAR(20) NOT NULL CHECK (escopo IN ('CONTA', 'FORUM')),
     motivo VARCHAR(1000) NOT NULL,
     criada_em TIMESTAMP WITH TIME ZONE NOT NULL,
     expira_em TIMESTAMP WITH TIME ZONE,
@@ -224,18 +226,6 @@ CREATE TABLE tb_politicas_privacidade (
     data_publicacao TIMESTAMP NOT NULL
 );
 
-CREATE TABLE tb_noticias (
-    id BIGSERIAL PRIMARY KEY,
-    titulo VARCHAR(255) NOT NULL,
-    conteudo VARCHAR(30000) NOT NULL,
-    autor_id BIGINT REFERENCES tb_usuarios(id) ON DELETE SET NULL,
-    criado_em TIMESTAMP NOT NULL,
-    atualizado_em TIMESTAMP,
-    ativo BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE INDEX idx_noticias_recentes ON tb_noticias(criado_em DESC, id DESC) WHERE ativo = TRUE;
-
 CREATE TABLE tb_suporte_controle (id INTEGER PRIMARY KEY);
 INSERT INTO tb_suporte_controle (id) VALUES (1);
 
@@ -256,19 +246,6 @@ CREATE UNIQUE INDEX uk_temas_nome ON tb_temas (LOWER(nome));
 
 ALTER TABLE tb_cursos ADD COLUMN tema_id BIGINT REFERENCES tb_temas(id) ON DELETE SET NULL;
 CREATE INDEX idx_cursos_tema ON tb_cursos(tema_id);
-
-CREATE TABLE tb_areas_tecnologia (
-    id BIGINT PRIMARY KEY,
-    codigo VARCHAR(50) NOT NULL UNIQUE,
-    nome VARCHAR(100) NOT NULL,
-    descricao VARCHAR(1000) NOT NULL,
-    passos VARCHAR(1500) NOT NULL,
-    area_pai_id BIGINT REFERENCES tb_areas_tecnologia(id),
-    ordem INTEGER NOT NULL
-);
-
-ALTER TABLE tb_cursos ADD COLUMN area_id BIGINT REFERENCES tb_areas_tecnologia(id);
-CREATE INDEX idx_cursos_area ON tb_cursos(area_id);
 
 CREATE TABLE tb_questionarios (
     id BIGSERIAL PRIMARY KEY,
@@ -367,13 +344,6 @@ CREATE TABLE tb_caminhos_escolhas_aluno (
     pergunta VARCHAR(50) NOT NULL,
     opcao INTEGER NOT NULL,
     PRIMARY KEY (resposta_id, ordem)
-);
-CREATE TABLE tb_caminhos_secoes (
-    id BIGSERIAL PRIMARY KEY,
-    titulo VARCHAR(255) NOT NULL,
-    conteudo VARCHAR(20000) NOT NULL,
-    ordem INTEGER NOT NULL DEFAULT 1,
-    publicado BOOLEAN NOT NULL DEFAULT FALSE
 );
 ALTER TABLE tb_usuarios DROP CONSTRAINT ck_tb_usuarios_dados_cadastro;
 ALTER TABLE tb_usuarios DROP COLUMN cpf;
