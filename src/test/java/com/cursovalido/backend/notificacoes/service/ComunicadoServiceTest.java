@@ -32,6 +32,8 @@ class ComunicadoServiceTest {
         when(comunicados.criar("Aviso", "Aula adiada", 1L)).thenReturn(comunicado);
 
         assertEquals(comunicado, service.publicar(1L, new ComunicadoRequest(" Aviso ", " Aula adiada ")));
+        verify(comunicados).bloquearPublicacoes();
+        verify(comunicados).registrarPublicacao(1L, comunicado.criadoEm());
         verify(auditoria).registrar(1L, "PUBLICACAO_COMUNICADO", "Comunicado 5", null);
     }
 
@@ -87,6 +89,29 @@ class ComunicadoServiceTest {
 
         assertEquals(HttpStatus.FORBIDDEN, erro.getStatusCode());
         verifyNoInteractions(comunicados);
+    }
+
+    @Test
+    void recusaTrigesimoPrimeiroComunicado() {
+        cadastrarUsuario(Perfil.ADMINISTRADOR);
+        when(comunicados.contar()).thenReturn(30L);
+        var erro = assertThrows(ResponseStatusException.class,
+                () -> service.publicar(1L, new ComunicadoRequest("Aviso", "Texto")));
+        assertEquals(HttpStatus.CONFLICT, erro.getStatusCode());
+        verify(comunicados, never()).criar(any(), any(), any());
+        verifyNoInteractions(auditoria);
+    }
+
+    @Test
+    void exigeTrintaSegundosAntesDePublicarOutro() {
+        cadastrarUsuario(Perfil.ADMINISTRADOR);
+        when(comunicados.publicouRecentemente(eq(1L), any())).thenReturn(true);
+        var erro = assertThrows(ResponseStatusException.class,
+                () -> service.publicar(1L, new ComunicadoRequest("Aviso", "Texto")));
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, erro.getStatusCode());
+        assertTrue(erro.getReason().contains("30 segundos"));
+        verify(comunicados, never()).criar(any(), any(), any());
+        verifyNoInteractions(auditoria);
     }
 
     private void cadastrarUsuario(Perfil perfil) {

@@ -130,6 +130,9 @@ public class TopicoService {
     }
 
     private void verificarAutoriaOuAdministrador(Topico topico, UsuarioForum usuario) {
+        if ("ALUNO".equalsIgnoreCase(usuario.getPerfil())) {
+            throw new AcessoNegadoException("Alunos não podem fechar nem arquivar tópicos.");
+        }
         boolean ehAutor = topico.getIdAutor() != null && topico.getIdAutor().equals(usuario.getId());
         if (!ehAutor && !servicoUsuarios.ehAdministrador(usuario)) {
             throw AcessoNegadoException.autorOuAdministradorAlterarTopico();

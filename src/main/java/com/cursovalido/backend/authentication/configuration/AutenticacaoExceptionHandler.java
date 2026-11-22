@@ -190,6 +190,15 @@ public class AutenticacaoExceptionHandler {
         return new Codigo2faErroResponse("Você não tem permissão para fazer isso.", "ACESSO_NEGADO");
     }
 
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    public ResponseEntity<Codigo2faErroResponse> conflitoDeAtualizacao(
+            org.springframework.dao.OptimisticLockingFailureException excecao) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new Codigo2faErroResponse(
+                        "Este conteúdo foi alterado ou removido. Atualize a página antes de tentar novamente.",
+                        "CONTEUDO_ALTERADO"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Codigo2faErroResponse> erroInesperado(Exception excecao) {
         if (excecao instanceof ErrorResponse erro && !erro.getStatusCode().is5xxServerError()) {

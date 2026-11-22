@@ -164,7 +164,8 @@ class TopicoServiceTest {
 
     @ParameterizedTest
     @ValueSource(strings = { "arquivar", "fechar" })
-    void alterarEstado_comAutor_devePersistirERegistrarAuditoria(String operacao) {
+    void alterarEstado_comProfessorAutor_devePersistirERegistrarAuditoria(String operacao) {
+        usuario.setPerfil("PROFESSOR");
         Topico topico = prepararTopico(7L);
         alterarEstado(operacao);
         conferirEstado(topico, operacao);
@@ -176,6 +177,7 @@ class TopicoServiceTest {
     @ParameterizedTest
     @ValueSource(strings = { "arquivar", "fechar" })
     void alterarEstado_comAdministrador_devePermitirAlterarOutroAutor(String operacao) {
+        usuario.setPerfil("ADMINISTRADOR");
         Topico topico = prepararTopico(99L);
         when(usuarios.ehAdministrador(usuario)).thenReturn(true);
         alterarEstado(operacao);
@@ -190,6 +192,14 @@ class TopicoServiceTest {
         assertThrows(AcessoNegadoException.class, () -> alterarEstado(operacao));
         verify(repositorio, never()).save(any());
         verify(auditoria, never()).registrar(any(), any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "arquivar", "fechar" })
+    void alunoNaoPodeAlterarEstadoNemDoProprioTopico(String operacao) {
+        prepararTopico(7L);
+        assertThrows(AcessoNegadoException.class, () -> alterarEstado(operacao));
+        verify(repositorio, never()).save(any());
     }
 
     private Topico prepararTopico(Long autorId) {
