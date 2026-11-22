@@ -37,4 +37,17 @@ class FiltroConteudoOfensivoTest {
         assertThatThrownBy(() -> filtro.validar("Dúvida sobre Spring", "que merda"))
                 .isInstanceOf(ConteudoOfensivoException.class);
     }
+    @ParameterizedTest
+    @ValueSource(strings = { "lixo", "fodace", "foda-se", "pau no cu", "idiota", "otario", "OTÁRIO", "p0rr4", "p o r r a" })
+    void ocultaTermosSolicitadosPreservandoRestante(String termo) {
+        assertThat(filtro.censurar("Olá, " + termo + ". Tudo bem?"))
+                .isEqualTo("Olá, ***. Tudo bem?");
+    }
+
+    @Test
+    void preservaTextoComumEAsteriscosExistentes() {
+        assertThat(filtro.censurar("Curso de estruturas: cumbuca, computador e espetáculo!"))
+                .isEqualTo("Curso de estruturas: cumbuca, computador e espetáculo!");
+        assertThat(filtro.censurar("Olá, ***." )).isEqualTo("Olá, ***.");
+    }
 }

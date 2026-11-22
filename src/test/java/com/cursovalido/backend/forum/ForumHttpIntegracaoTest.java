@@ -1095,13 +1095,58 @@ class ForumHttpIntegracaoTest {
                 return new Sessao(confirmacao.getBody().idUsuario(), nomeExibido, confirmacao.getBody().token());
         }
 
+        @Test
+        void topicosExigemTresMinutosInclusiveAposArquivar() {
+                var dados = new TopicoRequest("Primeiro", "Descricao");
+                var primeiro = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, TopicoResponse.class);
+                assertThat(primeiro.getStatusCode()).isEqualTo(HttpStatus.OK);
+                var bloqueado = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, String.class);
+                assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+                assertThat(bloqueado.getBody()).contains("3 minutos");
+                alterarEstado(primeiro.getBody().id(), "arquivar", autor.token());
+                assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, String.class).getStatusCode())
+                        .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+                jdbc.update("UPDATE tb_topics SET created_at = CURRENT_TIMESTAMP - INTERVAL '3 minutes'");
+                assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, TopicoResponse.class).getStatusCode())
+                        .isEqualTo(HttpStatus.OK);
+        }
+
+        @Test
+        void comentariosExigemVinteSegundosEntreTopicosDiferentes() {
+                var primeiro = criarTopico("Primeiro");
+                var segundo = criarTopico("Segundo");
+                var dados = new ComentarioRequest("Resposta");
+                assertThat(enviar(HttpMethod.POST, comentariosUrl(primeiro.id()), autor.token(), dados, ComentarioResponse.class).getStatusCode())
+                        .isEqualTo(HttpStatus.OK);
+                var bloqueado = enviar(HttpMethod.POST, comentariosUrl(segundo.id()), autor.token(), dados, String.class);
+                assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+                assertThat(bloqueado.getBody()).contains("20 segundos");
+                jdbc.update("UPDATE tb_comments SET created_at = CURRENT_TIMESTAMP - INTERVAL '20 seconds'");
+                assertThat(enviar(HttpMethod.POST, comentariosUrl(segundo.id()), autor.token(), dados, ComentarioResponse.class).getStatusCode())
+                        .isEqualTo(HttpStatus.OK);
+        }
+
+        @Test
+        void apiSalvaEDevolveOfensasOcultas() {
+                var resposta = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
+                        new TopicoRequest("idiota", "lixo, fodace, foda-se, pau no cu, otario"), TopicoResponse.class);
+                assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(resposta.getBody().titulo()).isEqualTo("***");
+                assertThat(topicos.findById(resposta.getBody().id()).orElseThrow().getDescricao())
+                        .isEqualTo("***, ***, ***, ***, ***");
+                var comentario = enviar(HttpMethod.POST, comentariosUrl(resposta.getBody().id()), autor.token(),
+                        new ComentarioRequest("OTÁRIO!"), ComentarioResponse.class);
+                assertThat(comentario.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(comentario.getBody().conteudo()).isEqualTo("***!");
+        }
+
         private TopicoResponse criarTopico(String titulo) {
                 var resposta = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
                                 new TopicoRequest(titulo, "Descricao " + titulo), TopicoResponse.class);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resposta.getBody().id()).isPositive();
                 // Libera o limite de criação entre tópicos dentro dos cenários de paginação.
-                jdbc.update("UPDATE tb_topics SET created_at = CURRENT_TIMESTAMP - INTERVAL '11 minutes' WHERE id = ?",
+                jdbc.update("UPDATE tb_topics SET created_at = CURRENT_TIMESTAMP - INTERVAL '3 minutes' WHERE id = ?",
                                 resposta.getBody().id());
                 return resposta.getBody();
         }
@@ -1112,6 +1157,9 @@ class ForumHttpIntegracaoTest {
                                 ComentarioResponse.class);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resposta.getBody().conteudo()).isEqualTo(conteudo);
+                // Fixtures de listagem não exercitam o intervalo entre publicações.
+                jdbc.update("UPDATE tb_comments SET created_at = CURRENT_TIMESTAMP - INTERVAL '20 seconds' WHERE id = ?",
+                                resposta.getBody().id());
                 return resposta.getBody();
         }
 

@@ -48,9 +48,13 @@ class DenunciaForumServiceTest {
         topico.setTitulo("Titulo");
         topico.setDescricao("x".repeat(400));
         topico.setNomeAutor("Autor A.");
+        var autor = new UsuarioForum(2L, "Autor A.", "autor@example.com", "ALUNO");
+        autor.setGamertag("#1a3b5c7d");
+        topico.setUsuarioAutor(autor);
         comentario = new Comentario();
         comentario.setId(9L);
         comentario.setIdAutor(2L);
+        comentario.setUsuarioAutor(autor);
         comentario.setConteudo("Comentario");
         comentario.setTopico(topico);
         when(topicos.findById(5L)).thenReturn(Optional.of(topico));
@@ -123,6 +127,7 @@ class DenunciaForumServiceTest {
             assertThat(item.trecho()).endsWith("...").hasSize(303);
             assertThat(item.conteudoAtivo()).isTrue();
             assertThat(item.nomeAutor()).isEqualTo("Autor A.");
+            assertThat(item.gamertagAutor()).isEqualTo("#1a3b5c7d");
             assertThat(item.denunciasPendentesDoConteudo()).isEqualTo(3);
             assertThat(item.idTopico()).isEqualTo(5L);
         });
@@ -136,6 +141,7 @@ class DenunciaForumServiceTest {
         var lista = servico.listar(10L, StatusDenuncia.IMPROCEDENTE);
 
         assertThat(lista.getFirst().idTopico()).isEqualTo(5L);
+        assertThat(lista.getFirst().gamertagAutor()).isEqualTo("#1a3b5c7d");
         assertThat(lista.getFirst().trecho()).isEqualTo("Comentario");
     }
 

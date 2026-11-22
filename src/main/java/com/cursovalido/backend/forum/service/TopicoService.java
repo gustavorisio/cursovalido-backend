@@ -8,7 +8,6 @@ import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
 import com.cursovalido.backend.forum.repository.TopicoRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
-import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import org.springframework.data.domain.Page;
@@ -68,11 +67,11 @@ public class TopicoService {
     public Topico criar(Topico topico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.bloquearAtivo(idUsuario);
         LocalDateTime agora = LocalDateTime.now(ZoneOffset.UTC);
-        if (repositorioTopicos.existsByIdAutorAndCriadoEmAfter(usuario.getId(), agora.minusMinutes(10))) {
+        if (repositorioTopicos.existsByIdAutorAndCriadoEmAfter(usuario.getId(), agora.minusMinutes(3))) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                    "Você já criou um tópico recentemente. Aguarde 10 minutos antes de criar outro.");
+                    "Você já criou um tópico recentemente. Aguarde 3 minutos antes de criar outro.");
         }
-        validarConteudo(idUsuario, topico.getTitulo(), topico.getDescricao());
+        censurarConteudo(topico, idUsuario);
         topico.setIdAutor(usuario.getId());
         topico.setUsuarioAutor(usuario);
         topico.setCriadoEm(agora);
@@ -90,7 +89,7 @@ public class TopicoService {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
         Topico topico = buscarAtivo(idTopico);
         verificarAutoria(topico, usuario);
-        validarConteudo(idUsuario, dadosAtualizados.getTitulo(), dadosAtualizados.getDescricao());
+        censurarConteudo(dadosAtualizados, idUsuario);
         topico.setTitulo(dadosAtualizados.getTitulo());
         topico.setDescricao(dadosAtualizados.getDescricao());
         Topico topicoSalvo = repositorioTopicos.save(topico);
@@ -143,13 +142,15 @@ public class TopicoService {
         }
     }
 
-    private void validarConteudo(Long idUsuario, String... textos) {
-        try {
-            filtroConteudo.validar(textos);
-        } catch (ConteudoOfensivoException excecao) {
-            registrar(idUsuario, "CONTEUDO_OFENSIVO_BLOQUEADO", "Topico");
-            throw excecao;
+    private void censurarConteudo(Topico topico, Long idUsuario) {
+        String titulo = filtroConteudo.censurar(topico.getTitulo());
+        String descricao = filtroConteudo.censurar(topico.getDescricao());
+        if (!java.util.Objects.equals(titulo, topico.getTitulo())
+                || !java.util.Objects.equals(descricao, topico.getDescricao())) {
+            registrar(idUsuario, "CONTEUDO_OFENSIVO_OCULTADO", "Topico");
         }
+        topico.setTitulo(titulo);
+        topico.setDescricao(descricao);
     }
 
     private void registrar(Long idUsuario, String tipo, String detalhes) {

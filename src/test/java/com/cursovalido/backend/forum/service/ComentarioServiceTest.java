@@ -1,6 +1,5 @@
 package com.cursovalido.backend.forum.service;
 
-import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -72,7 +71,7 @@ class ComentarioServiceTest {
 
     @Test
     void criar_comTopicoAberto_deveDefinirAutorDataERelacionamento() {
-        when(usuarios.buscarAtivo(7L)).thenReturn(autor);
+        when(usuarios.bloquearAtivo(7L)).thenReturn(autor);
         when(topicos.buscarAtivo(10L)).thenReturn(topico);
         when(repositorio.save(comentario)).thenReturn(comentario);
         var antes = LocalDateTime.now(ZoneOffset.UTC);
@@ -88,7 +87,7 @@ class ComentarioServiceTest {
     @Test
     void criar_comTopicoFechado_deveRejeitarSemPersistir() {
         topico.setFechado(true);
-        when(usuarios.buscarAtivo(7L)).thenReturn(autor);
+        when(usuarios.bloquearAtivo(7L)).thenReturn(autor);
         when(topicos.buscarAtivo(10L)).thenReturn(topico);
         assertThatThrownBy(() -> servico.criar(10L, comentario, 7L)).isInstanceOf(ConflitoException.class);
         verifyNoInteractions(repositorio, auditoria);
@@ -96,7 +95,7 @@ class ComentarioServiceTest {
 
     @Test
     void criar_comUsuarioInativo_deveInterromperOperacao() {
-        when(usuarios.buscarAtivo(7L)).thenThrow(RecursoNaoEncontradoException.usuarioNaoEncontrado());
+        when(usuarios.bloquearAtivo(7L)).thenThrow(RecursoNaoEncontradoException.usuarioNaoEncontrado());
         assertThatThrownBy(() -> servico.criar(10L, comentario, 7L)).isInstanceOf(RecursoNaoEncontradoException.class);
         verifyNoInteractions(topicos, repositorio, auditoria);
     }
@@ -199,15 +198,28 @@ class ComentarioServiceTest {
     }
 
     @Test
-    void comentarioOfensivoNaoESalvoEFicaRegistradoNaAuditoria() {
-        when(usuarios.buscarAtivo(7L)).thenReturn(autor);
+    void comentarioOfensivoESalvoComAsteriscos() {
+        when(usuarios.bloquearAtivo(7L)).thenReturn(autor);
         when(topicos.buscarAtivo(10L)).thenReturn(topico);
+        when(repositorio.save(any())).thenAnswer(invocacao -> invocacao.getArgument(0));
         Comentario novo = new Comentario();
         novo.setConteudo("v-i-a-d-o");
+        assertThat(servico.criar(10L, novo, 7L).getConteudo()).isEqualTo("***");
+        verify(auditoria).registrar(7L, "CONTEUDO_OFENSIVO_OCULTADO", "Comentario", null);
+    }
 
-        assertThatThrownBy(() -> servico.criar(10L, novo, 7L)).isInstanceOf(ConteudoOfensivoException.class);
-
+    @Test
+    void vinteSegundosValemParaTodosOsTopicosDoAutor() {
+        when(usuarios.bloquearAtivo(7L)).thenReturn(autor);
+        when(topicos.buscarAtivo(10L)).thenReturn(topico);
+        when(repositorio.existsByIdAutorAndCriadoEmAfter(eq(7L), any())).thenReturn(true);
+        var inicio = LocalDateTime.now(ZoneOffset.UTC).minusSeconds(20);
+        assertThatThrownBy(() -> servico.criar(10L, comentario, 7L))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("20 segundos");
+        var limite = org.mockito.ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(repositorio).existsByIdAutorAndCriadoEmAfter(eq(7L), limite.capture());
+        assertThat(limite.getValue()).isBetween(inicio, LocalDateTime.now(ZoneOffset.UTC).minusSeconds(20));
         verify(repositorio, never()).save(any());
-        verify(auditoria).registrar(7L, "CONTEUDO_OFENSIVO_BLOQUEADO", "Comentario", null);
     }
 }

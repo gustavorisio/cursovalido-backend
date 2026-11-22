@@ -30,7 +30,7 @@ public final class DenunciaDtos {
 
     // O denunciante nao e exposto: a moderacao avalia o conteudo, nao quem denunciou.
     public record DenunciaResponse(Long id, TipoConteudoForum tipo, Long idConteudo, Long idTopico, String trecho,
-            boolean conteudoAtivo, Long idAutor, String nomeAutor, MotivoDenuncia motivo, String descricao,
+            boolean conteudoAtivo, Long idAutor, String nomeAutor, String gamertagAutor, MotivoDenuncia motivo, String descricao,
             long denunciasPendentesDoConteudo, StatusDenuncia status, LocalDateTime criadaEm,
             LocalDateTime decididaEm, String observacaoModeracao) {
     }
