@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PrivacidadeRepository extends JpaRepository<PoliticaPrivacidade, Long> {
+    List<PoliticaPrivacidade> findByAtivaFalseOrderByDataPublicacaoDescIdDesc();
+
     List<PoliticaPrivacidade> findByAtivaTrueOrderByDataPublicacaoDesc();
 
     Optional<PoliticaPrivacidade> findByVersao(String versao);

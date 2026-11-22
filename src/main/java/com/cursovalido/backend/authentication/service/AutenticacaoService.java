@@ -45,25 +45,25 @@ public class AutenticacaoService {
 
     // Valida a senha e pede codigo quando o 2FA esta ativo ou o e-mail ainda nao foi confirmado.
     public AutenticacaoResponse autenticar(LoginRequest requisicao, String enderecoIp) {
-        String identificador = identificador(requisicao.email(), enderecoIp);
+        String identificador = identificador(requisicao.email());
         protecaoForcaBruta.verificar(identificador);
         Usuario usuario = repositorio.findByEmail(requisicao.email()).orElse(null);
         AutenticacaoValidation.validarCredenciais(usuario, requisicao.senha(), codificadorSenha, identificador,
                 enderecoIp, protecaoForcaBruta, auditoria);
         AutenticacaoValidation.validarLogin(usuario, enderecoIp, auditoria, moderacao);
-        protecaoForcaBruta.registrarSucesso(identificador);
         if (usuario.getPerfil().equipe() || usuario.isDoisFatoresAtivos() || !usuario.isEmailConfirmado()) {
             envio2fa.enviar(usuario.getId(), enderecoIp, false);
             String finalidadeCodigo = usuario.getPerfil().equipe() || usuario.isDoisFatoresAtivos()
                     ? "SEGUNDO_FATOR" : "CONFIRMAR_EMAIL";
             return new AutenticacaoResponse(null, null, null, null, true, finalidadeCodigo);
         }
+        protecaoForcaBruta.registrarSucesso(identificador);
         return concluirLogin(usuario, enderecoIp, false);
     }
 
     // Confirma o codigo 2FA e gera o token de acesso.
     public AutenticacaoResponse confirmarCodigo(String email, String codigo, String enderecoIp) {
-        String identificador = identificador(email, enderecoIp) + ":2fa";
+        String identificador = identificador(email);
         protecaoForcaBruta.verificar(identificador);
         Usuario usuario;
         try {
@@ -113,7 +113,7 @@ public class AutenticacaoService {
                 .ifPresent(usuario -> envio2fa.enviar(usuario.getId(), enderecoIp, true));
     }
 
-    private String identificador(String email, String enderecoIp) {
+    private String identificador(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 }
