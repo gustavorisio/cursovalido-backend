@@ -311,7 +311,7 @@ class ModeracaoIntegracaoTest {
         }
 
         @ParameterizedTest
-        @EnumSource(EscopoSuspensao.class)
+        @EnumSource(value = EscopoSuspensao.class, names = { "CONTA", "FORUM" })
         void restricoesSaoAplicadasNoServidorERevogaveis(EscopoSuspensao escopo) throws Exception {
                 var suspensao = moderacao.aplicar(aluno.getId(), new SuspensaoRequest(escopo, "Teste", null),
                                 administrador.getId());
@@ -319,14 +319,6 @@ class ModeracaoIntegracaoTest {
                         case CONTA -> mvc.perform(get("/api/aluno/cursos").with(como(aluno)))
                                         .andExpect(status().isForbidden());
                         case FORUM -> mvc.perform(get("/api/forum/topicos").with(como(aluno)))
-                                        .andExpect(status().isForbidden());
-                        case TOPICOS -> mvc
-                                        .perform(post("/api/forum/topicos").with(como(aluno))
-                                                        .contentType(MediaType.APPLICATION_JSON)
-                                                        .content("{\"titulo\":\"Teste\",\"descricao\":\"Duvida\"}"))
-                                        .andExpect(status().isForbidden());
-                        case COMENTARIOS -> mvc.perform(post("/api/forum/topicos/1/comentarios").with(como(aluno))
-                                        .contentType(MediaType.APPLICATION_JSON).content("{\"conteudo\":\"Resposta\"}"))
                                         .andExpect(status().isForbidden());
                 }
                 mvc.perform(get("/api/autenticacao/restricoes").with(como(aluno)))
@@ -338,34 +330,26 @@ class ModeracaoIntegracaoTest {
         }
 
         @Test
-        void restricoesDeConteudoBloqueiamCrudCompletoDeTopicosEComentarios() throws Exception {
-                for (var escopo : new EscopoSuspensao[] { EscopoSuspensao.TOPICOS, EscopoSuspensao.COMENTARIOS }) {
-                        var suspensao = moderacao.aplicar(aluno.getId(),
-                                        new SuspensaoRequest(escopo, "Teste CRUD", null), administrador.getId());
-                        for (String caminho : new String[] { "/api/forum/topicos",
-                                        "/api/forum/topicos/1/comentarios" }) {
-                                mvc.perform(get(caminho).with(como(aluno))).andExpect(status().isForbidden())
-                                                .andExpect(jsonPath("$.codigo").value(escopo.name() + "_SUSPENSOS"));
-                                mvc.perform(post(caminho).with(como(aluno)).contentType(MediaType.APPLICATION_JSON)
-                                                .content("{}"))
-                                                .andExpect(status().isForbidden());
-                        }
-                        for (String caminho : new String[] { "/api/forum/topicos/1", "/api/forum/topicos/1/arquivar",
-                                        "/api/forum/topicos/1/fechar", "/api/forum/comentarios/1" }) {
-                                mvc.perform(put(caminho).with(como(aluno)).contentType(MediaType.APPLICATION_JSON)
-                                                .content("{}"))
-                                                .andExpect(status().isForbidden());
-                        }
-                        for (String caminho : new String[] { "/api/forum/comentarios/1",
-                                        "/api/forum/topicos/1/comentarios/1" }) {
-                                mvc.perform(delete(caminho).with(como(aluno))).andExpect(status().isForbidden())
-                                                .andExpect(jsonPath("$.codigo").value(escopo.name() + "_SUSPENSOS"));
-                        }
-                        mvc.perform(get("/api/autenticacao/restricoes").with(como(aluno))).andExpect(status().isOk());
-                        mvc.perform(get("/api/aluno/cursos").with(como(aluno))).andExpect(status().isOk());
-                        moderacao.revogar(aluno.getId(), suspensao.id(), administrador.getId());
-                        mvc.perform(get("/api/forum/topicos").with(como(aluno))).andExpect(status().isOk());
+        void restricaoDoForumBloqueiaTodoAcessoAoForum() throws Exception {
+                var suspensao = moderacao.aplicar(aluno.getId(),
+                                new SuspensaoRequest(EscopoSuspensao.FORUM, "Teste CRUD", null), administrador.getId());
+                for (String caminho : new String[] { "/api/forum/topicos", "/api/forum/topicos/1/comentarios",
+                                "/api/forum/topicos/1", "/api/forum/topicos/1/arquivar",
+                                "/api/forum/topicos/1/fechar", "/api/forum/comentarios/1",
+                                "/api/forum/topicos/1/denuncias" }) {
+                        mvc.perform(get(caminho).with(como(aluno))).andExpect(status().isForbidden());
+                        mvc.perform(post(caminho).with(como(aluno)).contentType(MediaType.APPLICATION_JSON)
+                                        .content("{}"))
+                                        .andExpect(status().isForbidden());
+                        mvc.perform(put(caminho).with(como(aluno)).contentType(MediaType.APPLICATION_JSON)
+                                        .content("{}"))
+                                        .andExpect(status().isForbidden());
+                        mvc.perform(delete(caminho).with(como(aluno))).andExpect(status().isForbidden());
                 }
+                mvc.perform(get("/api/autenticacao/restricoes").with(como(aluno))).andExpect(status().isOk());
+                mvc.perform(get("/api/aluno/cursos").with(como(aluno))).andExpect(status().isOk());
+                moderacao.revogar(aluno.getId(), suspensao.id(), administrador.getId());
+                mvc.perform(get("/api/forum/topicos").with(como(aluno))).andExpect(status().isOk());
         }
 
         @Test
@@ -434,13 +418,13 @@ class ModeracaoIntegracaoTest {
         }
 
         @Test
-        void escoposLegadosDeConteudoSaoSubstituidosSemDuplicacao() {
-                moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.COMENTARIOS, "Antigo", null),
+        void novaRestricaoTemporariaDeForumSubstituiAnteriorSemDuplicacao() {
+                moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.FORUM, "Antigo", null),
                                 administrador.getId());
-                moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.TOPICOS, "Atual",
+                moderacao.aplicar(aluno.getId(), new SuspensaoRequest(EscopoSuspensao.FORUM, "Atual",
                                 Instant.now().plusSeconds(3600)), administrador.getId());
                 assertThat(moderacao.vigentes(aluno.getId())).hasSize(1);
-                assertThat(moderacao.mensagemBanimento(aluno.getId(), EscopoSuspensao.TOPICOS))
+                assertThat(moderacao.mensagemBanimento(aluno.getId(), EscopoSuspensao.FORUM))
                                 .contains("temporariamente", "até");
         }
 
@@ -527,7 +511,7 @@ class ModeracaoIntegracaoTest {
                 mvc.perform(get("/politica-privacidade.html"))
                                 .andExpect(status().isOk())
                                 .andExpect(content().string(
-                                                org.hamcrest.Matchers.containsString("Dados pessoais </article>")))
+                                                org.hamcrest.Matchers.containsString("Dados pessoais</article>")))
                                 .andExpect(content().string(org.hamcrest.Matchers
                                                 .not(org.hamcrest.Matchers.containsString("<script>teste"))))
                                 .andExpect(content().string(org.hamcrest.Matchers

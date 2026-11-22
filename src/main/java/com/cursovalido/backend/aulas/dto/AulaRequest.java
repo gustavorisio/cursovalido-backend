@@ -9,7 +9,4 @@ public record AulaRequest(
         @NotBlank @Size(max = 2048) String youtubeUrl,
         @NotBlank @Size(max = 2048) String vimeoUrl) {
 
-    public AulaRequest(String titulo, String descricao, Integer ordem, String youtubeUrl) {
-        this(titulo, descricao, ordem, youtubeUrl, null);
-    }
 }

@@ -29,7 +29,8 @@ class AulaServiceTest {
     private ProgressoAulaRepository progressos;
     @InjectMocks
     private AulaService servico;
-    private final AulaRequest dados = new AulaRequest(" Java ", " Basico ", 2, "https://youtu.be/M7lc1UVf-VE");
+    private final AulaRequest dados = new AulaRequest(" Java ", " Basico ", 2, "https://youtu.be/M7lc1UVf-VE",
+            "https://vimeo.com/123456789");
 
     @Test
     void criarAutorizaEValidaVideoAntesDeSalvar() {

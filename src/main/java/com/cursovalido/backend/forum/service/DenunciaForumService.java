@@ -81,8 +81,8 @@ public class DenunciaForumService {
         boolean remover = procedente && Boolean.TRUE.equals(decisao.removerConteudo());
         if (Boolean.TRUE.equals(decisao.aplicarRestricao())) {
             if (!procedente) throw new RequisicaoInvalidaException("A restrição só pode ser aplicada a uma denúncia procedente.");
-            if (decisao.escopoRestricao() == null || decisao.escopoRestricao() == com.cursovalido.backend.authentication.entity.EscopoSuspensao.TOPICOS
-                    || decisao.escopoRestricao() == com.cursovalido.backend.authentication.entity.EscopoSuspensao.COMENTARIOS) {
+            if (decisao.escopoRestricao() != com.cursovalido.backend.authentication.entity.EscopoSuspensao.CONTA
+                    && decisao.escopoRestricao() != com.cursovalido.backend.authentication.entity.EscopoSuspensao.FORUM) {
                 throw new RequisicaoInvalidaException("Escolha acesso à conta ou ao fórum para a restrição.");
             }
             moderacao.aplicar(denuncia.getIdAutorConteudo(),

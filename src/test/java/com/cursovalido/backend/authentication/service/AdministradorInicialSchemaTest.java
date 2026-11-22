@@ -21,9 +21,9 @@ class AdministradorInicialSchemaTest {
         FlywayConfig.configuracao().dataSource(url, usuario, senha).load().migrate();
         try (var conexao = DriverManager.getConnection(url, usuario, senha)) {
             try (var inserir = conexao.prepareStatement("""
-                    INSERT INTO tb_usuarios (nome_completo, email, senha, matricula, perfil,
+                    INSERT INTO tb_usuarios (nome_completo, email, senha, matricula, perfil, gamertag,
                         declarou_maior_idade, aceitou_termos_lgpd, email_confirmado)
-                    VALUES ('Administrador', ?, 'hash', ?, ?, FALSE, FALSE, TRUE)
+                    VALUES ('Administrador', ?, 'hash', ?, ?, 'CV-AAAA2345BBBB', FALSE, FALSE, TRUE)
                     """)) {
                 inserir.setString(1, "admin-configurado@example.com");
                 inserir.setString(2, "ADMIN-INICIAL");

@@ -159,6 +159,7 @@ CREATE TABLE tb_aulas (
     modulo_id BIGINT NOT NULL REFERENCES tb_modulos(id),
     ordem INTEGER NOT NULL CHECK (ordem > 0),
     youtube_video_id VARCHAR(11) NOT NULL,
+    vimeo_video_url VARCHAR(2048) NOT NULL,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em TIMESTAMP NOT NULL
 );
@@ -691,17 +692,6 @@ WHERE c.status = 'PENDENTE'
 
 CREATE UNIQUE INDEX uk_convites_pendente_por_email ON tb_convites_acesso(email) WHERE status = 'PENDENTE';
 CREATE INDEX idx_convites_criado_por ON tb_convites_acesso(criado_por, criado_em);
-
-
-ALTER TABLE tb_aulas
-    ADD COLUMN vimeo_video_url VARCHAR(2048);
-
-ALTER TABLE tb_aulas
-    ALTER COLUMN youtube_video_id DROP NOT NULL;
-
-ALTER TABLE tb_aulas
-    ADD CONSTRAINT ck_aulas_video_configurado
-    CHECK (vimeo_video_url IS NOT NULL OR youtube_video_id IS NOT NULL);
 
 
 ALTER TABLE tb_denuncias_forum
