@@ -69,8 +69,9 @@ class UsuarioForumServiceTest {
         when(usuario.getEmail()).thenReturn("novo@teste.com");
         when(usuario.getPerfil()).thenReturn(Perfil.PROFESSOR);
         when(usuario.isAtivo()).thenReturn(false);
+        when(usuario.getGamertag()).thenReturn("#1a3b5c7d");
         servico.sincronizar(usuario);
-        verify(repositorio).sincronizar(7L, "Nome atualizado", "n*******@teste.com", "PROFESSOR", false);
+        verify(repositorio).sincronizar(7L, "Nome atualizado", "n*******@teste.com", "PROFESSOR", false, "#1a3b5c7d");
     }
 
     @Test
@@ -81,8 +82,9 @@ class UsuarioForumServiceTest {
         when(usuario.getEmail()).thenReturn("maria@teste.com");
         when(usuario.getPerfil()).thenReturn(Perfil.ALUNO);
         when(usuario.isAtivo()).thenReturn(true);
+        when(usuario.getGamertag()).thenReturn("#1a3b5c7d");
         servico.sincronizar(usuario);
-        verify(repositorio).sincronizar(8L, "Maria S.", "m*******@teste.com", "ALUNO", true);
+        verify(repositorio).sincronizar(8L, "Maria S.", "m*******@teste.com", "ALUNO", true, "#1a3b5c7d");
     }
 
     @ParameterizedTest

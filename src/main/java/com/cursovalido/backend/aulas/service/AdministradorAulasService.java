@@ -22,6 +22,7 @@ public class AdministradorAulasService {
     private final ModuloRepository modulos;
     private final AulaRepository aulas;
     private final YoutubeService youtube;
+    private final VimeoService vimeo;
     private final ProgressoAulaRepository progressos;
     private final LogAuditoriaService auditoria;
     private final CursoService gestaoCursos;
@@ -89,7 +90,7 @@ public class AdministradorAulasService {
     @Transactional
     public Aula editarAula(Long id, AulaRequest dados, Long idAdministrador) {
         Aula aula = buscarAula(id, idAdministrador);
-        String vimeoUrl = VimeoService.validarUrl(dados.vimeoUrl());
+        String vimeoUrl = vimeo.validarVideo(dados.vimeoUrl());
         String videoId = dados.youtubeUrl() == null || dados.youtubeUrl().isBlank()
                 ? null : youtube.validarVideo(dados.youtubeUrl());
         if (vimeoUrl == null || videoId == null)

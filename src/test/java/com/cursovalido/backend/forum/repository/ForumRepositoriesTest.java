@@ -39,7 +39,9 @@ class ForumRepositoriesTest {
 
     @BeforeEach
     void criarAutor() {
-        autor = usuarios.save(new UsuarioForum(7L, "Autor", "autor@example.com", "ALUNO"));
+        autor = new UsuarioForum(7L, "Autor", "autor@example.com", "ALUNO");
+        autor.setGamertag("#1a3b5c7d");
+        autor = usuarios.save(autor);
     }
 
     @Test
@@ -75,6 +77,7 @@ class ForumRepositoriesTest {
         assertThat(topicos.listarRecentes(PageRequest.of(0, 10), "")).singleElement().satisfies(resumo -> {
             assertThat(resumo.quantidadeRespostas()).isEqualTo(2);
             assertThat(resumo.nomeAutor()).isEqualTo("Autor");
+            assertThat(resumo.gamertagAutor()).isEqualTo("#1a3b5c7d");
         });
         assertThat(comentarios.contarPorTopico(topico.getId())).isEqualTo(2);
     }
@@ -113,10 +116,11 @@ class ForumRepositoriesTest {
 
     @Test
     void sincronizar_comUsuarioNovo_deveInserirPorSqlNativo() {
-        usuarios.sincronizar(99L, "Novo", "novo@example.com", "PROFESSOR", true);
+        usuarios.sincronizar(99L, "Novo", "novo@example.com", "PROFESSOR", true, "#1a3b5c7d");
         entityManager.clear();
         assertThat(usuarios.findById(99L)).hasValueSatisfying(usuario -> {
             assertThat(usuario.getNome()).isEqualTo("Novo");
+            assertThat(usuario.getGamertag()).isEqualTo("#1a3b5c7d");
             assertThat(usuario.getEmail()).isEqualTo("novo@example.com");
             assertThat(usuario.getPerfil()).isEqualTo("PROFESSOR");
             assertThat(usuario.isAtivo()).isTrue();
@@ -126,11 +130,12 @@ class ForumRepositoriesTest {
     @Test
     void sincronizar_comUsuarioExistente_deveAtualizarSemDuplicar() {
         usuarios.flush();
-        usuarios.sincronizar(7L, "Atualizado", "novo@example.com", "ADMINISTRADOR", false);
+        usuarios.sincronizar(7L, "Atualizado", "novo@example.com", "ADMINISTRADOR", false, "#2b4c6d8e");
         entityManager.clear();
         assertThat(usuarios.count()).isEqualTo(1);
         assertThat(usuarios.findById(7L)).hasValueSatisfying(usuario -> {
             assertThat(usuario.getNome()).isEqualTo("Atualizado");
+            assertThat(usuario.getGamertag()).isEqualTo("#2b4c6d8e");
             assertThat(usuario.getEmail()).isEqualTo("novo@example.com");
             assertThat(usuario.getPerfil()).isEqualTo("ADMINISTRADOR");
             assertThat(usuario.isAtivo()).isFalse();

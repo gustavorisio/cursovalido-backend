@@ -172,6 +172,6 @@ public class ContaUsuarioService {
         usuariosForumRepositorio.findById(idUsuario)
                 .ifPresent(forum -> usuariosForumRepositorio.sincronizar(idUsuario, usuario.getNomeCompleto(),
                         usuario.getEmail(),
-                        usuario.getPerfil().name(), false));
+                        usuario.getPerfil().name(), false, usuario.getGamertag()));
     }
 }

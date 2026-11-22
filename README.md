@@ -130,12 +130,28 @@ Utilize um remetente autorizado na sua conta Resend. Ajuste a URL e a origem par
 Para validar os vídeos vinculados às aulas e receber solicitações de suporte:
 
 ```text
+VIMEO_ALLOWED_USER_ID=123456789
+VIMEO_ACCESS_TOKEN=seu_token_autenticado_vimeo
 YOUTUBE_API_KEY=sua_chave_da_api_youtube
 YOUTUBE_ALLOWED_CHANNEL_ID=UCabcdefghijklmnopqrstuv
 SUPPORT_EMAIL=email_de_atendimento
 ```
 
-Utilize uma chave com acesso à YouTube Data API v3 e substitua o ID de exemplo pelo ID do canal da plataforma (formato `UC` seguido de 22 caracteres). A validação de vídeos do YouTube confere se o vídeo está público ou não listado, permite incorporação e pertence a esse canal. O Vimeo é o servidor principal e pode ser usado sem configurar essas variáveis quando o campo de YouTube reserva for deixado vazio. Sem a chave ou o ID do canal, o cadastro de vídeos do YouTube fica indisponível. Sem `SUPPORT_EMAIL`, o envio do formulário de suporte fica indisponível.
+Configure `VIMEO_ALLOWED_USER_ID` com o ID **numérico** do proprietário dos vídeos, sem `/users/` e sem o nome do perfil. Para obtê-lo, consulte `GET https://api.vimeo.com/me` com o token autenticado: a propriedade `uri` retorna `/users/ID`. Configure `VIMEO_ACCESS_TOKEN` com um token autenticado dessa conta, criado em https://developer.vimeo.com/apps, com os escopos de leitura `public` e `private` (para vídeos não públicos). Não são necessários escopos de edição, upload ou exclusão. Consulte as [instruções oficiais do Vimeo](https://help.vimeo.com/hc/en-us/articles/12427789081745-How-to-generate-a-personal-access-token).
+
+As duas variáveis devem estar no ambiente do **processo do backend**: nas Variáveis de usuário do Windows em execução local ou nas configurações de ambiente/segredos do serviço de hospedagem em produção. Reinicie o backend após alterá-las. Não coloque o token no frontend, no repositório ou nas URLs. O Spring lê essas variáveis em `src/main/resources/application.properties`; arquivos `.env` não são carregados automaticamente.
+
+Exemplo no PowerShell, válido para o terminal atual e processos iniciados nele:
+
+```powershell
+$env:VIMEO_ALLOWED_USER_ID = "123456789"
+$env:VIMEO_ACCESS_TOKEN = "seu_token_autenticado_vimeo"
+mvn spring-boot:run
+```
+
+Ao cadastrar ou editar aulas (professor e administrador) ou atualizar o vídeo inicial, o backend consulta o Vimeo e compara `user.uri` com a conta autorizada antes de salvar. Links `https://vimeo.com/ID`, links com hash de privacidade e `https://player.vimeo.com/video/ID?h=HASH` são aceitos. Vídeos de outras contas são recusados. Configuração ausente/inválida, falhas da API ou respostas sem proprietário confirmado bloqueiam a gravação. Deixar o vídeo inicial vazio continua permitindo removê-lo. A validação ocorre na gravação; vídeos já existentes não são auditados nem removidos automaticamente.
+
+Utilize uma chave com acesso à YouTube Data API v3 e substitua o ID de exemplo pelo ID do canal da plataforma (formato `UC` seguido de 22 caracteres). A validação do YouTube confere se o vídeo está público ou não listado, permite incorporação e pertence a esse canal. As aulas exigem Vimeo como servidor principal e YouTube como reserva. Sem as respectivas credenciais, o cadastro/edição de aulas fica indisponível. Sem `SUPPORT_EMAIL`, o envio do formulário de suporte fica indisponível.
 
 Para criar o primeiro administrador em um banco novo:
 
