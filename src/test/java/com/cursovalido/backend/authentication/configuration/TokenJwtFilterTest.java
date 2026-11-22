@@ -2,7 +2,6 @@ package com.cursovalido.backend.authentication.configuration;
 
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
-import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
 import com.cursovalido.backend.authentication.service.UsuarioDetalhesService;
 import jakarta.servlet.FilterChain;
@@ -21,8 +20,7 @@ class TokenJwtFilterTest {
     private static final String ROTA_TERMO = "/api/autenticacao/decidir-termos";
     private final TokenJwtService tokens = mock(TokenJwtService.class);
     private final UsuarioDetalhesService usuarios = mock(UsuarioDetalhesService.class);
-    private final PoliticaService politicas = mock(PoliticaService.class);
-    private final TokenJwtFilter filtro = new TokenJwtFilter(tokens, usuarios, politicas);
+    private final TokenJwtFilter filtro = new TokenJwtFilter(tokens, usuarios);
     private final FilterChain cadeia = mock(FilterChain.class);
     private final MockHttpServletResponse resposta = new MockHttpServletResponse();
 
@@ -54,7 +52,6 @@ class TokenJwtFilterTest {
     @Test
     void deveAutenticarSessaoComTermosVigentes() throws Exception {
         prepararConta(true, 1L);
-        when(politicas.versaoAtiva("v1.2")).thenReturn(true);
         var requisicao = requisicao("GET", "/api/cursos");
 
         filtro.doFilter(requisicao, resposta, cadeia);
@@ -86,7 +83,7 @@ class TokenJwtFilterTest {
 
     @Test
     void devePedirReautenticacaoQuandoVersaoAceitaNaoEstaVigente() throws Exception {
-        prepararConta(true, 1L);
+        prepararContaDesatualizada(true, 1L);
 
         filtro.doFilter(requisicao("GET", "/api/cursos"), resposta, cadeia);
 
@@ -97,7 +94,7 @@ class TokenJwtFilterTest {
 
     @Test
     void devePermitirDecisaoComAutoridadeRestritaQuandoVersaoEstiverDesatualizada() throws Exception {
-        prepararConta(true, 1L);
+        prepararContaDesatualizada(true, 1L);
         var requisicao = requisicao("POST", ROTA_TERMO);
 
         filtro.doFilter(requisicao, resposta, cadeia);
@@ -109,7 +106,8 @@ class TokenJwtFilterTest {
     @Test
     void deveRestringirTokenDeTermosEmRotaComum() throws Exception {
         prepararConta(true, 1L);
-        when(tokens.apenasTermos("token")).thenReturn(true);
+        when(tokens.dadosParaRequisicao("token")).thenReturn(
+                new TokenJwtService.DadosTokenRequisicao(EMAIL, 1L, "sessao", "TERMOS"));
 
         filtro.doFilter(requisicao("GET", "/api/cursos"), resposta, cadeia);
 
@@ -120,7 +118,8 @@ class TokenJwtFilterTest {
     @Test
     void devePermitirDecisaoComTokenDeTermos() throws Exception {
         prepararConta(true, 1L);
-        when(tokens.apenasTermos("token")).thenReturn(true);
+        when(tokens.dadosParaRequisicao("token")).thenReturn(
+                new TokenJwtService.DadosTokenRequisicao(EMAIL, 1L, "sessao", "TERMOS"));
         var requisicao = requisicao("POST", ROTA_TERMO);
 
         filtro.doFilter(requisicao, resposta, cadeia);
@@ -136,10 +135,18 @@ class TokenJwtFilterTest {
     }
 
     private void prepararConta(boolean ativa, Long idNoToken) {
-        when(tokens.extrairEmail("token")).thenReturn(EMAIL);
-        when(tokens.extrairIdUsuario("token")).thenReturn(idNoToken);
-        when(usuarios.loadUserByUsername(EMAIL))
-                .thenReturn(new UsuarioAutenticado(1L, EMAIL, "hash", Perfil.ALUNO, true, true, ativa, "v1.2"));
+        when(tokens.dadosParaRequisicao("token")).thenReturn(
+                new TokenJwtService.DadosTokenRequisicao(EMAIL, idNoToken, "sessao", "ACESSO"));
+        when(usuarios.loadUserForRequest(EMAIL, idNoToken, "sessao"))
+                .thenReturn(new UsuarioAutenticado(1L, EMAIL, "hash", Perfil.ALUNO, true, true, ativa,
+                        "v1.2", true, false));
+    }
+
+    private void prepararContaDesatualizada(boolean ativa, Long idNoToken) {
+        prepararConta(ativa, idNoToken);
+        when(usuarios.loadUserForRequest(EMAIL, idNoToken, "sessao"))
+                .thenReturn(new UsuarioAutenticado(1L, EMAIL, "hash", Perfil.ALUNO, true, true, ativa,
+                        "v1.2", false, false));
     }
 
     private String autoridade() {

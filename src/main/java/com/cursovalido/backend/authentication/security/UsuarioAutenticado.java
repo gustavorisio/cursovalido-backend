@@ -19,10 +19,17 @@ public class UsuarioAutenticado implements UserDetails {
     private final boolean termosAceitos;
     private final boolean ativo;
     private final String versaoTermos;
+    private final boolean versaoTermosAtiva;
+    private final boolean administradorPrincipal;
 
     public UsuarioAutenticado(Long id, String email, String senha, Perfil perfil, boolean emailConfirmado,
             boolean termosAceitos, boolean ativo) {
-        this(id, email, senha, perfil, emailConfirmado, termosAceitos, ativo, null);
+        this(id, email, senha, perfil, emailConfirmado, termosAceitos, ativo, null, true, false);
+    }
+
+    public UsuarioAutenticado(Long id, String email, String senha, Perfil perfil, boolean emailConfirmado,
+            boolean termosAceitos, boolean ativo, String versaoTermos) {
+        this(id, email, senha, perfil, emailConfirmado, termosAceitos, ativo, versaoTermos, true, false);
     }
 
     @Override
