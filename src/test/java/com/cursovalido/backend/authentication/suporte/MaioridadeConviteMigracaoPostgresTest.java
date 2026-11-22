@@ -24,7 +24,7 @@ class MaioridadeConviteMigracaoPostgresTest {
                 propriedades.get("spring.datasource.username").get().toString(),
                 propriedades.get("spring.datasource.password").get().toString());
         var flyway = FlywayConfig.configuracao().dataSource(fonte).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
         var jdbc = new JdbcTemplate(fonte);
 
         assertThat(jdbc.queryForObject("""
