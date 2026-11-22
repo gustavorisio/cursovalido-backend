@@ -33,7 +33,7 @@ import org.springframework.web.client.RestClient;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-// Servidor HTTP, filtro JWT, transacoes e PostgreSQL reais; somente YouTube e simulado.
+// Servidor HTTP, filtro JWT, transacoes e PostgreSQL reais; Vimeo e YouTube sao simulados.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
                 "spring.jpa.hibernate.ddl-auto=validate",
                 "seguranca.limite-requisicoes=10000",
@@ -59,6 +59,9 @@ class AulasHttpIntegracaoTest {
         private ProgressoAulaRepository progressos;
         @Autowired
         private JdbcTemplate jdbc;
+        @MockitoBean
+        private com.cursovalido.backend.aulas.service.VimeoClient vimeoClient;
+
         @MockitoBean
         private YoutubeClient youtube;
         @Autowired

@@ -2,17 +2,30 @@ package com.cursovalido.backend.aulas.service;
 
 import java.net.URI;
 import java.util.Locale;
-import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Validação local das URLs públicas/privadas do Vimeo usadas pelo player incorporado. */
-public final class VimeoService {
-    private static final Pattern ID = Pattern.compile("[0-9]{1,20}");
+/** Valida a URL e confirma o proprietário do vídeo antes da gravação. */
+@Service
+@RequiredArgsConstructor
+public class VimeoService {
+    private final VimeoClient cliente;
 
-    private VimeoService() {}
+    public String validarVideo(String valor) {
+        String url = validarUrl(valor);
+        if (url != null) cliente.validarVideo(extrairVideoId(url));
+        return url;
+    }
 
-    public static String validarUrl(String valor) {
+    private String extrairVideoId(String url) {
+        URI uri = URI.create(url);
+        var partes = uri.getRawPath().split("/");
+        return uri.getHost().equalsIgnoreCase("player.vimeo.com") ? partes[2] : partes[1];
+    }
+
+    private static String validarUrl(String valor) {
         if (valor == null || valor.isBlank()) return null;
         try {
             URI uri = URI.create(valor.trim());
@@ -21,15 +34,10 @@ public final class VimeoService {
                     || host.equals("player.vimeo.com");
             if (!"https".equalsIgnoreCase(uri.getScheme()) || !hostPermitido || uri.getUserInfo() != null
                     || uri.getPort() != -1) throw new IllegalArgumentException();
-            String[] partes = uri.getPath().split("/");
-            String id = null;
-            if (host.equals("player.vimeo.com") && partes.length >= 3 && "video".equals(partes[1])) id = partes[2];
-            else if (partes.length >= 2) {
-                for (int i = partes.length - 1; i >= 1; i--) {
-                    if (ID.matcher(partes[i]).matches()) { id = partes[i]; break; }
-                }
-            }
-            if (id == null || !ID.matcher(id).matches()) throw new IllegalArgumentException();
+            if (valor.length() > 2048) throw new IllegalArgumentException();
+            String formato = host.equals("player.vimeo.com")
+                    ? "^/video/[0-9]{1,20}/?$" : "^/[0-9]{1,20}(?:/[a-zA-Z0-9]{1,64})?/?$";
+            if (!uri.getRawPath().matches(formato)) throw new IllegalArgumentException();
             return uri.toString();
         } catch (IllegalArgumentException erro) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
