@@ -91,11 +91,13 @@ public class ForumController {
     }
 
     @GetMapping("/topicos/{idTopico}/comentarios")
-    public List<ComentarioResponse> listarComentarios(@AuthenticationPrincipal UsuarioAutenticado usuario,
-            @PathVariable Long idTopico) {
-        return servicoComentarios.listarPorTopico(idTopico, usuario == null ? null : usuario.getId()).stream()
-                .map(this::converter)
-                .toList();
+    public com.cursovalido.backend.forum.dto.PaginaComentariosResponse listarComentarios(
+            @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable Long idTopico,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        var pagina = servicoComentarios.listarPaginaPorTopico(idTopico, usuario == null ? null : usuario.getId(), page, size);
+        return new com.cursovalido.backend.forum.dto.PaginaComentariosResponse(
+                pagina.getContent().stream().map(this::converter).toList(), pagina.getNumber(),
+                pagina.getTotalPages(), pagina.getTotalElements());
     }
 
     @PostMapping("/topicos/{idTopico}/comentarios")

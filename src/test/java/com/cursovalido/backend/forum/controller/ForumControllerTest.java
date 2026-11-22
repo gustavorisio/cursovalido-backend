@@ -105,8 +105,8 @@ class ForumControllerTest {
 
     @Test
     void listarComentarios_comTopico_deveConverterRespostaSemExporEntidades() {
-        when(comentarios.listarPorTopico(10L, 7L)).thenReturn(List.of(comentario));
-        assertThat(controlador.listarComentarios(principal, 10L)).containsExactly(new ComentarioResponse(
+        when(comentarios.listarPaginaPorTopico(10L, 7L, 0, 20)).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(comentario)));
+        assertThat(controlador.listarComentarios(principal, 10L, 0, 20).itens()).containsExactly(new ComentarioResponse(
                 20L, "Resposta", "Autor", "#1a3b5c7d", "ALUNO", 7L, LocalDateTime.of(2026, 11, 15, 22, 27), true));
     }
 
