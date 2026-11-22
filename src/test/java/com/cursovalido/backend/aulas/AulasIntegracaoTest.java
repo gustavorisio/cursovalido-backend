@@ -236,6 +236,7 @@ class AulasIntegracaoTest {
                 }
                 if (tipo.equals("aula")) {
                         dados.put("youtubeUrl", "https://youtu.be/M7lc1UVf-VE");
+                        dados.put("vimeoUrl", "https://vimeo.com/123456789");
                 }
                 var json = new com.fasterxml.jackson.databind.ObjectMapper();
                 mvc.perform(post(rota).with(comoProfessor(professor)).contentType(MediaType.APPLICATION_JSON)

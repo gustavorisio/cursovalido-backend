@@ -149,7 +149,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         @ParameterizedTest
         @ValueSource(strings = {
                         "insert into tb_modulos (titulo, descricao, curso_id, ordem, criado_em) values ('Teste', 'Teste', -1, 1, CURRENT_TIMESTAMP)",
-                        "insert into tb_aulas (titulo, descricao, modulo_id, ordem, youtube_video_id, criado_em) values ('Teste', 'Teste', -1, 1, 'M7lc1UVf-VE', CURRENT_TIMESTAMP)",
+                        "insert into tb_aulas (titulo, descricao, modulo_id, ordem, youtube_video_id, vimeo_video_url, criado_em) values ('Teste', 'Teste', -1, 1, 'M7lc1UVf-VE', 'https://vimeo.com/123456789', CURRENT_TIMESTAMP)",
                         "insert into tb_matriculas (aluno_id, curso_id, matriculado_em) values (-1, -1, CURRENT_TIMESTAMP)",
                         "insert into tb_progresso_aulas (matricula_id, aula_id, posicao_segundos, atualizado_em) values (-1, -1, 0, CURRENT_TIMESTAMP)" })
         void bancoRejeitaVinculosInexistentes(String sql) {

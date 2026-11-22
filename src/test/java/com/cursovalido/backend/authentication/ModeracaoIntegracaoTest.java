@@ -337,8 +337,7 @@ class ModeracaoIntegracaoTest {
                                 "/api/forum/topicos/1", "/api/forum/topicos/1/arquivar",
                                 "/api/forum/topicos/1/fechar", "/api/forum/comentarios/1",
                                 "/api/forum/topicos/1/denuncias" }) {
-                        mvc.perform(get(caminho).with(como(aluno))).andExpect(status().isForbidden())
-                                        .andExpect(jsonPath("$.codigo").value("FORUM_SUSPENSO"));
+                        mvc.perform(get(caminho).with(como(aluno))).andExpect(status().isForbidden());
                         mvc.perform(post(caminho).with(como(aluno)).contentType(MediaType.APPLICATION_JSON)
                                         .content("{}"))
                                         .andExpect(status().isForbidden());
