@@ -51,6 +51,12 @@ public class PoliticaService {
         return converter(publicada);
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<PoliticaResponse> listarHistorico() {
+        return repositorio.findByAtivaFalseOrderByDataPublicacaoDescIdDesc().stream()
+                .map(this::converter).toList();
+    }
+
     private PoliticaResponse converter(Politica politica) {
         return new PoliticaResponse(politica.getNome(), politica.getVersao(), politica.getConteudo(),
                 politica.getDataPublicacao());

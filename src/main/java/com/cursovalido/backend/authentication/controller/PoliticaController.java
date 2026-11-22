@@ -25,6 +25,16 @@ public class PoliticaController {
                 : org.springframework.http.ResponseEntity.ok(atual);
     }
 
+    @GetMapping("/historico")
+    public List<PoliticaResponse> historicoTermos() {
+        return servico.listarHistorico();
+    }
+
+    @GetMapping("/privacidade/historico")
+    public List<PoliticaResponse> historicoPrivacidade() {
+        return privacidade.listarHistorico();
+    }
+
     @PostMapping("/privacidade")
     @ResponseStatus(HttpStatus.CREATED)
     public PoliticaResponse publicarPrivacidade(@AuthenticationPrincipal UsuarioAutenticado administrador,

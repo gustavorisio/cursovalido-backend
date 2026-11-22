@@ -53,6 +53,8 @@ public class TokenJwtFilter extends OncePerRequestFilter {
         }
         return "GET".equals(request.getMethod())
                 && (caminho.equals("/api/politicas/ativas") || caminho.equals("/api/politicas/privacidade/ativa")
+                        || caminho.equals("/api/politicas/historico")
+                        || caminho.equals("/api/politicas/privacidade/historico")
                         || caminho.startsWith("/api/politicas/responsabilidade/")
                         || caminho.equals("/termos-aceite.html") || caminho.equals("/politica-privacidade.html"));
     }
