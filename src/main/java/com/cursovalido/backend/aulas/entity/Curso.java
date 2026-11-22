@@ -32,7 +32,4 @@ public class Curso {
     @JoinColumn(name = "tema_id")
     private Tema tema;
 
-    @ManyToOne
-    @JoinColumn(name = "area_id")
-    private AreaTecnologia area;
 }

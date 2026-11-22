@@ -3,10 +3,12 @@ package com.cursovalido.backend.forum.dto;
 import com.cursovalido.backend.forum.entity.MotivoDenuncia;
 import com.cursovalido.backend.forum.entity.StatusDenuncia;
 import com.cursovalido.backend.forum.entity.TipoConteudoForum;
+import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
+import java.time.Instant;
 
 public final class DenunciaDtos {
     private DenunciaDtos() {
@@ -19,7 +21,11 @@ public final class DenunciaDtos {
     }
 
     public record DecisaoDenunciaRequest(@NotNull Boolean procedente, @NotNull Boolean removerConteudo,
-            @NotBlank @Size(max = 1000) String observacao) {
+            @NotBlank @Size(max = 1000) String observacao, Boolean aplicarRestricao,
+            EscopoSuspensao escopoRestricao, Instant expiraEm) {
+        public DecisaoDenunciaRequest(Boolean procedente, Boolean removerConteudo, String observacao) {
+            this(procedente, removerConteudo, observacao, false, null, null);
+        }
     }
 
     // O denunciante nao e exposto: a moderacao avalia o conteudo, nao quem denunciou.

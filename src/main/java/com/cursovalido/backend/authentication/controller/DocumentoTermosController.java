@@ -47,16 +47,9 @@ public class DocumentoTermosController {
         var navegacao = Pattern.compile("(?is)<nav\\b[^>]*>.*?</nav>").matcher(modelo);
         String botoes = navegacao.find() ? navegacao.group() : "";
         String conteudo = renderizarConteudo(politica.conteudo());
-        boolean html = Pattern.compile("(?i)<(?:h[1-6]|p|ul|ol|li|strong|em|br)\\b").matcher(conteudo).find();
-        if (html) {
-            // The template already displays the document title and version.
-            conteudo = conteudo.replaceFirst("(?is)^\\s*<h1>.*?</h1>\\s*", "")
-                    .replaceFirst("(?is)^\\s*<p>\\s*(?:<strong>)?Vers[aã]o\\s+[^<]*(?:</strong>)?\\s*</p>\\s*", "");
-        }
         String principal = "<main>" + botoes + "<h1>" + HtmlUtils.htmlEscape(politica.nome())
                 + "</h1><p class=\"atualizacao\"><strong>Versão: " + HtmlUtils.htmlEscape(politica.versao())
-                + "</strong></p><article style=\"overflow-wrap:anywhere;white-space:"
-                + (html ? "normal" : "pre-wrap") + "\">" + conteudo + "</article></main>";
+                + "</strong></p><article style=\"overflow-wrap:anywhere;white-space:pre-wrap\">" + conteudo + "</article></main>";
         return modelo.replaceFirst("(?is)<main\\b[^>]*>.*?</main>",
                 java.util.regex.Matcher.quoteReplacement(principal));
     }
@@ -64,14 +57,6 @@ public class DocumentoTermosController {
     static String renderizarConteudo(String conteudo) {
         if (conteudo == null)
             return "";
-        var corpo = Pattern.compile("(?is)<body\\b[^>]*>(.*?)</body\\s*>").matcher(conteudo);
-        String texto = corpo.find() ? corpo.group(1) : conteudo;
-        texto = texto.replaceAll(
-                "(?is)<(?:script|style|iframe|object)\\b[^>]*>.*?</(?:script|style|iframe|object)\\s*>", "");
-        // Only structural tags are rendered. Attributes and executable HTML remain
-        // escaped.
-        String seguro = HtmlUtils.htmlEscape(texto);
-        return seguro.replaceAll("(?i)&lt;(/?(?:h[1-6]|p|strong|em|b|i|u|ul|ol|li|blockquote|br|hr))\\s*/?&gt;",
-                "<$1>");
+        return HtmlUtils.htmlEscape(com.cursovalido.backend.authentication.validation.politica.ConteudoDocumento.preparar(conteudo));
     }
 }

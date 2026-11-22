@@ -77,17 +77,33 @@ public class TokenJwtService {
         return validar(token).getSubject();
     }
 
+    public DadosTokenRequisicao dadosParaRequisicao(String token) {
+        Claims dados = lerClaims(token);
+        return new DadosTokenRequisicao(dados.getSubject(), dados.get("idUsuario", Long.class), dados.getId(),
+                dados.get("finalidade", String.class));
+    }
+
+    public record DadosTokenRequisicao(String email, Long idUsuario, String idSessao, String finalidade) {
+        public boolean apenasTermos() {
+            return "TERMOS".equals(finalidade);
+        }
+    }
+
     public Long extrairIdUsuario(String token) {
         return validar(token).get("idUsuario", Long.class);
     }
 
     private Claims validar(String token) {
-        var dados = Jwts.parser().verifyWith((javax.crypto.SecretKey) chave).build()
-                .parseSignedClaims(token).getPayload();
+        var dados = lerClaims(token);
         var sessao = sessoes.findById(dados.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Sessao invalida"));
         TokenJwtValidation.validarSessao(sessao, dados);
         return dados;
+    }
+
+    private Claims lerClaims(String token) {
+        return Jwts.parser().verifyWith((javax.crypto.SecretKey) chave).build()
+                .parseSignedClaims(token).getPayload();
     }
 
     public boolean apenasTermos(String token) {

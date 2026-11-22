@@ -2,6 +2,7 @@ package com.cursovalido.backend.authentication.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.security.SecureRandom;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @Setter
 public class Usuario {
+    private static final char[] CARACTERES_GAMERTAG = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
+    private static final SecureRandom RANDOM_GAMERTAG = new SecureRandom();
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Setter(AccessLevel.NONE)
@@ -21,6 +24,8 @@ public class Usuario {
     private String nomeCompleto;
     @Column(nullable = false, unique = true, length = 254)
     private String email;
+    @Column(name = "gamertag", nullable = false, unique = true, length = 15)
+    private String gamertag;
     @Column(nullable = false, length = 60)
     private String senha;
     @Column(nullable = false, unique = true, length = 50)
@@ -47,4 +52,12 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     @Column(name = "status_aprovacao", nullable = false)
     private StatusAprovacao statusAprovacao = StatusAprovacao.APROVADO;
+
+    @PrePersist
+    private void gerarGamertagSeAusente() {
+        if (gamertag != null && !gamertag.isBlank()) return;
+        StringBuilder tag = new StringBuilder("CV-");
+        for (int i = 0; i < 12; i++) tag.append(CARACTERES_GAMERTAG[RANDOM_GAMERTAG.nextInt(CARACTERES_GAMERTAG.length)]);
+        gamertag = tag.toString();
+    }
 }

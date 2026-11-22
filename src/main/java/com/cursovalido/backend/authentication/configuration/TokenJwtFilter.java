@@ -1,11 +1,9 @@
 package com.cursovalido.backend.authentication.configuration;
 
-import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
 import com.cursovalido.backend.authentication.service.UsuarioDetalhesService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.security.RespostaErroHttp;
-import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,12 +23,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class TokenJwtFilter extends OncePerRequestFilter {
     private final TokenJwtService tokens;
     private final UsuarioDetalhesService usuarios;
-    private final PoliticaService politicas;
-    private final PrivilegiosAdministrativosService privilegios;
-
-    public TokenJwtFilter(TokenJwtService tokens, UsuarioDetalhesService usuarios, PoliticaService politicas) {
-        this(tokens, usuarios, politicas, null);
-    }
 
     private boolean podeAutenticar(String email) {
         if (email == null) {
@@ -39,9 +31,8 @@ public class TokenJwtFilter extends OncePerRequestFilter {
         return SecurityContextHolder.getContext().getAuthentication() == null;
     }
 
-    private boolean precisaReautenticar(org.springframework.security.core.userdetails.UserDetails detalhes) {
-        return detalhes instanceof UsuarioAutenticado usuario
-                && (!usuario.isTermosAceitos() || !politicas.versaoAtiva(usuario.getVersaoTermos()));
+    private boolean precisaReautenticar(UsuarioAutenticado usuario) {
+        return !usuario.isTermosAceitos() || !usuario.isVersaoTermosAtiva();
     }
 
     private boolean rotaDeDecisao(HttpServletRequest request) {
@@ -77,24 +68,22 @@ public class TokenJwtFilter extends OncePerRequestFilter {
         if (cabecalho.startsWith("Bearer ")) {
             try {
                 String token = cabecalho.substring(7);
-                String email = tokens.extrairEmail(token);
+                var dadosToken = tokens.dadosParaRequisicao(token);
+                String email = dadosToken.email();
                 if (podeAutenticar(email)) {
-                    var detalhes = usuarios.loadUserByUsername(email);
-                    if (detalhes instanceof UsuarioAutenticado usuario) {
-                        if (!usuario.getId().equals(tokens.extrairIdUsuario(token))) {
-                            RespostaErroHttp.escrever(response, 401,
-                                    "Seu acesso não é mais válido. Entre na sua conta novamente.", "SESSAO_INVALIDA");
-                            return;
-                        }
+                    var detalhes = usuarios.loadUserForRequest(email, dadosToken.idUsuario(), dadosToken.idSessao());
+                    if (!detalhes.getId().equals(dadosToken.idUsuario())) {
+                        RespostaErroHttp.escrever(response, 401,
+                                "Seu acesso não é mais válido. Entre na sua conta novamente.", "SESSAO_INVALIDA");
+                        return;
                     }
-                    boolean root = privilegios != null && detalhes instanceof UsuarioAutenticado usuario
-                            && privilegios.ehPrincipal(usuario.getId());
+                    boolean root = detalhes.isAdministradorPrincipal();
                     if (!detalhes.isEnabled()) {
                         RespostaErroHttp.escrever(response, 403,
                                 "Sua conta não tem acesso no momento. Entre em contato pelo Suporte.", "ACESSO_NEGADO");
                         return;
                     }
-                    boolean termos = tokens.apenasTermos(token);
+                    boolean termos = dadosToken.apenasTermos();
                     String caminho = request.getRequestURI();
                     boolean decidir = rotaDeDecisao(request);
                     boolean logout = "POST".equals(request.getMethod()) && caminho.equals("/api/autenticacao/logout");
