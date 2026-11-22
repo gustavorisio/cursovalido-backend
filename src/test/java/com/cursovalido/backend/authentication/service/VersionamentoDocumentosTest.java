@@ -122,7 +122,7 @@ class VersionamentoDocumentosTest {
         var publicado = termos.publicar(documento("<h1>Termo antigo</h1>"
                 + "<p><strong>Versão 99.0</strong></p><h2>Regras</h2><p>Texto revisado</p>"), 1L);
         assertEquals("v1.0", publicado.versao());
-        assertEquals("<h2>Regras</h2><p>Texto revisado</p>", publicado.conteudo());
+        assertEquals("Regras\nTexto revisado", publicado.conteudo());
     }
 
     @Test
