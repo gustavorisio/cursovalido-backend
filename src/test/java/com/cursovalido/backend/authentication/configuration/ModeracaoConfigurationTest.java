@@ -53,25 +53,25 @@ class ModeracaoConfigurationTest {
     }
 
     @Test
-    void restricaoDeComentariosUsaAMensagemDoProprioEscopo() throws Exception {
-        when(moderacao.restrito(1L, EscopoSuspensao.COMENTARIOS)).thenReturn(true);
-        when(moderacao.mensagemBanimento(1L, EscopoSuspensao.COMENTARIOS)).thenReturn("Comentarios bloqueados");
+    void restricaoDoForumBloqueiaTopicosEComentarios() throws Exception {
+        when(moderacao.restrito(1L, EscopoSuspensao.FORUM)).thenReturn(true);
+        when(moderacao.mensagemBanimento(1L, EscopoSuspensao.FORUM)).thenReturn("Forum bloqueado");
         var resposta = new MockHttpServletResponse();
 
         assertThat(interceptador.preHandle(new MockHttpServletRequest("POST", "/api/forum/topicos/5/comentarios"),
                 resposta, null)).isFalse();
-        assertThat(resposta.getContentAsString()).contains("COMENTARIOS_SUSPENSOS").contains("Comentarios bloqueados");
-        verify(moderacao, never()).mensagemBanimento(1L, EscopoSuspensao.TOPICOS);
+        assertThat(resposta.getContentAsString()).contains("FORUM_SUSPENSO").contains("Forum bloqueado");
     }
 
     @Test
-    void denunciaContinuaPermitidaComTopicosRestritos() throws Exception {
-        when(moderacao.restrito(1L, EscopoSuspensao.TOPICOS)).thenReturn(true);
+    void forumSuspensoTambemBloqueiaDenuncias() throws Exception {
+        when(moderacao.restrito(1L, EscopoSuspensao.FORUM)).thenReturn(true);
+        when(moderacao.mensagemBanimento(1L, EscopoSuspensao.FORUM)).thenReturn("Forum bloqueado");
+        var resposta = new MockHttpServletResponse();
 
         assertThat(interceptador.preHandle(new MockHttpServletRequest("POST", "/api/forum/topicos/5/denuncias"),
-                new MockHttpServletResponse(), null)).isTrue();
-        assertThat(interceptador.preHandle(new MockHttpServletRequest("POST", "/api/forum/topicos"),
-                new MockHttpServletResponse(), null)).isFalse();
+                resposta, null)).isFalse();
+        assertThat(resposta.getContentAsString()).contains("FORUM_SUSPENSO");
     }
 
     @Test
