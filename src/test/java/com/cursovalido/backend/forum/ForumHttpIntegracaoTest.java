@@ -273,7 +273,7 @@ class ForumHttpIntegracaoTest {
         }
 
         @Test
-        void listagemDeModeracaoMascaraEmailsETrocaNomeCompletoPeloPrimeiroNome() {
+        void listagemDeModeracaoExibeNomeCompletoEGamertagSemEmail() {
                 var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-listagem@example.com");
                 var comum = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
                 var professor = cadastrarEAutenticar(Perfil.PROFESSOR);
@@ -284,21 +284,23 @@ class ForumHttpIntegracaoTest {
                                 UsuarioAdministracaoResposta[].class);
                 assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(autor.id())).singleElement()
                                 .satisfies(u -> {
-                                        assertThat(u.email())
-                                                        .isEqualTo(emailAluno.substring(0, 1) + "*******@example.com");
-                                        assertThat(u.nome()).isEqualTo("Participante");
+                                        var usuario = usuarios.findById(autor.id()).orElseThrow();
+                                        assertThat(u.nome()).isEqualTo(usuario.getNomeCompleto());
+                                        assertThat(u.gamertag()).isEqualTo(usuario.getGamertag());
                                         assertThat(u.podeExcluir()).isTrue();
                                 });
                 assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(professor.id())).singleElement()
                                 .satisfies(u -> {
-                                        assertThat(u.email()).isEqualTo(emailProfessor.substring(0, 1) + "*******@example.com");
-                                        assertThat(u.nome()).isEqualTo("Participante");
+                                        var usuario = usuarios.findById(professor.id()).orElseThrow();
+                                        assertThat(u.nome()).isEqualTo(usuario.getNomeCompleto());
+                                        assertThat(u.gamertag()).isEqualTo(usuario.getGamertag());
                                         assertThat(u.podeExcluir()).isTrue();
                                 });
                 assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(comum.id())).singleElement()
                                 .satisfies(u -> {
-                                        assertThat(u.email()).isEqualTo(emailComum.substring(0, 1) + "*******@example.com");
-                                        assertThat(u.nome()).isEqualTo("Participante");
+                                        var usuario = usuarios.findById(comum.id()).orElseThrow();
+                                        assertThat(u.nome()).isEqualTo(usuario.getNomeCompleto());
+                                        assertThat(u.gamertag()).isEqualTo(usuario.getGamertag());
                                         assertThat(u.podeExcluir()).isTrue();
                                 });
                 assertThat(resposta.getBody()).filteredOn(u -> u.id().equals(principal.id())).singleElement()
