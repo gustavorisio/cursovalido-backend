@@ -49,6 +49,7 @@ class AutenticacaoServiceTest {
 
         assertTrue(resposta.requerCodigo2fa());
         verify(envio).enviar(1L, IP, false);
+        verify(protecao, never()).registrarSucesso(anyString());
     }
 
     @Test
@@ -58,6 +59,16 @@ class AutenticacaoServiceTest {
 
         verify(protecao).registrarFalha(EMAIL);
         verifyNoInteractions(envio);
+    }
+
+    @Test
+    void falhasDaMesmaContaEmIpsDiferentesUsamOMesmoIdentificador() {
+        assertThrows(CredenciaisInvalidasException.class,
+                () -> service.autenticar(new LoginRequest(EMAIL, "errada"), "192.0.2.1"));
+        assertThrows(CredenciaisInvalidasException.class,
+                () -> service.autenticar(new LoginRequest(EMAIL, "errada"), "192.0.2.2"));
+        verify(protecao, times(2)).verificar(EMAIL);
+        verify(protecao, times(2)).registrarFalha(EMAIL);
     }
 
     @Test
@@ -112,7 +123,7 @@ class AutenticacaoServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> service.confirmarCodigo(EMAIL, "123456", IP));
 
-        verify(protecao).registrarFalha(EMAIL + ":2fa");
+        verify(protecao).registrarFalha(EMAIL);
         verify(tokensEmail, never()).validarCodigo2fa(anyString(), anyString());
         verifyNoInteractions(tokens);
     }
