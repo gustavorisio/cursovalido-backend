@@ -223,6 +223,43 @@
 												</limit>
 											</limits>
 										</rule>
+										<!-- Faixa solicitada para classes principais; as já acima de 58% não entram nesta regra. -->
+										<rule>
+											<element>CLASS</element>
+											<includes>
+												<include>com.cursovalido.backend.authentication.controller.AdministracaoController</include>
+												<include>com.cursovalido.backend.authentication.controller.PoliticaController</include>
+												<include>com.cursovalido.backend.authentication.security.AnonimizacaoDados</include>
+												<include>com.cursovalido.backend.authentication.service.UsuarioDetalhesService</include>
+												<include>com.cursovalido.backend.notificacoes.controller.ComunicadoController</include>
+												<include>com.cursovalido.backend.notificacoes.repository.ComunicadoRepository</include>
+												<include>com.cursovalido.backend.dashboard.repository.DashboardRepository</include>
+											</includes>
+											<limits>
+												<limit>
+													<counter>LINE</counter>
+													<value>COVEREDRATIO</value>
+													<minimum>0.50</minimum>
+													<maximum>0.58</maximum>
+												</limit>
+											</limits>
+										</rule>
+
+										<!-- Exceção autorizada: classes pequenas sem faixa executável entre 50% e 58%. -->
+										<rule>
+											<element>CLASS</element>
+											<includes>
+												<include>com.cursovalido.backend.authentication.controller.ResponsabilidadeController</include>
+											</includes>
+											<limits>
+												<limit>
+													<counter>LINE</counter>
+													<value>COVEREDRATIO</value>
+													<minimum>0.50</minimum>
+													<maximum>1.00</maximum>
+												</limit>
+											</limits>
+										</rule>
 									</rules>
 								</configuration>
 							</execution>
