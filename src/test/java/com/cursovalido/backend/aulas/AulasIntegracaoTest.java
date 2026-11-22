@@ -574,7 +574,7 @@ class AulasIntegracaoTest {
 
         private String dadosAula(String titulo, String url) {
                 return "{\"titulo\":\"" + titulo + "\",\"descricao\":\"Introducao\",\"ordem\":1,\"youtubeUrl\":\"" + url
-                                + "\"}";
+                                + "\",\"vimeoUrl\":\"https://vimeo.com/123456789\"}";
         }
 
         private RequestPostProcessor comoProfessor(Usuario usuario) {

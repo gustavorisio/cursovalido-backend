@@ -81,7 +81,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 alunoAulas.matricular(curso.getId(), aluno.getId());
                 var modulo = modulos.criar(curso.getId(), new ModuloRequest("Inicio", "Basico", 1), professor.getId());
                 var aula = aulas.criar(modulo.getId(), new AulaRequest("Java", "Introducao", 1,
-                                "https://youtu.be/M7lc1UVf-VE"), professor.getId());
+                                "https://youtu.be/M7lc1UVf-VE", "https://vimeo.com/123456789"), professor.getId());
                 progressos.concluir(aula.getId(), aluno.getId());
                 contas.excluirConta(aluno.getId(), tokensEmail.criarExclusao(aluno));
                 usuarios.flush();
@@ -173,7 +173,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 var curso = cursos.criar(new CursoRequest("Java", "Curso"), professor.getId());
                 var modulo = modulos.criar(curso.getId(), new ModuloRequest("Inicio", "Basico", 1), professor.getId());
                 var aula = aulas.criar(modulo.getId(), new AulaRequest("Java", "Basico", 1,
-                                "https://youtu.be/M7lc1UVf-VE"), professor.getId());
+                                "https://youtu.be/M7lc1UVf-VE", "https://vimeo.com/123456789"), professor.getId());
                 var aluno = criarProfessor("aluno-progresso");
                 aluno.setPerfil(Perfil.ALUNO);
                 usuarios.saveAndFlush(aluno);

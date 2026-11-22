@@ -63,7 +63,8 @@ class AdministradorAulasServiceTest {
     @Test
     void deveApagarProgressoAoTrocarVideoDaAula() {
         Aula aula = cadastrarAula();
-        var dados = new AulaRequest(" Novo título ", " Descrição ", 2, "https://youtu.be/abcdefghijk");
+        var dados = new AulaRequest(" Novo título ", " Descrição ", 2, "https://youtu.be/abcdefghijk",
+                "https://vimeo.com/123456789");
         when(youtube.validarVideo(dados.youtubeUrl())).thenReturn("abcdefghijk");
 
         service.editarAula(30L, dados, 1L);

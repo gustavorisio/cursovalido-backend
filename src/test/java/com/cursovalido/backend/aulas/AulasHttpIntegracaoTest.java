@@ -97,7 +97,8 @@ class AulasHttpIntegracaoTest {
                 assertThat(modulo.getStatusCode()).isEqualTo(HttpStatus.CREATED);
                 idModulo = modulo.getBody().id();
                 var aula = enviar(HttpMethod.POST, "/api/modulos/" + idModulo + "/aulas", tokenProfessor,
-                                new AulaRequest("Java", "Introducao", 1, "https://youtu.be/M7lc1UVf-VE"),
+                                new AulaRequest("Java", "Introducao", 1, "https://youtu.be/M7lc1UVf-VE",
+                                                "https://vimeo.com/123456789"),
                                 AulaResponse.class);
                 assertThat(aula.getStatusCode()).isEqualTo(HttpStatus.CREATED);
                 idAula = aula.getBody().id();
@@ -153,7 +154,7 @@ class AulasHttpIntegracaoTest {
                                 ProgressoAulaResponse.class);
                 String rota = "/api/administracao/aulas/" + idAula;
                 var dados = new AulaRequest("Editada pelo administrador", "Descricao atualizada", 2,
-                                "https://youtu.be/M7lc1UVf-VE");
+                                "https://youtu.be/M7lc1UVf-VE", "https://vimeo.com/123456789");
                 assertThat(enviar(HttpMethod.PUT, rota, tokenAluno, dados, String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.FORBIDDEN);
                 assertThat(enviar(HttpMethod.PUT, rota + "/arquivar", tokenProfessor, null, String.class)
@@ -408,7 +409,8 @@ class AulasHttpIntegracaoTest {
                 doThrow(new org.springframework.web.server.ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE))
                                 .when(youtube).validarVideo("abcdefghijk");
                 var falha = enviar(HttpMethod.PUT, "/api/aulas/" + idAula, tokenProfessor,
-                                new AulaRequest("Nao salvar", "Novo", 2, "https://youtu.be/abcdefghijk"), String.class);
+                                new AulaRequest("Nao salvar", "Novo", 2, "https://youtu.be/abcdefghijk",
+                                                "https://vimeo.com/123456789"), String.class);
                 assertThat(falha.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
                 var aula = enviar(HttpMethod.GET, "/api/aulas/" + idAula, tokenProfessor, null, AulaResponse.class)
                                 .getBody();
