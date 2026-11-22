@@ -27,6 +27,8 @@ class AulaServiceTest {
     private LogAuditoriaService auditoria;
     @Mock
     private ProgressoAulaRepository progressos;
+    @Spy
+    private VimeoService vimeo = new VimeoService(mock(VimeoClient.class));
     @InjectMocks
     private AulaService servico;
     private final AulaRequest dados = new AulaRequest(" Java ", " Basico ", 2, "https://youtu.be/M7lc1UVf-VE",
@@ -42,11 +44,23 @@ class AulaServiceTest {
         assertThat(salvo.getIdModulo()).isEqualTo(20L);
         assertThat(salvo.getYoutubeVideoId()).isEqualTo("M7lc1UVf-VE");
         assertThat(salvo.getCriadoEm()).isNotNull();
-        var ordem = inOrder(modulos, youtube, repositorio, auditoria);
+        var ordem = inOrder(modulos, vimeo, youtube, repositorio, auditoria);
         ordem.verify(modulos).buscarAtivo(20L, 1L);
+        ordem.verify(vimeo).validarVideo(dados.vimeoUrl());
         ordem.verify(youtube).validarVideo(dados.youtubeUrl());
         ordem.verify(repositorio).save(salvo);
         ordem.verify(auditoria).registrar(eq(1L), eq("CADASTRO_AULA"), anyString(), isNull());
+    }
+
+    @Test
+    void recusarVimeoNaoSalvaAulaNemApagaProgresso() {
+        var aula = aula();
+        when(repositorio.findById(30L)).thenReturn(Optional.of(aula));
+        doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST)).when(vimeo).validarVideo(dados.vimeoUrl());
+        erro(() -> servico.editar(30L, dados, 1L), 400);
+        assertThat(aula.getOrdem()).isEqualTo(1);
+        verify(repositorio, never()).save(any());
+        verifyNoInteractions(youtube, progressos, auditoria);
     }
 
     @Test

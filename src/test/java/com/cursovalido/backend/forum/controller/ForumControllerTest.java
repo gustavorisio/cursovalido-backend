@@ -41,6 +41,7 @@ class ForumControllerTest {
     void prepararDados() {
         principal = new UsuarioAutenticado(7L, "autor@example.com", "senha", Perfil.ALUNO, true, true, true);
         autor = new UsuarioForum(7L, "Autor", "autor@example.com", "ALUNO");
+        autor.setGamertag("#1a3b5c7d");
         topico = new Topico();
         topico.setId(10L);
         topico.setTitulo("Java");
@@ -58,11 +59,11 @@ class ForumControllerTest {
 
     @Test
     void listarTopicos_comParametros_deveEncaminharBuscaPaginaEUsuario() {
-        var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "ALUNO", 7L, topico.getCriadoEm(), 2, true,
+        var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "#1a3b5c7d", "ALUNO", 7L, topico.getCriadoEm(), 2, true,
                 false);
         when(topicos.listarRecentes(1, 3, "java", 7L)).thenReturn(List.of(resumo));
         assertThat(controlador.listarTopicosRecentes(principal, 1, 3, "java")).containsExactly(
-                new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "ALUNO", 7L,
+                new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "#1a3b5c7d", "ALUNO", 7L,
                         LocalDateTime.of(2026, 11, 15, 22, 27), 2, true, false));
     }
 
@@ -75,7 +76,7 @@ class ForumControllerTest {
         assertThat(captor.getValue().getTitulo()).isEqualTo("Java");
         assertThat(captor.getValue().getDescricao()).isEqualTo("Duvida");
         assertThat(resposta).isEqualTo(
-                new TopicoResponse(10L, "Java", "Duvida", "Autor", "ALUNO", 7L,
+                new TopicoResponse(10L, "Java", "Duvida", "Autor", "#1a3b5c7d", "ALUNO", 7L,
                         LocalDateTime.of(2026, 11, 15, 22, 27), 0, true, false));
     }
 
@@ -106,7 +107,7 @@ class ForumControllerTest {
     void listarComentarios_comTopico_deveConverterRespostaSemExporEntidades() {
         when(comentarios.listarPorTopico(10L, 7L)).thenReturn(List.of(comentario));
         assertThat(controlador.listarComentarios(principal, 10L)).containsExactly(new ComentarioResponse(
-                20L, "Resposta", "Autor", "ALUNO", 7L, LocalDateTime.of(2026, 11, 15, 22, 27), true));
+                20L, "Resposta", "Autor", "#1a3b5c7d", "ALUNO", 7L, LocalDateTime.of(2026, 11, 15, 22, 27), true));
     }
 
     @Test

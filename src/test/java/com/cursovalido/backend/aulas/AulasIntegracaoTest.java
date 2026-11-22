@@ -57,6 +57,9 @@ class AulasIntegracaoTest {
         @Autowired
         private ProgressoAulaRepository progressos;
         @MockitoBean
+        private com.cursovalido.backend.aulas.service.VimeoClient vimeoClient;
+
+        @MockitoBean
         private YoutubeClient youtubeClient;
         private Usuario professor;
 

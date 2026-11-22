@@ -14,7 +14,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Setter
 public class Usuario {
-    private static final char[] CARACTERES_GAMERTAG = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
+    private static final char[] CARACTERES_GAMERTAG = "abcdefghijklmnopqrstuvwxyz0123456789".toCharArray();
     private static final SecureRandom RANDOM_GAMERTAG = new SecureRandom();
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,8 +56,12 @@ public class Usuario {
     @PrePersist
     private void gerarGamertagSeAusente() {
         if (gamertag != null && !gamertag.isBlank()) return;
-        StringBuilder tag = new StringBuilder("CV-");
-        for (int i = 0; i < 12; i++) tag.append(CARACTERES_GAMERTAG[RANDOM_GAMERTAG.nextInt(CARACTERES_GAMERTAG.length)]);
-        gamertag = tag.toString();
+        do {
+            StringBuilder tag = new StringBuilder("#");
+            for (int i = 0; i < 8; i++) {
+                tag.append(CARACTERES_GAMERTAG[RANDOM_GAMERTAG.nextInt(CARACTERES_GAMERTAG.length)]);
+            }
+            gamertag = tag.toString();
+        } while (!gamertag.matches(".*[a-z].*") || !gamertag.matches(".*[0-9].*"));
     }
 }

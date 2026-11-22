@@ -136,14 +136,14 @@ public class ForumController {
     }
 
     private TopicoResumoDTO converter(TopicoResumoDTO topico) {
-        return new TopicoResumoDTO(topico.id(), topico.titulo(), topico.descricao(), topico.nomeAutor(),
+        return new TopicoResumoDTO(topico.id(), topico.titulo(), topico.descricao(), topico.nomeAutor(), topico.gamertagAutor(),
                 topico.papelAutor(), topico.idAutor(), horarioDeBrasilia(topico.criadoEm()),
                 topico.quantidadeRespostas(),
                 topico.ativo(), topico.fechado());
     }
 
     private TopicoResponse converter(Topico topico) {
-        return new TopicoResponse(topico.getId(), topico.getTitulo(), topico.getDescricao(), topico.getNomeAutor(),
+        return new TopicoResponse(topico.getId(), topico.getTitulo(), topico.getDescricao(), topico.getNomeAutor(), topico.getGamertagAutor(),
                 topico.getPapelAutor(), topico.getIdAutor(), horarioDeBrasilia(topico.getCriadoEm()),
                 topico.getQuantidadeRespostas(), topico.isAtivo(), topico.isFechado());
     }
@@ -151,7 +151,7 @@ public class ForumController {
     private ComentarioResponse converter(Comentario comentario) {
         return new ComentarioResponse(comentario.getId(),
                 comentario.isAtivo() ? comentario.getConteudo() : "Esta mensagem foi excluída.",
-                comentario.getNomeAutor(),
+                comentario.getNomeAutor(), comentario.getGamertagAutor(),
                 comentario.getPapelAutor(), comentario.getIdAutor(), horarioDeBrasilia(comentario.getCriadoEm()),
                 comentario.isAtivo());
     }

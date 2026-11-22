@@ -26,10 +26,11 @@ class AdministradorAulasServiceTest {
     private final ModuloRepository modulos = mock(ModuloRepository.class);
     private final AulaRepository aulas = mock(AulaRepository.class);
     private final YoutubeService youtube = mock(YoutubeService.class);
+    private final VimeoService vimeo = spy(new VimeoService(mock(VimeoClient.class)));
     private final ProgressoAulaRepository progressos = mock(ProgressoAulaRepository.class);
     private final CursoService gestaoCursos = mock(CursoService.class);
     private final AdministradorAulasService service = new AdministradorAulasService(usuarios, cursos, modulos,
-            aulas, youtube, progressos, mock(LogAuditoriaService.class), gestaoCursos);
+            aulas, youtube, vimeo, progressos, mock(LogAuditoriaService.class), gestaoCursos);
 
     @Test
     void deveListarCursosAtivosParaAdministrador() {
@@ -73,6 +74,18 @@ class AdministradorAulasServiceTest {
         assertEquals("abcdefghijk", aula.getYoutubeVideoId());
         verify(progressos).deleteByIdAula(30L);
         verify(aulas).save(aula);
+    }
+
+    @Test
+    void devePreservarAulaEProgressoQuandoVimeoRecusa() {
+        Aula aula = cadastrarAula();
+        var dados = new AulaRequest("Novo", "Descricao", 2, "https://youtu.be/abcdefghijk",
+                "https://vimeo.com/123456789");
+        doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST)).when(vimeo).validarVideo(dados.vimeoUrl());
+        assertThrows(ResponseStatusException.class, () -> service.editarAula(30L, dados, 1L));
+        assertEquals(1, aula.getOrdem());
+        verify(aulas, never()).save(any());
+        verifyNoInteractions(progressos, youtube);
     }
 
     @Test
