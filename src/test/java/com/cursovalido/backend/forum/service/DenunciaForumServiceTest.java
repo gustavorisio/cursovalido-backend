@@ -1,6 +1,7 @@
 package com.cursovalido.backend.forum.service;
 
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.authentication.service.ModeracaoUsuarioService;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.forum.dto.DenunciaDtos.DecisaoDenunciaRequest;
 import com.cursovalido.backend.forum.dto.DenunciaDtos.DenunciaRequest;
@@ -33,8 +34,9 @@ class DenunciaForumServiceTest {
     private final UsuarioForumService usuariosForum = mock(UsuarioForumService.class);
     private final PrivilegiosAdministrativosService privilegios = mock(PrivilegiosAdministrativosService.class);
     private final LogAuditoriaService auditoria = mock(LogAuditoriaService.class);
+    private final ModeracaoUsuarioService moderacao = mock(ModeracaoUsuarioService.class);
     private final DenunciaForumService servico = new DenunciaForumService(denuncias, topicos, comentarios,
-            usuariosForum, privilegios, auditoria);
+            usuariosForum, privilegios, auditoria, moderacao);
     private Topico topico;
     private Comentario comentario;
 

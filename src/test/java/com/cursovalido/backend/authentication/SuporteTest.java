@@ -41,7 +41,7 @@ class SuporteTest {
                                 .enviar(anyString(), anyString(), anyString(), any(Runnable.class));
                 return MockMvcBuilders.standaloneSetup(new SuporteController(emails, destino, limites))
                                 .setControllerAdvice(new AutenticacaoExceptionHandler())
-                                .addFilters(new LimiteRequisicoesFilter(2), new TokenJwtFilter(null, null, null))
+                                .addFilters(new LimiteRequisicoesFilter(2), new TokenJwtFilter(null, null))
                                 .build();
         }
 

@@ -18,8 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class CursoController {
     private final CursoService servico;
 
-    public record CursoPublico(Long id, String titulo, String descricao, Long idTema, String nomeTema, Long idArea,
-            String capaJpeg) {
+    public record CursoPublico(Long id, String titulo, String descricao, Long idTema, String nomeTema, String capaJpeg) {
     }
 
     @GetMapping("/catalogo/cursos")
@@ -27,8 +26,7 @@ public class CursoController {
         return servico.listarPublicos().stream()
                 .map(curso -> new CursoPublico(curso.getId(), curso.getTitulo(), curso.getDescricao(),
                         curso.getTema() == null ? null : curso.getTema().getId(),
-                        curso.getTema() == null ? null : curso.getTema().getNome(),
-                        curso.getArea() == null ? null : curso.getArea().getId(), curso.getCapaJpeg()))
+                        curso.getTema() == null ? null : curso.getTema().getNome(), curso.getCapaJpeg()))
                 .toList();
     }
 

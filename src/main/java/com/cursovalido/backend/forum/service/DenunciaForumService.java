@@ -1,6 +1,8 @@
 package com.cursovalido.backend.forum.service;
 
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.authentication.service.ModeracaoUsuarioService;
+import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.forum.dto.DenunciaDtos.DecisaoDenunciaRequest;
 import com.cursovalido.backend.forum.dto.DenunciaDtos.DenunciaRegistradaResponse;
@@ -35,6 +37,7 @@ public class DenunciaForumService {
     private final UsuarioForumService usuariosForum;
     private final PrivilegiosAdministrativosService privilegios;
     private final LogAuditoriaService auditoria;
+    private final ModeracaoUsuarioService moderacao;
 
     @Transactional
     public DenunciaRegistradaResponse denunciar(TipoConteudoForum tipo, Long idConteudo, DenunciaRequest requisicao,
@@ -76,6 +79,15 @@ public class DenunciaForumService {
             throw new ConflitoException("Esta denúncia já foi analisada.");
         boolean procedente = Boolean.TRUE.equals(decisao.procedente());
         boolean remover = procedente && Boolean.TRUE.equals(decisao.removerConteudo());
+        if (Boolean.TRUE.equals(decisao.aplicarRestricao())) {
+            if (!procedente) throw new RequisicaoInvalidaException("A restrição só pode ser aplicada a uma denúncia procedente.");
+            if (decisao.escopoRestricao() == null || decisao.escopoRestricao() == com.cursovalido.backend.authentication.entity.EscopoSuspensao.TOPICOS
+                    || decisao.escopoRestricao() == com.cursovalido.backend.authentication.entity.EscopoSuspensao.COMENTARIOS) {
+                throw new RequisicaoInvalidaException("Escolha acesso à conta ou ao fórum para a restrição.");
+            }
+            moderacao.aplicar(denuncia.getIdAutorConteudo(),
+                    new SuspensaoRequest(decisao.escopoRestricao(), decisao.observacao(), decisao.expiraEm()), idAdministrador);
+        }
         String observacao = decisao.observacao().trim();
         if (remover) {
             removerConteudo(denuncia);

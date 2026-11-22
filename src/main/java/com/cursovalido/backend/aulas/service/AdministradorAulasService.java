@@ -92,9 +92,9 @@ public class AdministradorAulasService {
         String vimeoUrl = VimeoService.validarUrl(dados.vimeoUrl());
         String videoId = dados.youtubeUrl() == null || dados.youtubeUrl().isBlank()
                 ? null : youtube.validarVideo(dados.youtubeUrl());
-        if (vimeoUrl == null && videoId == null)
+        if (vimeoUrl == null || videoId == null)
             throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Informe um vídeo do Vimeo e/ou um vídeo reserva do YouTube.");
+                    "Informe um vídeo válido para o Server 1 (Vimeo) e para o Server 2 (YouTube).");
         if (!java.util.Objects.equals(videoId, aula.getYoutubeVideoId())
                 || !java.util.Objects.equals(vimeoUrl, aula.getVimeoVideoUrl()))
             progressos.deleteByIdAula(id);
