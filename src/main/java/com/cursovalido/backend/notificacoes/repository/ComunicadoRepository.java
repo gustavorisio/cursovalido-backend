@@ -14,6 +14,25 @@ import org.springframework.stereotype.Repository;
 public class ComunicadoRepository {
     private final JdbcTemplate jdbc;
 
+    // Serializa publicações de todos os administradores para proteger o máximo global.
+    public void bloquearPublicacoes() {
+        jdbc.execute("LOCK TABLE tb_comunicados IN SHARE ROW EXCLUSIVE MODE");
+    }
+
+    public boolean publicouRecentemente(Long autor, LocalDateTime desde) {
+        return jdbc.queryForObject("""
+                SELECT EXISTS (SELECT 1 FROM tb_publicacoes_comunicados
+                WHERE autor_id = ? AND ultima_publicacao_em > ?)
+                """, Boolean.class, autor, Timestamp.valueOf(desde));
+    }
+
+    public void registrarPublicacao(Long autor, LocalDateTime data) {
+        jdbc.update("""
+                INSERT INTO tb_publicacoes_comunicados (autor_id, ultima_publicacao_em) VALUES (?, ?)
+                ON CONFLICT (autor_id) DO UPDATE SET ultima_publicacao_em = EXCLUDED.ultima_publicacao_em
+                """, autor, Timestamp.valueOf(data));
+    }
+
     public ComunicadoResponse criar(String titulo, String conteudo, Long autor) {
         var chave = new GeneratedKeyHolder();
         var data = LocalDateTime.now();

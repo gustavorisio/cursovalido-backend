@@ -22,7 +22,17 @@ public class ComunicadoService {
     @Transactional
     public ComunicadoResponse publicar(Long administrador, ComunicadoRequest dados) {
         verificarPerfil(administrador, Perfil.ADMINISTRADOR);
+        repositorio.bloquearPublicacoes();
+        if (repositorio.contar() >= 30) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "O limite de 30 comunicados foi atingido. Exclua um comunicado antes de publicar outro.");
+        }
+        if (repositorio.publicouRecentemente(administrador, java.time.LocalDateTime.now().minusSeconds(30))) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Aguarde 30 segundos entre a criação de comunicados.");
+        }
         var comunicado = repositorio.criar(dados.titulo().trim(), dados.conteudo().trim(), administrador);
+        repositorio.registrarPublicacao(administrador, comunicado.criadoEm());
         auditoria.registrar(administrador, "PUBLICACAO_COMUNICADO", "Comunicado " + comunicado.id(), null);
         return comunicado;
     }

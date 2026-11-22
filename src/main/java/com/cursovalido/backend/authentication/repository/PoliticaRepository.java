@@ -6,6 +6,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PoliticaRepository extends JpaRepository<Politica, Long> {
+    List<Politica> findByAtivaFalseOrderByDataPublicacaoDescIdDesc();
+
     List<Politica> findByAtivaTrueOrderByDataPublicacaoDesc();
 
     boolean existsByAtivaTrueAndVersao(String versao);
