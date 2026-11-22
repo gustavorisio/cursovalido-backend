@@ -104,6 +104,54 @@ class QuestionarioServiceTest {
         assertEquals("Avaliação", plano.avaliacoes().getFirst().titulo());
     }
 
+    @Test
+    void erroRetornaPorcentagemEExplicacaoSemGabarito() {
+        var questionario = questionarioPublicado();
+        when(cursos.buscarParaMatricula(10L)).thenReturn(Optional.of(AulasTestSupport.curso()));
+        when(questionarios.findByIdCursoAndIdModulo(10L, null)).thenReturn(Optional.of(questionario));
+        var errado = service.responder(10L, null, new RespostasQuestionarioRequest(2, List.of(0)), 2L);
+        assertEquals(0, errado.acertos());
+        assertEquals(0, errado.percentual());
+        assertNull(errado.correcoes().getFirst().alternativaCorreta());
+        assertFalse(errado.correcoes().getFirst().acertou());
+        assertEquals("Some os valores", errado.correcoes().getFirst().explicacao());
+        var certo = service.responder(10L, null, new RespostasQuestionarioRequest(2, List.of(1)), 2L);
+        assertEquals(100, certo.percentual());
+        assertNull(certo.correcoes().getFirst().explicacao());
+        verify(tentativas, times(2)).saveAndFlush(any());
+    }
+
+    @Test
+    void consultaAposRecarregarExibePorcentagemSemGabarito() {
+        var questionario = questionarioPublicado();
+        when(questionarios.findByIdCursoAndIdModulo(10L, null)).thenReturn(Optional.of(questionario));
+        var tentativa = new com.cursovalido.backend.aulas.entity.TentativaQuestionario();
+        tentativa.setAcertos(0);
+        tentativa.setTotal(1);
+        tentativa.setRespostas(List.of(0));
+        when(tentativas.findFirstByIdAlunoAndIdQuestionarioAndVersaoOrderByIdDesc(2L, 5L, 2))
+                .thenReturn(Optional.of(tentativa));
+        var resultado = service.consultarAluno(10L, null, 2L).resultado();
+        assertEquals(0, resultado.percentual());
+        assertNull(resultado.correcoes().getFirst().alternativaCorreta());
+        when(questionarios.findByIdCursoAndPublicadoTrueOrderByIdAsc(10L)).thenReturn(List.of(questionario));
+        assertEquals(0, service.plano(10L, 2L).avaliacoes().getFirst().percentual());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({ "0,3,0", "1,3,33", "1,2,50", "3,4,75", "4,4,100" })
+    void porcentagemIndependeDeAcertarTodas(int acertos, int total, int esperado) {
+        var q = questionarioPublicado();
+        var pergunta = q.getPerguntas().getFirst();
+        q.getPerguntas().clear();
+        for (int i = 0; i < total; i++) q.getPerguntas().add(pergunta);
+        when(cursos.buscarParaMatricula(10L)).thenReturn(Optional.of(AulasTestSupport.curso()));
+        when(questionarios.findByIdCursoAndIdModulo(10L, null)).thenReturn(Optional.of(q));
+        var respostas = new java.util.ArrayList<Integer>();
+        for (int i = 0; i < total; i++) respostas.add(i < acertos ? 1 : 0);
+        assertEquals(esperado, service.responder(10L, null, new RespostasQuestionarioRequest(2, respostas), 2L).percentual());
+    }
+
     private Questionario questionarioPublicado() {
         Questao pergunta = new Questao();
         pergunta.setEnunciado("Quanto é 2 + 2?");
