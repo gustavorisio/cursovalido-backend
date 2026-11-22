@@ -35,8 +35,8 @@ class DocumentoVersoesMigracaoTest {
                 propriedades.get("spring.datasource.password").get().toString());
         Flyway flyway = FlywayConfig.configuracao().dataSource(fonte).load();
 
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
-        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
+        assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("4");
         return new JdbcTemplate(fonte);
     }
 }
