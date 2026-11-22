@@ -59,6 +59,10 @@ public class Topico {
         return usuarioAutor != null ? usuarioAutor.getNome() : nomeAutor;
     }
 
+    public String getGamertagAutor() {
+        return usuarioAutor != null ? usuarioAutor.getGamertag() : null;
+    }
+
     public String getPapelAutor() {
         return usuarioAutor != null ? usuarioAutor.getPerfil() : papelAutor;
     }

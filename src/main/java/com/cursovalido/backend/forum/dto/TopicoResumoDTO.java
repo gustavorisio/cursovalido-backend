@@ -7,6 +7,7 @@ public record TopicoResumoDTO(
                 String titulo,
                 String descricao,
                 String nomeAutor,
+                String gamertagAutor,
                 String papelAutor,
                 Long idAutor,
                 LocalDateTime criadoEm,

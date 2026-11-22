@@ -48,7 +48,7 @@ public class UsuarioForumService {
                 ? AnonimizacaoDados.abreviarNome(usuario.getNomeCompleto())
                 : usuario.getNomeCompleto();
         repositorioUsuarios.sincronizar(usuario.getId(), nome, VisibilidadeEmail.mascarar(usuario.getEmail()),
-                usuario.getPerfil().name(), usuario.isAtivo());
+                usuario.getPerfil().name(), usuario.isAtivo(), usuario.getGamertag());
     }
 
     // Verifica se o usuario possui o perfil de administrador.

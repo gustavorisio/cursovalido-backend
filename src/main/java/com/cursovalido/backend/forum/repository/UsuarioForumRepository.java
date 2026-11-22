@@ -17,8 +17,9 @@ public interface UsuarioForumRepository extends JpaRepository<UsuarioForum, Long
     java.util.Optional<UsuarioForum> bloquearPorId(@Param("id") Long id);
 
     @Transactional
-    default void sincronizar(Long id, String nome, String email, String perfil, boolean ativo) {
+    default void sincronizar(Long id, String nome, String email, String perfil, boolean ativo, String gamertag) {
         UsuarioForum usuario = findById(id).orElseGet(() -> new UsuarioForum(id, nome, email, perfil));
+        usuario.setGamertag(gamertag);
         usuario.setNome(nome);
         usuario.setEmail(email);
         usuario.setPerfil(perfil);

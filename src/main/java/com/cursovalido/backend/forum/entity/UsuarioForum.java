@@ -16,6 +16,8 @@ public class UsuarioForum {
     private Long id;
     @Column(name = "name", nullable = false)
     private String nome;
+    @Column(length = 15)
+    private String gamertag;
     @Column(nullable = false)
     private String email;
     @Column(name = "role", nullable = false)
