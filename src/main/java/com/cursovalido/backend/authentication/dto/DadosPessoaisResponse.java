@@ -5,7 +5,7 @@ import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record DadosPessoaisResponse(Long id, String nomeCompleto, String email,
+public record DadosPessoaisResponse(Long id, String nomeCompleto, String email, String gamertag,
                 String matricula,
                 Perfil perfil, boolean ativo, boolean emailConfirmado,
                 boolean doisFatoresAtivos,

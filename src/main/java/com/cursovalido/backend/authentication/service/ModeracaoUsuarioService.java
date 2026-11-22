@@ -3,8 +3,6 @@ package com.cursovalido.backend.authentication.service;
 import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
-import com.cursovalido.backend.authentication.security.VisibilidadeEmail;
-import com.cursovalido.backend.authentication.security.AnonimizacaoDados;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.authentication.validation.moderacao.ModeracaoValidation;
 import java.time.Instant;
@@ -67,6 +65,9 @@ public class ModeracaoUsuarioService {
 
     @Transactional
     public SuspensaoResponse aplicar(Long idUsuario, SuspensaoRequest dados, Long idAdministrador) {
+        if (dados.escopo() != EscopoSuspensao.CONTA && dados.escopo() != EscopoSuspensao.FORUM) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A restrição deve ser para conta ou fórum");
+        }
         Usuario alvo = ModeracaoValidation.verificarAlvo(idUsuario, idAdministrador, privilegios, usuarios);
         ModeracaoValidation.validarExpiracao(dados);
         for (var existente : vigentes(idUsuario, alvo)) {
@@ -106,8 +107,7 @@ public class ModeracaoUsuarioService {
                 privilegios);
         boolean podeExcluir = podeModerar
                 && (administradorPrincipal || usuario.getPerfil() != Perfil.ADMINISTRADOR);
-        return new UsuarioAdministracaoResposta(usuario.getId(), AnonimizacaoDados.primeiroNome(usuario.getNomeCompleto()),
-                VisibilidadeEmail.mascarar(usuario.getEmail()),
+        return new UsuarioAdministracaoResposta(usuario.getId(), usuario.getNomeCompleto(), usuario.getGamertag(),
                 usuario.getPerfil(), privilegios.ehPrincipal(usuario), usuario.isAtivo(), podeModerar, podeExcluir,
                 vigentes(usuario.getId(), usuario).stream().map(SuspensaoResponse::de).toList());
     }

@@ -56,32 +56,9 @@ public class ModeracaoConfiguration implements WebMvcConfigurer {
                     return bloquear(response, "FORUM_SUSPENSO",
                             moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.FORUM));
                 }
-                // Denunciar continua possivel com restricao de topicos ou comentarios: e uma ferramenta de protecao.
-                boolean denuncia = caminho.endsWith("/denuncias");
-                boolean conteudoForum = !denuncia && caminhoDeConteudoForum(caminho);
-                if (conteudoForum) {
-                    if (moderacao.restrito(usuario.getId(), EscopoSuspensao.TOPICOS)) {
-                        return bloquear(response, "TOPICOS_SUSPENSOS",
-                                moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.TOPICOS));
-                    }
-                    if (moderacao.restrito(usuario.getId(), EscopoSuspensao.COMENTARIOS)) {
-                        return bloquear(response, "COMENTARIOS_SUSPENSOS",
-                                moderacao.mensagemBanimento(usuario.getId(), EscopoSuspensao.COMENTARIOS));
-                    }
-                }
                 return true;
             }
         }).addPathPatterns("/api/**");
-    }
-
-    private boolean caminhoDeConteudoForum(String caminho) {
-        if (caminho.equals("/api/forum/topicos")) {
-            return true;
-        }
-        if (caminho.startsWith("/api/forum/topicos/")) {
-            return true;
-        }
-        return caminho.startsWith("/api/forum/comentarios/");
     }
 
     private boolean bloquear(HttpServletResponse response, String codigo, String mensagem) throws Exception {
