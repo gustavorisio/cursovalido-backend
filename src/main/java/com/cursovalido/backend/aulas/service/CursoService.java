@@ -21,7 +21,6 @@ public class CursoService {
     private final UsuarioRepository usuarios;
     private final LogAuditoriaService auditoria;
     private final TemaService temas;
-    private final com.cursovalido.backend.aulas.repository.AreaTecnologiaRepository areas;
 
     public List<Curso> listarPublicos() {
         return repositorio.findByAtivoTrueOrderByIdDesc();
@@ -83,9 +82,6 @@ public class CursoService {
         curso.setTitulo(dados.titulo().trim());
         curso.setDescricao(dados.descricao().trim());
         curso.setTema(dados.idTema() == null ? null : temas.buscar(dados.idTema()));
-        curso.setArea(dados.idArea() == null ? null
-                : areas.findById(dados.idArea()).orElseThrow(
-                        () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Area de tecnologia nao encontrada")));
     }
 
     private void verificarProfessor(Long idProfessor) {
