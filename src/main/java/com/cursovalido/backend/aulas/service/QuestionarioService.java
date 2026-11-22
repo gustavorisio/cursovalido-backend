@@ -172,14 +172,16 @@ public class QuestionarioService {
     }
 
     private ResultadoQuestionarioResponse resultado(Questionario q, TentativaQuestionario tentativa) {
+        boolean concluido = tentativa.getAcertos() == tentativa.getTotal();
         List<ResultadoQuestionarioResponse.Correcao> correcoes = new ArrayList<>();
         for (int i = 0; i < q.getPerguntas().size(); i++) {
             var p = q.getPerguntas().get(i);
-            correcoes.add(new ResultadoQuestionarioResponse.Correcao(i,
-                    tentativa.getRespostas().get(i) == p.getAlternativaCorreta(),
-                    p.getAlternativaCorreta(), p.getExplicacao()));
+            boolean acertou = tentativa.getRespostas().get(i) == p.getAlternativaCorreta();
+            correcoes.add(new ResultadoQuestionarioResponse.Correcao(i, acertou,
+                    concluido ? p.getAlternativaCorreta() : null, acertou ? null : p.getExplicacao()));
         }
-        return new ResultadoQuestionarioResponse(tentativa.getAcertos(), tentativa.getTotal(), percentual(tentativa),
+        return new ResultadoQuestionarioResponse(tentativa.getAcertos(), tentativa.getTotal(),
+                percentual(tentativa),
                 tentativa.getCriadoEm(), correcoes, List.of());
     }
 
