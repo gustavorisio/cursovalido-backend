@@ -9,7 +9,6 @@ import com.cursovalido.backend.forum.repository.ComentarioRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.ConflitoException;
-import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import org.springframework.stereotype.Service;
@@ -44,18 +43,24 @@ public class ComentarioService {
     // Cria um comentario em um topico aberto.
     @Transactional
     public Comentario criar(Long idTopico, Comentario comentario, Long idUsuario) {
-        UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
+        UsuarioForum usuario = servicoUsuarios.bloquearAtivo(idUsuario);
         Topico topico = servicoTopicos.buscarAtivo(idTopico);
 
         if (topico.isFechado()) {
             throw ConflitoException.topicoFechado();
         }
-        validarConteudo(idUsuario, comentario.getConteudo());
+        LocalDateTime agora = LocalDateTime.now(ZoneOffset.UTC);
+        if (repositorioComentarios.existsByIdAutorAndCriadoEmAfter(usuario.getId(), agora.minusSeconds(20))) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+                    "Você já enviou um comentário recentemente. Aguarde 20 segundos entre comentários, mesmo em tópicos diferentes.");
+        }
+        comentario.setConteudo(censurarConteudo(idUsuario, comentario.getConteudo()));
 
         comentario.setIdAutor(usuario.getId());
         comentario.setUsuarioAutor(usuario);
         comentario.setTopico(topico);
-        comentario.setCriadoEm(LocalDateTime.now(ZoneOffset.UTC));
+        comentario.setCriadoEm(agora);
         comentario.setAtivo(true);
 
         Comentario comentarioSalvo = repositorioComentarios.save(comentario);
@@ -76,7 +81,7 @@ public class ComentarioService {
         if (!comentario.isAtivo()) {
             throw RequisicaoInvalidaException.comentarioApagado();
         }
-        validarConteudo(idUsuario, dadosAtualizados.getConteudo());
+        dadosAtualizados.setConteudo(censurarConteudo(idUsuario, dadosAtualizados.getConteudo()));
 
         comentario.setConteudo(dadosAtualizados.getConteudo());
         Comentario comentarioSalvo = repositorioComentarios.save(comentario);
@@ -117,13 +122,12 @@ public class ComentarioService {
                 .orElseThrow(RecursoNaoEncontradoException::comentarioNaoEncontrado);
     }
 
-    private void validarConteudo(Long idUsuario, String texto) {
-        try {
-            filtroConteudo.validar(texto);
-        } catch (ConteudoOfensivoException excecao) {
-            registrar(idUsuario, "CONTEUDO_OFENSIVO_BLOQUEADO", "Comentario");
-            throw excecao;
+    private String censurarConteudo(Long idUsuario, String texto) {
+        String censurado = filtroConteudo.censurar(texto);
+        if (!java.util.Objects.equals(texto, censurado)) {
+            registrar(idUsuario, "CONTEUDO_OFENSIVO_OCULTADO", "Comentario");
         }
+        return censurado;
     }
 
     private void registrar(Long idUsuario, String tipo, String detalhes) {

@@ -19,7 +19,7 @@ public class FiltroConteudoOfensivo {
             "cuzao", "cuzinho", "arrombado", "arrombada", "desgraca", "desgracado", "desgracada", "otario",
             "otaria", "idiota", "idiotas", "imbecil", "imbecis", "retardado", "retardada", "retardados", "babaca", "babacas", "escroto", "escrota",
             "vagabundo", "vagabunda", "vadia", "vadias", "corno", "cornos", "corna", "cornas", "viado", "viados", "sapatao", "sapatoes", "traveco", "travecos", "mongoloide",
-            "lixo humano", "fuck", "fucking", "fucker", "motherfucker", "shit", "bitch", "asshole", "cunt",
+            "lixo", "lixo humano", "fodace", "foda-se", "pau no cu", "fuck", "fucking", "fucker", "motherfucker", "shit", "bitch", "asshole", "cunt",
             "nigger", "niggers", "nigga", "niggas", "faggot", "faggots", "retard"));
 
     // Radicais que cobrem variacoes como plural, diminutivo e aumentativo.
@@ -36,18 +36,46 @@ public class FiltroConteudoOfensivo {
     }
 
     public boolean contemTermoOfensivo(String texto) {
-        if (texto == null || texto.isBlank())
-            return false;
-        List<String> palavras = palavras(texto);
-        for (String palavra : palavras) {
-            if (ofensiva(palavra))
-                return true;
+        return texto != null && !texto.equals(censurar(texto));
+    }
+
+    // Mantém os índices do texto original para preservar acentos e pontuação fora das ofensas.
+    public String censurar(String texto) {
+        if (texto == null || texto.isBlank()) return texto;
+        var tokens = new ArrayList<Token>();
+        var matcher = java.util.regex.Pattern.compile("[\\p{L}\\p{M}\\p{N}@$]+").matcher(texto);
+        while (matcher.find()) {
+            tokens.add(new Token(colapsar(normalizar(matcher.group())), matcher.start(), matcher.end()));
         }
-        for (String juncao : juncoes(palavras)) {
-            if (ofensiva(juncao))
-                return true;
+        boolean[] ocultos = new boolean[texto.length()];
+        for (int i = 0; i < tokens.size(); i++) {
+            StringBuilder frase = new StringBuilder();
+            for (int j = i; j < tokens.size() && j < i + 4; j++) {
+                if (j > i) frase.append(' ');
+                frase.append(tokens.get(j).valor());
+                if (ofensiva(frase.toString())) marcar(ocultos, tokens.get(i).inicio(), tokens.get(j).fim());
+            }
+            if (tokens.get(i).valor().length() == 1) {
+                StringBuilder letras = new StringBuilder();
+                for (int j = i; j < tokens.size() && j < i + 32 && tokens.get(j).valor().length() == 1; j++) {
+                    letras.append(tokens.get(j).valor());
+                    if (ofensiva(colapsar(letras.toString())))
+                        marcar(ocultos, tokens.get(i).inicio(), tokens.get(j).fim());
+                }
+            }
         }
-        return false;
+        StringBuilder resultado = new StringBuilder();
+        for (int i = 0; i < texto.length(); i++) {
+            if (!ocultos[i]) resultado.append(texto.charAt(i));
+            else if (i == 0 || !ocultos[i - 1]) resultado.append("***");
+        }
+        return resultado.toString();
+    }
+
+    private record Token(String valor, int inicio, int fim) {}
+
+    private static void marcar(boolean[] ocultos, int inicio, int fim) {
+        java.util.Arrays.fill(ocultos, inicio, fim, true);
     }
 
     private boolean ofensiva(String palavra) {
@@ -55,31 +83,12 @@ public class FiltroConteudoOfensivo {
             return false;
         if (TERMOS.contains(palavra))
             return true;
+        if (palavra.contains(" ")) return false;
         for (String radical : RADICAIS) {
             if (palavra.startsWith(radical))
                 return true;
         }
         return false;
-    }
-
-    // Junta letras soltas e pares de palavras para detectar "p o r r a" e "lixo humano".
-    private List<String> juncoes(List<String> palavras) {
-        List<String> resultado = new ArrayList<>();
-        StringBuilder letras = new StringBuilder();
-        for (String palavra : palavras) {
-            if (palavra.length() == 1) {
-                letras.append(palavra);
-                continue;
-            }
-            if (letras.length() > 1)
-                resultado.add(colapsar(letras.toString()));
-            letras.setLength(0);
-        }
-        if (letras.length() > 1)
-            resultado.add(colapsar(letras.toString()));
-        for (int i = 0; i + 1 < palavras.size(); i++)
-            resultado.add(palavras.get(i) + " " + palavras.get(i + 1));
-        return resultado;
     }
 
     private static List<String> palavras(String texto) {

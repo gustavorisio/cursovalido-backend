@@ -12,6 +12,8 @@ public interface ComentarioRepository extends JpaRepository<Comentario, Long> {
     @EntityGraph(attributePaths = "usuarioAutor")
     Optional<Comentario> findById(Long id);
 
+    boolean existsByIdAutorAndCriadoEmAfter(Long idAutor, java.time.LocalDateTime desde);
+
     void deleteByIdAutor(Long idAutor);
 
     void deleteByTopicoId(Long idTopico);

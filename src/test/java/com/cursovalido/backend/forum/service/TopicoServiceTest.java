@@ -1,6 +1,5 @@
 package com.cursovalido.backend.forum.service;
 
-import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -217,34 +216,42 @@ class TopicoServiceTest {
     }
 
     @Test
-    void topicoComPalavraoNaoESalvoEFicaRegistradoNaAuditoria() {
+    void topicoComOfensaESalvoComAsteriscos() {
         Topico topico = new Topico();
         topico.setTitulo("Duvida");
         topico.setDescricao("que porra de erro");
         when(usuarios.bloquearAtivo(7L)).thenReturn(usuario);
-
-        assertThrows(ConteudoOfensivoException.class, () -> servico.criar(topico, 7L));
-
-        verify(repositorio, never()).save(any());
-        verify(auditoria).registrar(7L, "CONTEUDO_OFENSIVO_BLOQUEADO", "Topico", null);
+        when(repositorio.save(topico)).thenReturn(topico);
+        assertEquals("que *** de erro", servico.criar(topico, 7L).getDescricao());
+        verify(auditoria).registrar(7L, "CONTEUDO_OFENSIVO_OCULTADO", "Topico", null);
     }
 
     @Test
-    void edicaoComTermoOfensivoNoTituloERecusada() {
+    void edicaoOcultaOfensaNoTitulo() {
         Topico existente = new Topico();
         existente.setId(3L);
         existente.setIdAutor(7L);
-        existente.setTitulo("Antes");
-        existente.setDescricao("Texto");
         Topico dados = new Topico();
         dados.setTitulo("seu idiota");
         dados.setDescricao("Texto");
         when(usuarios.buscarAtivo(7L)).thenReturn(usuario);
         when(repositorio.findById(3L)).thenReturn(Optional.of(existente));
+        when(repositorio.save(existente)).thenReturn(existente);
+        assertEquals("seu ***", servico.editar(3L, dados, 7L).getTitulo());
+    }
 
-        assertThrows(ConteudoOfensivoException.class, () -> servico.editar(3L, dados, 7L));
-
-        assertEquals("Antes", existente.getTitulo());
+    @Test
+    void limiteDeTresMinutosImpedeSalvarOutroTopico() {
+        when(usuarios.bloquearAtivo(7L)).thenReturn(usuario);
+        when(repositorio.existsByIdAutorAndCriadoEmAfter(eq(7L), any())).thenReturn(true);
+        var inicio = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(3);
+        var erro = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> servico.criar(new Topico(), 7L));
+        assertEquals(429, erro.getStatusCode().value());
+        assertThat(erro.getReason()).contains("3 minutos");
+        var limite = org.mockito.ArgumentCaptor.forClass(java.time.LocalDateTime.class);
+        verify(repositorio).existsByIdAutorAndCriadoEmAfter(eq(7L), limite.capture());
+        assertThat(limite.getValue()).isBetween(inicio, java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(3));
         verify(repositorio, never()).save(any());
     }
 }
