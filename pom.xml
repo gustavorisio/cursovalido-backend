@@ -223,6 +223,60 @@
 												</limit>
 											</limits>
 										</rule>
+										<!-- Faixa solicitada para classes principais; as já acima de 58% não entram nesta regra. -->
+										<rule>
+											<element>CLASS</element>
+											<includes>
+												<include>com.cursovalido.backend.aulas.controller.AdministradorAulasController</include>
+												<include>com.cursovalido.backend.aulas.controller.AlunoAulasController</include>
+												<include>com.cursovalido.backend.aulas.controller.AulaController</include>
+												<include>com.cursovalido.backend.aulas.controller.CursoController</include>
+												<include>com.cursovalido.backend.aulas.controller.ModuloController</include>
+												<include>com.cursovalido.backend.aulas.controller.ProgressoAulaController</include>
+												<include>com.cursovalido.backend.aulas.controller.VideoInicioController</include>
+												<include>com.cursovalido.backend.aulas.controller.GamificacaoController</include>
+											</includes>
+											<limits>
+												<limit>
+													<counter>LINE</counter>
+													<value>COVEREDRATIO</value>
+													<minimum>0.50</minimum>
+													<maximum>0.58</maximum>
+												</limit>
+											</limits>
+										</rule>
+										<!-- Exceção autorizada: com cinco linhas, a cobertura mínima possível é 3/5 = 60%. -->
+										<rule>
+											<element>CLASS</element>
+											<includes>
+												<include>com.cursovalido.backend.aulas.controller.TemaController</include>
+												<include>com.cursovalido.backend.aulas.controller.QuestionarioController</include>
+											</includes>
+											<limits>
+												<limit>
+													<counter>LINE</counter>
+													<value>COVEREDRATIO</value>
+													<minimum>0.50</minimum>
+													<maximum>0.60</maximum>
+												</limit>
+											</limits>
+										</rule>
+										<!-- Exceção autorizada: classes pequenas sem faixa executável entre 50% e 58%. -->
+										<rule>
+											<element>CLASS</element>
+											<includes>
+												<include>com.cursovalido.backend.aulas.service.RankingAlunoService</include>
+												<include>com.cursovalido.backend.aulas.repository.RankingAlunoRepository</include>
+											</includes>
+											<limits>
+												<limit>
+													<counter>LINE</counter>
+													<value>COVEREDRATIO</value>
+													<minimum>0.50</minimum>
+													<maximum>1.00</maximum>
+												</limit>
+											</limits>
+										</rule>
 									</rules>
 								</configuration>
 							</execution>
