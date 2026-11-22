@@ -20,6 +20,10 @@ public class Comentario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    @Column(nullable = false)
+    private long versao;
+
     @NotBlank
     @Size(max = 5000)
     @Column(name = "content", length = 5000, nullable = false)

@@ -426,6 +426,7 @@ class ForumHttpIntegracaoTest {
 
         @Test
         void listarTopicos_comBuscaEPaginacao_deveFiltrarOrdenarEContarRespostasAtivas() {
+                autor = cadastrarEAutenticar(Perfil.PROFESSOR);
                 var primeiro = criarTopico("Java inicial");
                 criarComentario(primeiro.id(), "Resposta");
                 var apagado = criarComentario(primeiro.id(), "Apagado");
@@ -464,6 +465,7 @@ class ForumHttpIntegracaoTest {
 
         @Test
         void arquivarTopico_comAutor_deveDesativarEOcultarNaListagem() {
+                autor = cadastrarEAutenticar(Perfil.PROFESSOR);
                 var topico = criarTopico("Arquivar");
                 alterarEstado(topico.id(), "arquivar", autor.token());
                 assertThat(topicos.findById(topico.id()).orElseThrow().isAtivo()).isFalse();
@@ -480,6 +482,7 @@ class ForumHttpIntegracaoTest {
 
         @Test
         void fecharTopico_comAutor_devePersistirFechamento() {
+                autor = cadastrarEAutenticar(Perfil.PROFESSOR);
                 var topico = criarTopico("Fechar");
                 alterarEstado(topico.id(), "fechar", autor.token());
                 assertThat(topicos.findById(topico.id()).orElseThrow().isFechado()).isTrue();
@@ -541,13 +544,13 @@ class ForumHttpIntegracaoTest {
                 criarComentario(outro.id(), "Fora do topico");
                 excluirComentario(apagado.id(), autor.token());
                 var resposta = enviar(HttpMethod.GET, comentariosUrl(topico.id()), autor.token(), null,
-                                ComentarioResponse[].class);
+                                PaginaComentariosResponse.class);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(resposta.getBody()).extracting(ComentarioResponse::id).containsExactly(primeiro.id(),
+                assertThat(resposta.getBody().itens()).extracting(ComentarioResponse::id).containsExactly(primeiro.id(),
                                 segundo.id(), apagado.id());
-                assertThat(resposta.getBody()).extracting(ComentarioResponse::conteudo).containsExactly("Primeiro",
+                assertThat(resposta.getBody().itens()).extracting(ComentarioResponse::conteudo).containsExactly("Primeiro",
                                 "Segundo", "Esta mensagem foi excluída.");
-                assertThat(resposta.getBody()[2].ativo()).isFalse();
+                assertThat(resposta.getBody().itens().get(2).ativo()).isFalse();
         }
 
         @Test
@@ -687,6 +690,7 @@ class ForumHttpIntegracaoTest {
 
         @Test
         void criarComentario_comTopicoFechado_deveRetornar409SemPersistir() {
+                autor = cadastrarEAutenticar(Perfil.PROFESSOR);
                 var topico = criarTopico("Fechado");
                 alterarEstado(topico.id(), "fechar", autor.token());
                 verificarErro(enviar(HttpMethod.POST, comentariosUrl(topico.id()), autor.token(),
@@ -702,6 +706,7 @@ class ForumHttpIntegracaoTest {
 
         @Test
         void listarComentarios_comTopicoArquivado_deveRetornar404() {
+                autor = cadastrarEAutenticar(Perfil.PROFESSOR);
                 var topico = criarTopico("Arquivado");
                 alterarEstado(topico.id(), "arquivar", autor.token());
                 verificarErro(enviar(HttpMethod.GET, comentariosUrl(topico.id()), autor.token(), null, ErroHttp.class),
@@ -1097,6 +1102,7 @@ class ForumHttpIntegracaoTest {
 
         @Test
         void topicosExigemTresMinutosInclusiveAposArquivar() {
+                autor = cadastrarEAutenticar(Perfil.PROFESSOR);
                 var dados = new TopicoRequest("Primeiro", "Descricao");
                 var primeiro = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, TopicoResponse.class);
                 assertThat(primeiro.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -1138,6 +1144,76 @@ class ForumHttpIntegracaoTest {
                         new ComentarioRequest("OTÁRIO!"), ComentarioResponse.class);
                 assertThat(comentario.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(comentario.getBody().conteudo()).isEqualTo("***!");
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = { "fechar", "arquivar" })
+        void alunoNaoPodeFecharNemArquivarSeuTopico(String acao) {
+                var topico = criarTopico("Topico do aluno");
+                var resposta = enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id() + "/" + acao,
+                        autor.token(), null, String.class);
+                assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                var salvo = topicos.findById(topico.id()).orElseThrow();
+                assertThat(salvo.isAtivo()).isTrue();
+                assertThat(salvo.isFechado()).isFalse();
+        }
+
+        @Autowired
+        private org.springframework.transaction.PlatformTransactionManager transacoesComentarios;
+
+        @Test
+        void edicaoConcorrenteNaoReativaComentarioRemovido() throws Exception {
+                var topico = criarTopico("Concorrencia");
+                var publicado = criarComentario(topico.id(), "Original");
+                var carregou = new java.util.concurrent.CountDownLatch(1);
+                var continuar = new java.util.concurrent.CountDownLatch(1);
+                doAnswer(invocacao -> {
+                        carregou.countDown();
+                        if (!continuar.await(10, java.util.concurrent.TimeUnit.SECONDS)) throw new IllegalStateException("Timeout");
+                        return null;
+                }).when(auditoria).registrar(eq(autor.id()), eq("EDICAO_COMENTARIO"), anyString(), isNull());
+                var edicao = java.util.concurrent.CompletableFuture.supplyAsync(() ->
+                        enviar(HttpMethod.PUT, "/api/forum/comentarios/" + publicado.id(), autor.token(),
+                                new ComentarioRequest("Edicao concorrente"), String.class));
+                try {
+                        assertThat(carregou.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+                        new org.springframework.transaction.support.TransactionTemplate(transacoesComentarios).execute(status -> {
+                                var removido = comentarios.findById(publicado.id()).orElseThrow();
+                                removido.setAtivo(false);
+                                comentarios.saveAndFlush(removido);
+                                return null;
+                        });
+                } finally { continuar.countDown(); }
+                var resposta = edicao.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                assertThat(resposta.getBody()).contains("CONTEUDO_ALTERADO");
+                assertThat(comentarios.findById(publicado.id()).orElseThrow().isAtivo()).isFalse();
+        }
+
+        @Test
+        void comentariosSaoPaginadosELimiteNaoPodeSerContornado() {
+                var topico = criarTopico("Paginacao");
+                var original = criarComentario(topico.id(), "Original");
+                jdbc.update("""
+                        INSERT INTO tb_comments (content, author_id, topic_id, created_at, active, versao)
+                        SELECT 'Resposta ' || numero, author_id, topic_id, created_at + numero * INTERVAL '1 second', true, 0
+                        FROM tb_comments CROSS JOIN generate_series(1, 24) numero WHERE id = ?
+                        """, original.id());
+                var primeira = enviar(HttpMethod.GET, comentariosUrl(topico.id()), autor.token(), null,
+                        PaginaComentariosResponse.class).getBody();
+                var segunda = enviar(HttpMethod.GET, comentariosUrl(topico.id()) + "?page=1&size=20", autor.token(), null,
+                        PaginaComentariosResponse.class).getBody();
+                assertThat(primeira.itens()).hasSize(20);
+                assertThat(primeira.totalElementos()).isEqualTo(25);
+                assertThat(primeira.totalPaginas()).isEqualTo(2);
+                assertThat(segunda.itens()).hasSize(5);
+                assertThat(segunda.pagina()).isEqualTo(1);
+                assertThat(primeira.itens()).extracting(ComentarioResponse::id)
+                        .doesNotContainAnyElementsOf(segunda.itens().stream().map(ComentarioResponse::id).toList());
+                for (String parametros : java.util.List.of("size=51", "size=0", "page=-1")) {
+                        assertThat(enviar(HttpMethod.GET, comentariosUrl(topico.id()) + "?" + parametros, autor.token(), null,
+                                String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                }
         }
 
         private TopicoResponse criarTopico(String titulo) {

@@ -40,6 +40,17 @@ public class ComentarioService {
         return repositorioComentarios.listarPorTopicoAtivo(idTopico);
     }
 
+    public org.springframework.data.domain.Page<Comentario> listarPaginaPorTopico(Long idTopico, Long idUsuario,
+            int pagina, int tamanho) {
+        if (pagina < 0 || tamanho < 1 || tamanho > 50) {
+            throw new RequisicaoInvalidaException("Página deve ser maior ou igual a zero e tamanho deve estar entre 1 e 50.");
+        }
+        servicoTopicos.buscarAtivo(idTopico);
+        registrar(idUsuario, "CONSULTA_COMENTARIOS", "Topico " + idTopico);
+        return repositorioComentarios.listarPorTopicoAtivo(idTopico,
+                org.springframework.data.domain.PageRequest.of(pagina, tamanho));
+    }
+
     // Cria um comentario em um topico aberto.
     @Transactional
     public Comentario criar(Long idTopico, Comentario comentario, Long idUsuario) {
