@@ -31,6 +31,8 @@ import java.util.List;
 @RequestMapping("/api/forum")
 @RequiredArgsConstructor
 public class ForumController {
+    private final com.cursovalido.backend.forum.service.FiltroConteudoOfensivo filtroConteudo =
+            new com.cursovalido.backend.forum.service.FiltroConteudoOfensivo();
     private static final ZoneId BRASILIA = ZoneId.of("America/Sao_Paulo");
 
     private final TopicoService servicoTopicos;
@@ -136,21 +138,21 @@ public class ForumController {
     }
 
     private TopicoResumoDTO converter(TopicoResumoDTO topico) {
-        return new TopicoResumoDTO(topico.id(), topico.titulo(), topico.descricao(), topico.nomeAutor(), topico.gamertagAutor(),
+        return new TopicoResumoDTO(topico.id(), filtroConteudo.censurar(topico.titulo()), filtroConteudo.censurar(topico.descricao()), topico.nomeAutor(), topico.gamertagAutor(),
                 topico.papelAutor(), topico.idAutor(), horarioDeBrasilia(topico.criadoEm()),
                 topico.quantidadeRespostas(),
                 topico.ativo(), topico.fechado());
     }
 
     private TopicoResponse converter(Topico topico) {
-        return new TopicoResponse(topico.getId(), topico.getTitulo(), topico.getDescricao(), topico.getNomeAutor(), topico.getGamertagAutor(),
+        return new TopicoResponse(topico.getId(), filtroConteudo.censurar(topico.getTitulo()), filtroConteudo.censurar(topico.getDescricao()), topico.getNomeAutor(), topico.getGamertagAutor(),
                 topico.getPapelAutor(), topico.getIdAutor(), horarioDeBrasilia(topico.getCriadoEm()),
                 topico.getQuantidadeRespostas(), topico.isAtivo(), topico.isFechado());
     }
 
     private ComentarioResponse converter(Comentario comentario) {
         return new ComentarioResponse(comentario.getId(),
-                comentario.isAtivo() ? comentario.getConteudo() : "Esta mensagem foi excluída.",
+                comentario.isAtivo() ? filtroConteudo.censurar(comentario.getConteudo()) : "Esta mensagem foi excluída.",
                 comentario.getNomeAutor(), comentario.getGamertagAutor(),
                 comentario.getPapelAutor(), comentario.getIdAutor(), horarioDeBrasilia(comentario.getCriadoEm()),
                 comentario.isAtivo());

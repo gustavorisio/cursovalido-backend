@@ -121,21 +121,24 @@ public class DenunciaForumService {
         boolean ativo;
         Long idTopico;
         String nomeAutor;
+        String gamertagAutor;
         if (denuncia.getTipo() == TipoConteudoForum.TOPICO) {
             Topico topico = topicos.findById(denuncia.getIdConteudo()).orElse(null);
             trecho = topico == null ? null : resumir(topico.getTitulo() + " - " + topico.getDescricao());
             ativo = topico != null && topico.isAtivo();
             idTopico = denuncia.getIdConteudo();
             nomeAutor = topico == null ? null : topico.getNomeAutor();
+            gamertagAutor = topico == null ? null : topico.getGamertagAutor();
         } else {
             Comentario comentario = comentarios.findById(denuncia.getIdConteudo()).orElse(null);
             trecho = comentario == null ? null : resumir(comentario.getConteudo());
             ativo = comentario != null && comentario.isAtivo();
             idTopico = comentario == null || comentario.getTopico() == null ? null : comentario.getTopico().getId();
             nomeAutor = comentario == null ? null : comentario.getNomeAutor();
+            gamertagAutor = comentario == null ? null : comentario.getGamertagAutor();
         }
         return new DenunciaResponse(denuncia.getId(), denuncia.getTipo(), denuncia.getIdConteudo(), idTopico, trecho,
-                ativo, denuncia.getIdAutorConteudo(), nomeAutor, denuncia.getMotivo(), denuncia.getDescricao(),
+                ativo, denuncia.getIdAutorConteudo(), nomeAutor, gamertagAutor, denuncia.getMotivo(), denuncia.getDescricao(),
                 denuncias.countByTipoAndIdConteudoAndStatus(denuncia.getTipo(), denuncia.getIdConteudo(),
                         StatusDenuncia.PENDENTE),
                 denuncia.getStatus(), denuncia.getCriadaEm(), denuncia.getDecididaEm(),
