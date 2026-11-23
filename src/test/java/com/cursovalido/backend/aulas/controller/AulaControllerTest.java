@@ -5,9 +5,12 @@ import com.cursovalido.backend.aulas.entity.*;
 import com.cursovalido.backend.aulas.service.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import static com.cursovalido.backend.support.ControllerFixtures.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static com.cursovalido.backend.support.ControllerFixtures.*;
 
 class AulaControllerTest {
     private final AulaService servico = mock(AulaService.class);
@@ -29,7 +32,7 @@ class AulaControllerTest {
     void consultaAulaUsandoIdentidadeAutenticadaEPreservaNegacaoDeAcesso() {
         when(servico.buscarAtivo(30L, 7L)).thenReturn(aula());
         assertThat(controlador.buscar(30L, usuario()).titulo()).isEqualTo("Primeira aula");
-        var negado = new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN);
+        var negado = new ResponseStatusException(HttpStatus.FORBIDDEN);
         when(servico.buscarAtivo(99L, 7L)).thenThrow(negado);
         assertThatThrownBy(() -> controlador.buscar(99L, usuario())).isSameAs(negado);
     }

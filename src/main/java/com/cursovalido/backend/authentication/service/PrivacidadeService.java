@@ -7,6 +7,7 @@ import com.cursovalido.backend.authentication.repository.PrivacidadeRepository;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.authentication.validation.politica.ConteudoDocumento;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +53,7 @@ public class PrivacidadeService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<PoliticaResponse> listarHistorico() {
+    public List<PoliticaResponse> listarHistorico() {
         return repositorio.findByAtivaFalseOrderByDataPublicacaoDescIdDesc().stream()
                 .map(this::converter).toList();
     }

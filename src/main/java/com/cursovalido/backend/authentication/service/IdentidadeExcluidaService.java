@@ -5,6 +5,7 @@ import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.ContaExcluidaRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class IdentidadeExcluidaService {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest(email.trim().toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8)));
-        } catch (java.security.NoSuchAlgorithmException erro) {
+        } catch (NoSuchAlgorithmException erro) {
             throw new IllegalStateException("Nao foi possivel proteger o e-mail", erro);
         }
     }

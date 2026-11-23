@@ -6,6 +6,8 @@ import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.authentication.validation.moderacao.ModeracaoValidation;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -53,8 +55,8 @@ public class ModeracaoUsuarioService {
         var fim = aplicaveis.stream().map(SuspensaoUsuario::getExpiraEm).max(Instant::compareTo).orElse(null);
         if (fim == null)
             return "Seu acesso está restrito.";
-        String data = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
-                .withZone(java.time.ZoneId.of("America/Sao_Paulo")).format(fim);
+        String data = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
+                .withZone(ZoneId.of("America/Sao_Paulo")).format(fim);
         return "Você foi banido temporariamente" + acesso + " até " + data + " (horário de Brasília).";
     }
 
@@ -100,8 +102,7 @@ public class ModeracaoUsuarioService {
             Usuario usuario) {
         boolean podeModerar = ModeracaoValidation.podeModerar(administrador, usuario, administradorPrincipal,
                 privilegios);
-        boolean podeExcluir = podeModerar
-                && (administradorPrincipal || usuario.getPerfil() != Perfil.ADMINISTRADOR);
+        boolean podeExcluir = podeModerar && administradorPrincipal;
         return new UsuarioAdministracaoResposta(usuario.getId(), usuario.getNomeCompleto(), usuario.getGamertag(),
                 usuario.getPerfil(), privilegios.ehPrincipal(usuario), usuario.isAtivo(), podeModerar, podeExcluir,
                 vigentes(usuario.getId(), usuario).stream().map(SuspensaoResponse::de).toList());

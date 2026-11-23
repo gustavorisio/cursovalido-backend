@@ -84,7 +84,7 @@ public class YoutubeService {
             throw linkInvalido();
         }
         String id = null;
-        // O caractere abaixo separa os parametros da URL; nao e um operador logico.
+        // Separa os parâmetros da URL.
         for (String parametro : uri.getRawQuery().split("&")) {
             String[] partes = parametro.split("=", 2);
             if (!"v".equals(partes[0])) {

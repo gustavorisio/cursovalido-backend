@@ -4,8 +4,10 @@ import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.ModeracaoUsuarioService;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +20,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class ModeracaoConfiguration implements WebMvcConfigurer {
     private final ModeracaoUsuarioService moderacao;
     private final PrivilegiosAdministrativosService privilegios;
-    private static final com.fasterxml.jackson.databind.ObjectMapper JSON = new com.fasterxml.jackson.databind.ObjectMapper();
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -65,8 +67,8 @@ public class ModeracaoConfiguration implements WebMvcConfigurer {
         response.setStatus(403);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        // O motivo da suspensao e escrito pelo administrador: a serializacao evita JSON quebrado por aspas.
-        var corpo = new java.util.LinkedHashMap<String, String>();
+        // Serializa o motivo da suspensão como JSON.
+        var corpo = new LinkedHashMap<String, String>();
         corpo.put("codigo", codigo);
         corpo.put("mensagem", mensagem);
         JSON.writeValue(response.getWriter(), corpo);

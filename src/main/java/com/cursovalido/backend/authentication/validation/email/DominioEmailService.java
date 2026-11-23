@@ -36,8 +36,7 @@ public class DominioEmailService {
     }
 
     private boolean consultar(InitialDirContext contexto, String dominio) throws NamingException {
-        // O provedor JNDI transforma varios tipos em uma consulta DNS ANY.
-        // Resolvedores podem responder ANY sem registros mesmo para dominios validos.
+        // Consulta cada tipo separadamente para evitar consultas DNS ANY.
         var atributos = contexto.getAttributes(dominio, new String[] { "MX" });
         Attribute mx = atributos.get("MX");
         if (possuiRegistros(mx)) {
@@ -50,9 +49,9 @@ public class DominioEmailService {
                     return true;
                 }
             }
-            return false; // Null MX: o dominio declara que nao recebe e-mails.
+            return false; // O registro MX nulo indica que o domínio não recebe e-mails.
         }
-        // Na ausencia de MX, SMTP permite entrega ao endereco do proprio dominio.
+        // Consulta A e AAAA quando não há registro MX.
         Attribute ipv4 = contexto.getAttributes(dominio, new String[] { "A" }).get("A");
         if (possuiRegistros(ipv4))
             return true;

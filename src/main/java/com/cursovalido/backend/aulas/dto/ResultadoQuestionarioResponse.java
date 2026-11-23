@@ -1,11 +1,12 @@
 package com.cursovalido.backend.aulas.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record ResultadoQuestionarioResponse(int acertos, int total, int percentual, LocalDateTime respondidoEm,
         List<Correcao> correcoes, List<Revisao> revisoes,
-        @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         RecompensaQuestionarioResponse recompensa) {
     public ResultadoQuestionarioResponse(int acertos, int total, int percentual, LocalDateTime respondidoEm,
             List<Correcao> correcoes, List<Revisao> revisoes) {

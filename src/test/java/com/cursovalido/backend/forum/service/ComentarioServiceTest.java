@@ -1,9 +1,5 @@
 package com.cursovalido.backend.forum.service;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.forum.entity.*;
 import com.cursovalido.backend.forum.exception.*;
@@ -15,9 +11,15 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ComentarioServiceTest {
@@ -215,9 +217,9 @@ class ComentarioServiceTest {
         when(repositorio.existsByIdAutorAndCriadoEmAfter(eq(7L), any())).thenReturn(true);
         var inicio = LocalDateTime.now(ZoneOffset.UTC).minusSeconds(20);
         assertThatThrownBy(() -> servico.criar(10L, comentario, 7L))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("20 segundos");
-        var limite = org.mockito.ArgumentCaptor.forClass(LocalDateTime.class);
+        var limite = ArgumentCaptor.forClass(LocalDateTime.class);
         verify(repositorio).existsByIdAutorAndCriadoEmAfter(eq(7L), limite.capture());
         assertThat(limite.getValue()).isBetween(inicio, LocalDateTime.now(ZoneOffset.UTC).minusSeconds(20));
         verify(repositorio, never()).save(any());

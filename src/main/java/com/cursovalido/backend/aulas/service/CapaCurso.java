@@ -1,6 +1,7 @@
 package com.cursovalido.backend.aulas.service;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Base64;
 import javax.imageio.ImageIO;
 import org.springframework.http.HttpStatus;
@@ -41,7 +42,7 @@ final class CapaCurso {
                     leitor.dispose();
                 }
             }
-        } catch (java.io.IOException | IllegalArgumentException e) {
+        } catch (IOException | IllegalArgumentException e) {
             throw invalida();
         }
     }

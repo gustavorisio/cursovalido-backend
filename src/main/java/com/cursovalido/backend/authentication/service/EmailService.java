@@ -4,17 +4,22 @@ import com.cursovalido.backend.authentication.entity.ConviteAcesso;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 @Service
 public class EmailService {
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(EmailService.class);
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private final RestClient cliente;
     private final String enderecoRemetente;
     private final String urlAplicacao;
@@ -47,7 +52,7 @@ public class EmailService {
                         + "Este link expira em 30 minutos.");
     }
 
-    // Envia o codigo usado na segunda etapa do login.
+    // Envia o código usado na segunda etapa do login.
     public void enviarCodigo2fa(Usuario usuario, String codigo) {
         enviar(usuario.getEmail(), "Codigo de acesso do Curso Valido",
                 "Ola, " + usuario.getNomeCompleto() + ".\n\n"
@@ -68,7 +73,7 @@ public class EmailService {
                         + "Se voce nao esperava este convite, ignore esta mensagem.");
     }
 
-    // Avisa o professor ou administrador convidado de que o login ja pode ser feito.
+    // Avisa o professor ou administrador convidado de que o login já pode ser feito.
     public void enviarAcessoAprovado(Usuario usuario) {
         enviar(usuario.getEmail(), "Seu acesso ao Curso Valido foi aprovado",
                 "Ola, " + usuario.getNomeCompleto() + ".\n\n"
@@ -107,7 +112,7 @@ public class EmailService {
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientException excecao) {
-            if (excecao instanceof org.springframework.web.client.RestClientResponseException resposta) {
+            if (excecao instanceof RestClientResponseException resposta) {
                 log.warn("Resend recusou o envio de e-mail (HTTP {}). Verifique os eventos no painel do provedor.",
                         resposta.getStatusCode().value());
             } else {
@@ -118,6 +123,6 @@ public class EmailService {
     }
 
     private record EmailRequest(String from, List<String> to, String subject, String text,
-            @com.fasterxml.jackson.annotation.JsonProperty("reply_to") @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String replyTo) {
+            @JsonProperty("reply_to") @JsonInclude(JsonInclude.Include.NON_NULL) String replyTo) {
     }
 }

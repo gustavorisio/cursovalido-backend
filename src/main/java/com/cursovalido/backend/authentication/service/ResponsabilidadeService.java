@@ -14,7 +14,7 @@ public class ResponsabilidadeService {
     private final AceiteResponsabilidadeRepository aceites;
     private final LogAuditoriaService auditoria;
 
-    // Cada alteracao de conteudo exige uma nova versao e novo aceite.
+    // Cada alteração de conteúdo exige uma nova versão e novo aceite.
     public TermoResponsabilidadeResponse documento(Perfil perfil) {
         String conteudo = switch (perfil) {
             case PROFESSOR -> "Ao aceitar, declaro possuir os direitos e autorizacoes sobre os conteudos que publico, "

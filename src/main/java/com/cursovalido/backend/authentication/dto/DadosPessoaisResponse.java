@@ -2,6 +2,7 @@ package com.cursovalido.backend.authentication.dto;
 
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,7 +13,7 @@ public record DadosPessoaisResponse(Long id, String nomeCompleto, String email, 
                 StatusAprovacao statusAprovacao,
                 Boolean declarouMaiorIdade, Boolean aceitouTermosLgpd, String versaoTermos,
                 LocalDateTime dataHoraAceite, List<Consentimento> historicoConsentimentos,
-                @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) List<RegistroAuditoria> registrosAuditoria) {
+                @JsonInclude(JsonInclude.Include.NON_NULL) List<RegistroAuditoria> registrosAuditoria) {
         public record Consentimento(String versao, LocalDateTime dataHoraAceite,
                         LocalDateTime dataHoraArquivamento, String motivo) {
         }

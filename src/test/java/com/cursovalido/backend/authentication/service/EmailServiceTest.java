@@ -5,18 +5,18 @@ import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
 import java.time.LocalDateTime;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 class EmailServiceTest {
 
@@ -36,7 +36,7 @@ class EmailServiceTest {
         servidor.expect(requestTo("https://emails.example.com/emails"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(jsonPath("$.to[0]").value("aluno@example.com"))
-                .andExpect(jsonPath("$.text", org.hamcrest.Matchers.containsString("123456")))
+                .andExpect(jsonPath("$.text", Matchers.containsString("123456")))
                 .andRespond(withSuccess());
 
         service.enviarCodigo2fa(usuario(), "123456");
@@ -69,9 +69,9 @@ class EmailServiceTest {
         var convite = new ConviteAcesso("admin@example.com", Perfil.ADMINISTRADOR, "hash",
                 LocalDateTime.now().plusDays(2));
         servidor.expect(requestTo("https://emails.example.com/emails"))
-                .andExpect(jsonPath("$.text", org.hamcrest.Matchers.containsString("como administrador")))
-                .andExpect(jsonPath("$.text", org.hamcrest.Matchers.containsString("uma unica vez")))
-                .andExpect(jsonPath("$.text", org.hamcrest.Matchers.containsString("48 horas")))
+                .andExpect(jsonPath("$.text", Matchers.containsString("como administrador")))
+                .andExpect(jsonPath("$.text", Matchers.containsString("uma unica vez")))
+                .andExpect(jsonPath("$.text", Matchers.containsString("48 horas")))
                 .andRespond(withSuccess());
 
         service.enviarConvite(convite, "token-teste");
@@ -119,7 +119,7 @@ class EmailServiceTest {
 
     private void esperarMensagemCom(String trecho) {
         servidor.expect(requestTo("https://emails.example.com/emails"))
-                .andExpect(jsonPath("$.text", org.hamcrest.Matchers.containsString(trecho)))
+                .andExpect(jsonPath("$.text", Matchers.containsString(trecho)))
                 .andRespond(withSuccess());
     }
 

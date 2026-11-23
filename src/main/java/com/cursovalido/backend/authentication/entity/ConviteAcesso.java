@@ -62,7 +62,7 @@ public class ConviteAcesso {
         this.quantidadeEnvios = 1;
     }
 
-    // Cada reenvio gera um novo link; o anterior deixa de funcionar.
+    // Invalida o link anterior ao reenviar o convite.
     public void renovar(String novoTokenHash, LocalDateTime novaExpiracao) {
         tokenHash = novoTokenHash;
         expiraEm = novaExpiracao;
@@ -76,7 +76,7 @@ public class ConviteAcesso {
         return expiraEm.isBefore(LocalDateTime.now());
     }
 
-    // O link recebido por e-mail comprova o acesso ao endereco; o convite so pode ser usado uma vez.
+    // Confirma o e-mail pelo link de uso único.
     public void concluir() {
         emailConfirmado = true;
         status = StatusConvite.CONCLUIDO;

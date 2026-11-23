@@ -8,6 +8,7 @@ import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -75,7 +76,7 @@ public class CursoService {
     }
 
     void atualizarDados(Curso curso, CursoRequest dados) {
-        if (!java.util.Objects.equals(dados.capaJpeg(), curso.getCapaJpeg())) {
+        if (!Objects.equals(dados.capaJpeg(), curso.getCapaJpeg())) {
             CapaCurso.validar(dados.capaJpeg());
         }
         curso.setCapaJpeg(dados.capaJpeg());

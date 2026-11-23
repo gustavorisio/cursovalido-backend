@@ -1,15 +1,20 @@
 package com.cursovalido.backend.authentication;
 
-import com.cursovalido.backend.authentication.configuration.AutenticacaoExceptionHandler;
-import com.cursovalido.backend.authentication.validation.senha.SenhaValidaValidator;
 import com.cursovalido.backend.aulas.controller.CursoController;
 import com.cursovalido.backend.aulas.service.CursoService;
+import com.cursovalido.backend.authentication.configuration.AutenticacaoExceptionHandler;
+import com.cursovalido.backend.authentication.validation.senha.SenhaValidaValidator;
 import com.cursovalido.backend.forum.controller.ForumController;
+import com.cursovalido.backend.forum.dto.TopicoRequest;
+import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
+import com.cursovalido.backend.forum.repository.TopicoRepository;
 import com.cursovalido.backend.forum.service.*;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -29,9 +34,9 @@ class ValidacaoModulosHttpTest {
     void tituloAceita80ERejeita81Caracteres() {
         try (var factory = Validation.buildDefaultValidatorFactory()) {
             var validator = factory.getValidator();
-            assertTrue(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(80), "Texto"))
+            assertTrue(validator.validate(new TopicoRequest("a".repeat(80), "Texto"))
                     .isEmpty());
-            assertFalse(validator.validate(new com.cursovalido.backend.forum.dto.TopicoRequest("a".repeat(81), "Texto"))
+            assertFalse(validator.validate(new TopicoRequest("a".repeat(81), "Texto"))
                     .isEmpty());
         }
     }
@@ -44,7 +49,7 @@ class ValidacaoModulosHttpTest {
                 new ForumController(forum, mock(ComentarioService.class), mock(UsuarioForumService.class)),
                 new CursoController(cursos))
                 .setCustomArgumentResolvers(
-                        new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
+                        new AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new AutenticacaoExceptionHandler()).build();
         for (String rota : new String[] { "/api/forum/topicos", "/api/cursos" }) {
             mvc.perform(post(rota).contentType(MediaType.APPLICATION_JSON).content("{}"))
@@ -67,10 +72,10 @@ class ValidacaoModulosHttpTest {
 
     @Test
     void paginacaoInvalidaNaoConsultaRepositorio() {
-        var repositorio = mock(com.cursovalido.backend.forum.repository.TopicoRepository.class);
+        var repositorio = mock(TopicoRepository.class);
         var servico = new TopicoService(repositorio, mock(UsuarioForumService.class), null);
         for (int[] valores : new int[][] { { -1, 5 }, { 0, 0 }, { 0, -1 }, { 0, 101 } }) {
-            var erro = assertThrows(com.cursovalido.backend.forum.exception.RequisicaoInvalidaException.class,
+            var erro = assertThrows(RequisicaoInvalidaException.class,
                     () -> servico.listarRecentes(valores[0], valores[1], ""));
             assertEquals(400, erro.getStatusCode().value());
         }

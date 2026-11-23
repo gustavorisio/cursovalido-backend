@@ -1,6 +1,7 @@
 package com.cursovalido.backend.authentication.dto;
 
 import com.cursovalido.backend.authentication.validation.senha.SenhaValida;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.*;
 import java.text.Normalizer;
 import java.util.Locale;
@@ -20,10 +21,10 @@ public record CadastroUsuarioRequest(
         return "CadastroUsuarioRequest[email=" + email + "]";
     }
 
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     @AssertTrue(message = "As senhas devem coincidir.")
     public boolean isConfirmacaoSenhaValida() {
-        // Campos vazios ja recebem a mensagem de preenchimento obrigatorio.
+        // Campos vazios já recebem a mensagem de preenchimento obrigatório.
         return senha == null || confirmacaoSenha == null || senha.equals(confirmacaoSenha);
     }
 

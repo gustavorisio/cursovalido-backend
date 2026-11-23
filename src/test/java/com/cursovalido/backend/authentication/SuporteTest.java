@@ -5,21 +5,24 @@ import com.cursovalido.backend.authentication.configuration.LimiteRequisicoesFil
 import com.cursovalido.backend.authentication.configuration.TokenJwtFilter;
 import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
 import com.cursovalido.backend.authentication.service.EmailService;
+import com.cursovalido.backend.authentication.suporte.LimiteSuporteException;
+import com.cursovalido.backend.authentication.suporte.LimiteSuporteService;
 import com.cursovalido.backend.authentication.suporte.SuporteController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import static org.mockito.Mockito.*;
+
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class SuporteTest {
         private EmailService emails;
         private MockMvc mvc;
-        private com.cursovalido.backend.authentication.suporte.LimiteSuporteService limites;
+        private LimiteSuporteService limites;
         private static final String JSON = """
                         {"emailConta":"conta@example.com","usuario":"Maria","emailContato":"retorno@example.com",
                          "motivo":"REVISAO_BANIMENTO","assunto":"Revisar bloqueio",
@@ -33,7 +36,7 @@ class SuporteTest {
         }
 
         private MockMvc criar(String destino) {
-                limites = mock(com.cursovalido.backend.authentication.suporte.LimiteSuporteService.class);
+                limites = mock(LimiteSuporteService.class);
                 doAnswer(chamada -> {
                         chamada.getArgument(3, Runnable.class).run();
                         return null;
@@ -47,7 +50,7 @@ class SuporteTest {
 
         @Test
         void limiteDiarioRetornaCodigoETempoParaNovaTentativa() throws Exception {
-                doThrow(new com.cursovalido.backend.authentication.suporte.LimiteSuporteException(86400))
+                doThrow(new LimiteSuporteException(86400))
                                 .when(limites).enviar(anyString(), anyString(), anyString(), any(Runnable.class));
                 mvc.perform(post("/api/suporte/solicitacoes").header("X-Forwarded-For", "8.8.8.8")
                                 .contentType(MediaType.APPLICATION_JSON).content(JSON))

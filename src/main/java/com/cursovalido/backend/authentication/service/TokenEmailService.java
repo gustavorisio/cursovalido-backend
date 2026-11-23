@@ -26,7 +26,7 @@ public class TokenEmailService {
     private final SecureRandom aleatorio = new SecureRandom();
 
     @Transactional
-    // Gera um novo codigo de 2FA e invalida o anterior.
+    // Gera um novo código de 2FA e invalida o anterior.
     public String criarCodigo2fa(Usuario usuario) {
         verificarLimite(usuario, CODIGO_2FA);
         repositorio.invalidarTokensAtivos(usuario.getId(), CODIGO_2FA);
@@ -42,7 +42,7 @@ public class TokenEmailService {
     }
 
     @Transactional
-    // Confere o codigo 2FA e marca o token como usado.
+    // Confere o código 2FA e marca o token como usado.
     public Usuario validarCodigo2fa(String email, String codigo) {
         TokenEmail registro = localizarCodigo2fa(email, codigo);
         registro.setUtilizado(true);
@@ -50,7 +50,7 @@ public class TokenEmailService {
         return registro.getUsuario();
     }
 
-    // Confere o codigo sem consumi-lo e devolve o identificador do usuario dono do codigo.
+    // Confere o código sem consumi-lo e devolve o identificador do usuário dono do código.
     @Transactional
     public Long conferirCodigo2fa(String email, String codigo) {
         return localizarCodigo2fa(email, codigo).getUsuario().getId();
@@ -67,7 +67,7 @@ public class TokenEmailService {
     }
 
     @Transactional
-    // Cria o token usado na alteracao de senha.
+    // Cria o token usado na alteração de senha.
     public String criarAlteracaoSenha(Usuario usuario) {
         verificarLimite(usuario, ALTERACAO_SENHA);
         repositorio.invalidarTokensAtivos(usuario.getId(), ALTERACAO_SENHA);
@@ -145,7 +145,7 @@ public class TokenEmailService {
         }
     }
 
-    // Retorna o identificador do token de alteracao de senha.
+    // Retorna o identificador do token de alteração de senha.
     public String finalidadeAlteracaoSenha() {
         return ALTERACAO_SENHA;
     }

@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-// Politica de senha unica para cadastro, convite, recuperacao e alteracao.
-// O limite de 72 bytes acompanha o BCrypt, que ignora o que passa desse tamanho.
+// Política de senha única para cadastro, convite, recuperação e alteração.
+// Limita a senha ao tamanho aceito pelo BCrypt.
 public final class RegrasSenha {
     public static final int MAXIMO_BYTES = 72;
     public static final int MINIMO_CARACTERES = 8;
@@ -20,7 +20,7 @@ public final class RegrasSenha {
     private RegrasSenha() {
     }
 
-    // Lista todas as regras que a senha ainda nao atende, na ordem em que aparecem para o usuario.
+    // Lista as regras de senha não atendidas.
     public static List<String> problemas(String senha) {
         List<String> problemas = new ArrayList<>();
         String valor = senha == null ? "" : senha;

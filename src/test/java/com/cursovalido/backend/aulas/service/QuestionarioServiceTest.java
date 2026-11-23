@@ -1,21 +1,27 @@
 package com.cursovalido.backend.aulas.service;
 
-import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.authentication.service.LogAuditoriaService;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import com.cursovalido.backend.aulas.dto.QuestionarioRequest;
 import com.cursovalido.backend.aulas.dto.RespostasQuestionarioRequest;
-import com.cursovalido.backend.aulas.entity.Questionario;
 import com.cursovalido.backend.aulas.entity.Questao;
+import com.cursovalido.backend.aulas.entity.Questionario;
+import com.cursovalido.backend.aulas.entity.TentativaQuestionario;
 import com.cursovalido.backend.aulas.repository.CursoRepository;
 import com.cursovalido.backend.aulas.repository.ModuloRepository;
 import com.cursovalido.backend.aulas.repository.QuestionarioRepository;
 import com.cursovalido.backend.aulas.repository.TentativaQuestionarioRepository;
+import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -27,7 +33,7 @@ class QuestionarioServiceTest {
     private final CursoRepository cursos = mock(CursoRepository.class);
     private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
     private final ModuloRepository modulos = mock(ModuloRepository.class);
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void configurarModulo() {
         when(modulos.findById(20L)).thenReturn(Optional.of(AulasTestSupport.modulo()));
         when(modulos.findByIdCursoAndAtivoTrueOrderByOrdemAscIdAsc(10L)).thenReturn(List.of(AulasTestSupport.modulo()));
@@ -54,7 +60,7 @@ class QuestionarioServiceTest {
     void deveRecusarQuestionarioForaDeModulo() {
         when(usuarios.findById(1L)).thenReturn(Optional.of(AulasTestSupport.usuario(Perfil.PROFESSOR)));
         var pergunta = new QuestionarioRequest.Pergunta("Questão", List.of("A", "B"), 1, List.of("Explicação", ""), null);
-        var dados = new QuestionarioRequest("Avaliação", true, java.util.Collections.nCopies(11, pergunta));
+        var dados = new QuestionarioRequest("Avaliação", true, Collections.nCopies(11, pergunta));
 
         var erro = assertThrows(ResponseStatusException.class, () -> service.salvar(10L, null, dados, 1L));
 
@@ -131,7 +137,7 @@ class QuestionarioServiceTest {
     void consultaAposRecarregarExibePorcentagemSemGabarito() {
         var questionario = questionarioPublicado();
         when(questionarios.findByIdCursoAndIdModulo(10L, 20L)).thenReturn(Optional.of(questionario));
-        var tentativa = new com.cursovalido.backend.aulas.entity.TentativaQuestionario();
+        var tentativa = new TentativaQuestionario();
         tentativa.setAcertos(0);
         tentativa.setTotal(1);
         tentativa.setRespostas(List.of(0));
@@ -144,8 +150,8 @@ class QuestionarioServiceTest {
         assertEquals(0, service.plano(10L, 2L).avaliacoes().getFirst().percentual());
     }
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({ "0,3,0", "1,3,33", "1,2,50", "3,4,75", "4,4,100" })
+    @ParameterizedTest
+    @CsvSource({ "0,3,0", "1,3,33", "1,2,50", "3,4,75", "4,4,100" })
     void porcentagemIndependeDeAcertarTodas(int acertos, int total, int esperado) {
         var q = questionarioPublicado();
         var pergunta = q.getPerguntas().getFirst();
@@ -153,7 +159,7 @@ class QuestionarioServiceTest {
         for (int i = 0; i < total; i++) q.getPerguntas().add(pergunta);
         when(cursos.buscarParaMatricula(10L)).thenReturn(Optional.of(AulasTestSupport.curso()));
         when(questionarios.findByIdCursoAndIdModulo(10L, 20L)).thenReturn(Optional.of(q));
-        var respostas = new java.util.ArrayList<Integer>();
+        var respostas = new ArrayList<Integer>();
         for (int i = 0; i < total; i++) respostas.add(i < acertos ? 1 : 0);
         assertEquals(esperado, service.responder(10L, 20L, new RespostasQuestionarioRequest(2, respostas), 2L).percentual());
     }

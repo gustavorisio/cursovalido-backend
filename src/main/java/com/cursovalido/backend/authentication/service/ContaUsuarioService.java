@@ -2,22 +2,24 @@ package com.cursovalido.backend.authentication.service;
 
 import com.cursovalido.backend.authentication.dto.DadosPessoaisResponse;
 import com.cursovalido.backend.authentication.entity.AceiteTermoArquivado;
+import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.entity.StatusAprovacao;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.AceiteTermoArquivadoRepository;
 import com.cursovalido.backend.authentication.repository.LogAuditoriaRepository;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
 import com.cursovalido.backend.authentication.repository.TokenEmailRepository;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.authentication.validation.conta.ContaValidation;
-import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+import com.cursovalido.backend.authentication.validation.conta.ContaValidation;
 import com.cursovalido.backend.forum.repository.UsuarioForumRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -91,7 +93,7 @@ public class ContaUsuarioService {
     }
 
     @Transactional
-    // Remove a conta e trata os registros ligados ao usuario.
+    // Envia o código para confirmar a exclusão da conta.
     public void solicitarExclusao(Long idUsuario) {
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
@@ -110,8 +112,7 @@ public class ContaUsuarioService {
 
     @Transactional
     public void excluirPelaAdministracao(Long idUsuario, Long idAdministrador) {
-        privilegios.verificarAdministrador(idAdministrador);
-        boolean administradorPrincipal = privilegios.ehPrincipal(idAdministrador);
+        privilegios.verificarPrincipal(idAdministrador);
         if (idUsuario.equals(idAdministrador)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Nao e permitido excluir a propria conta pelo painel");
@@ -121,10 +122,6 @@ public class ContaUsuarioService {
         if (privilegios.ehPrincipal(usuario)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Nao e permitido excluir o administrador principal");
-        }
-        if (usuario.getPerfil() == Perfil.ADMINISTRADOR && !administradorPrincipal) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Somente o root pode remover outro administrador");
         }
         if (usuario.getExcluidoEm() != null)
             return;
@@ -147,7 +144,7 @@ public class ContaUsuarioService {
         Usuario usuario = repositorio.findById(idUsuario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
         ContaValidation.validarPendencia(usuario);
-        usuario.setStatusAprovacao(com.cursovalido.backend.authentication.entity.StatusAprovacao.REJEITADO);
+        usuario.setStatusAprovacao(StatusAprovacao.REJEITADO);
         encerrarConta(usuario);
     }
 
@@ -163,7 +160,7 @@ public class ContaUsuarioService {
         arquivarAceite(usuario);
         usuario.setAtivo(false);
         usuario.setEmailConfirmado(false);
-        usuario.setExcluidoEm(java.time.LocalDateTime.now());
+        usuario.setExcluidoEm(LocalDateTime.now());
         usuario.setNomeCompleto("Usuario excluido");
         usuario.setEmail("excluido-" + idUsuario + "@conta.invalid");
         usuario.setSenha("");

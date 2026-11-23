@@ -38,8 +38,7 @@ public class LimiteSuporteService {
         var chaves = Stream.of("ip:" + ip, "email:" + normalizar(emailConta), "email:" + normalizar(emailContato))
                 .map(LimiteSuporteService::hash).distinct().toList();
         transacao.executeWithoutResult(status -> {
-            // Trava compartilhada entre instancias: duas requisicoes simultaneas nao
-            // ultrapassam o limite.
+            // Bloqueia o contador no banco antes de conferir a cota.
             jdbc.queryForObject("SELECT id FROM tb_suporte_controle WHERE id = 1 FOR UPDATE", Integer.class);
             Instant agora = relogio.instant();
             Instant liberacao = agora;
@@ -53,7 +52,7 @@ public class LimiteSuporteService {
             }
             SuporteValidation.validarLimite(agora, liberacao);
             envio.run();
-            // Falha no provedor desfaz a transacao e nao consome a cota por uma hora.
+            // Falha no provedor desfaz a transação e não consome a cota por uma hora.
             Instant fim = relogio.instant().plus(Duration.ofHours(1));
             jdbc.update("DELETE FROM tb_suporte_limites WHERE expira_em <= ?", Timestamp.from(agora));
             for (String chave : chaves) {
