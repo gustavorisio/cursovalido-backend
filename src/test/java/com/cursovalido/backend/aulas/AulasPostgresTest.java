@@ -211,13 +211,31 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         }
 
         @Test
+        @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+        void migracaoPreservaExplicacoesEArquivaAvaliacaoExterna() {
+                String schema = "explicacoes_" + java.util.UUID.randomUUID().toString().replace("-", "");
+                FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).target("4").load().migrate();
+                jdbc.update("insert into " + schema + ".tb_cursos (id, titulo, descricao, criado_em) values (1, 'Curso', 'Descrição', current_timestamp)");
+                jdbc.update("insert into " + schema + ".tb_modulos (id, titulo, descricao, curso_id, ordem, criado_em) values (20, 'Módulo', 'Descrição', 1, 1, current_timestamp)");
+                jdbc.update("insert into " + schema + ".tb_questionarios (id, curso_id, modulo_id, titulo, publicado) values (1, 1, null, 'Externa', true), (2, 1, 20, 'Módulo', true)");
+                jdbc.update("insert into " + schema + ".tb_questoes (id, questionario_id, enunciado, explicacao, alternativa_correta, ordem) values (1, 1, 'Pergunta', 'Motivo antigo', 1, 0), (2, 2, 'Pergunta', 'Motivo antigo', 1, 0)");
+                jdbc.update("insert into " + schema + ".tb_alternativas_questao (questao_id, ordem, texto) values (1, 0, 'A'), (1, 1, 'B'), (1, 2, 'C'), (2, 0, 'A'), (2, 1, 'B'), (2, 2, 'C')");
+                FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).load().migrate();
+                assertThat(jdbc.queryForList("select explicacao from " + schema + ".tb_explicacoes_alternativa where questao_id = 2 order by ordem", String.class))
+                                .containsExactly("Motivo antigo", "", "Motivo antigo");
+                assertThat(jdbc.queryForObject("select publicado from " + schema + ".tb_questionarios where id = 1", Boolean.class)).isFalse();
+                assertThat(jdbc.queryForObject("select publicado from " + schema + ".tb_questionarios where id = 2", Boolean.class)).isTrue();
+                assertThat(jdbc.queryForObject("select count(*) from " + schema + ".tb_questionarios", Long.class)).isEqualTo(2);
+        }
+
+        @Test
         void bancoNovoAplicaSchemaUnificadoSemConteudoLegalPadrao() {
                 String schema = "v3_" + java.util.UUID.randomUUID().toString().replace("-", "");
                 var flyway = FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
                 var pendentes = flyway.info().pending();
                 assertThat(pendentes).extracting(item -> item.getVersion().getVersion())
-                                .containsExactly("1", "2", "3", "4");
-                assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
+                                .containsExactly("1", "2", "3", "4", "5");
+                assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5);
                 assertThat(flyway.info().pending()).isEmpty();
                 assertThat(flyway.info().current().getVersion())
                                 .isEqualTo(pendentes[pendentes.length - 1].getVersion());

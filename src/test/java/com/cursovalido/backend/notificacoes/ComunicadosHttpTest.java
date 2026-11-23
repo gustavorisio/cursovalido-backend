@@ -36,6 +36,8 @@ import static org.assertj.core.api.Assertions.*;
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @Import(ComunicadosHttpTest.MigracaoTeste.class)
 class ComunicadosHttpTest {
+        @Autowired
+        private org.springframework.security.web.SecurityFilterChain cadeiaSeguranca;
         @LocalServerPort
         int porta;
         @Autowired
@@ -66,7 +68,10 @@ class ComunicadosHttpTest {
                 jdbc.update("DELETE FROM tb_comunicados");
                 if (politicas.listarAtivas().isEmpty())
                         repositorioPoliticas.save(new Politica("Termos de teste", "comunicados-teste", "Conteudo de teste"));
-                cliente = RestClient.builder().baseUrl("http://127.0.0.1:" + porta)
+                cliente = RestClient.builder().requestInterceptor((request, corpo, execucao) -> {
+                        com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
+                        return execucao.execute(request, corpo);
+                }).baseUrl("http://127.0.0.1:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
                                 }).build();
                 admin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));

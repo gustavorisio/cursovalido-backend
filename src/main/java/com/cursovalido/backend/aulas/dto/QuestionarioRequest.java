@@ -9,6 +9,16 @@ public record QuestionarioRequest(@NotBlank @Size(max = 255) String titulo, bool
         public record Pergunta(@NotBlank @Size(max = 1000) String enunciado,
                         @NotNull @Size(min = 2, max = 6, message = "Cada pergunta deve ter de 2 a 6 alternativas.") List<@NotBlank @Size(max = 500) String> alternativas,
                         @NotNull @Min(0) @Max(5) Integer alternativaCorreta,
-                        @NotBlank @Size(max = 2000) String explicacao, @Positive Long idAulaRevisao) {
+                        @NotNull @Size(min = 2, max = 6) List<@NotNull @Size(max = 2000) String> explicacoes, @Positive Long idAulaRevisao) {
+                @com.fasterxml.jackson.annotation.JsonIgnore
+                @AssertTrue(message = "Informe uma explicação para cada alternativa incorreta.")
+                public boolean isExplicacoesValidas() {
+                        if (alternativas == null || explicacoes == null || alternativaCorreta == null
+                                        || alternativaCorreta < 0 || alternativaCorreta >= alternativas.size()
+                                        || explicacoes.size() != alternativas.size()) return false;
+                        for (int i = 0; i < alternativas.size(); i++)
+                                if (i != alternativaCorreta && (explicacoes.get(i) == null || explicacoes.get(i).isBlank())) return false;
+                        return true;
+                }
         }
 }
