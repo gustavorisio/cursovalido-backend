@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class SincronizacaoGamificacao {
     private final GamificacaoService gamificacao;
 
-    // Registra os cursos concluidos antes da criacao do sistema de niveis.
+    // Atualiza apenas as métricas de cursos concluídos. Não concede XP.
     @EventListener(ApplicationReadyEvent.class)
     public void sincronizarConclusoesAnteriores() {
         int registradas = 0;
@@ -22,7 +22,7 @@ public class SincronizacaoGamificacao {
             for (var matricula : gamificacao.matriculasPendentesDeConclusao()) {
                 try {
                     if (gamificacao.registrarConclusao(matricula.getIdAluno(), matricula.getIdCurso(),
-                            matricula.getId()) != null)
+                            matricula.getId()))
                         registradas++;
                 } catch (RuntimeException excecao) {
                     log.warn("Nao foi possivel atualizar a conclusao da matricula {}", matricula.getId());

@@ -1,6 +1,5 @@
 package com.cursovalido.backend.aulas.service;
 
-import com.cursovalido.backend.aulas.dto.RecompensaCursoResponse;
 import com.cursovalido.backend.aulas.entity.Matricula;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,7 @@ class SincronizacaoGamificacaoTest {
         when(gamificacao.matriculasPendentesDeConclusao()).thenReturn(List.of(primeira, segunda));
         when(gamificacao.registrarConclusao(1L, 10L, 40L)).thenThrow(new IllegalStateException("falha"));
         when(gamificacao.registrarConclusao(1L, 10L, 41L))
-                .thenReturn(new RecompensaCursoResponse(10L, 100, 1, 2, true, null));
+                .thenReturn(true);
 
         assertThatCode(sincronizacao::sincronizarConclusoesAnteriores).doesNotThrowAnyException();
         verify(gamificacao).registrarConclusao(1L, 10L, 41L);

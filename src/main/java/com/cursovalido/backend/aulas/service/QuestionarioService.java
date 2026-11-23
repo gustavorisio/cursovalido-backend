@@ -26,6 +26,7 @@ public class QuestionarioService {
     private final AdministradorAulasService administracao;
     private final AlunoAulasService aluno;
     private final LogAuditoriaService auditoria;
+    private final GamificacaoService gamificacao;
 
     @Transactional(readOnly = true)
     public QuestionarioGestaoResponse consultarGestao(Long idCurso, Long idModulo, Long idUsuario) {
@@ -114,7 +115,10 @@ public class QuestionarioService {
         tentativa.setRespostas(new ArrayList<>(dados.respostas()));
         tentativa.setCriadoEm(LocalDateTime.now());
         tentativas.saveAndFlush(tentativa);
-        return resultado(questionario, tentativa);
+        var recompensa = gamificacao.registrarAprovacao(idAluno, questionario, acertos);
+        var resultado = resultado(questionario, tentativa);
+        return new ResultadoQuestionarioResponse(resultado.acertos(), resultado.total(), resultado.percentual(),
+                resultado.respondidoEm(), resultado.correcoes(), resultado.revisoes(), recompensa);
     }
 
     @Transactional(readOnly = true)

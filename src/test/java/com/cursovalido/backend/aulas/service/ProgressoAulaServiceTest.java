@@ -109,18 +109,6 @@ class ProgressoAulaServiceTest {
         verify(gamificacao).registrarConclusao(1L, 10L, 40L);
     }
 
-    @Test
-    void concluirComRecompensaDevolveOXpConcedidoPelaGamificacao() {
-        permitirEscrita();
-        when(progressos.saveAndFlush(any())).thenAnswer(invocacao -> invocacao.getArgument(0));
-        var recompensa = new com.cursovalido.backend.aulas.dto.RecompensaCursoResponse(10L, 150, 1, 2, true, null);
-        when(gamificacao.registrarConclusao(1L, 10L, 40L)).thenReturn(recompensa);
-
-        var resultado = servico.concluirComRecompensa(30L, 1L);
-
-        assertThat(resultado.progresso().isConcluida()).isTrue();
-        assertThat(resultado.recompensa()).isSameAs(recompensa);
-    }
 
     @Test
     void repetirConclusaoNaoAlteraDataNemAudita() {

@@ -14,7 +14,7 @@ class GamificacaoControllerTest {
     @Test
     void consultaAGamificacaoDoAlunoAutenticado() {
         var servico = mock(GamificacaoService.class);
-        var resposta = new GamificacaoResponse(2, 50, 150, 100, 33, 150, 1, false);
+        var resposta = new GamificacaoResponse(2, 50, 150, 100, 33, 150, 1, 1, false);
         when(servico.consultar(1L)).thenReturn(resposta);
 
         var aluno = new UsuarioAutenticado(1L, "a@x.com", "s", Perfil.ALUNO, true, true, true);
