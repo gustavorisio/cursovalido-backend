@@ -17,7 +17,6 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class QuestionarioService {
-    private static final int LIMITE_PERGUNTAS_AVALIACAO = 10;
     private final QuestionarioRepository questionarios;
     private final TentativaQuestionarioRepository tentativas;
     private final CursoRepository cursos;
@@ -37,14 +36,11 @@ public class QuestionarioService {
     @Transactional
     public QuestionarioGestaoResponse salvar(Long idCurso, Long idModulo, QuestionarioRequest dados, Long idUsuario) {
         verificarGestor(idCurso, idModulo, idUsuario);
-        if (idModulo == null && dados.perguntas().size() > LIMITE_PERGUNTAS_AVALIACAO) {
-            throw erro(HttpStatus.BAD_REQUEST, "A avaliação do curso pode ter no máximo 10 perguntas.");
-        }
         cursos.buscarParaMatricula(idCurso)
                 .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Curso nao encontrado"));
         for (var pergunta : dados.perguntas()) {
-            if (pergunta.alternativaCorreta() >= pergunta.alternativas().size()) {
-                throw erro(HttpStatus.BAD_REQUEST, "A alternativa correta nao existe nesta pergunta");
+            if (!pergunta.isExplicacoesValidas()) {
+                throw erro(HttpStatus.BAD_REQUEST, "Informe uma explicação para cada alternativa incorreta e uma alternativa correta válida");
             }
         }
         Questionario questionario = questionarios.findByIdCursoAndIdModulo(idCurso, idModulo)
@@ -63,7 +59,7 @@ public class QuestionarioService {
             pergunta.setEnunciado(dadosPergunta.enunciado().trim());
             pergunta.setAlternativas(new ArrayList<>(dadosPergunta.alternativas().stream().map(String::trim).toList()));
             pergunta.setAlternativaCorreta(dadosPergunta.alternativaCorreta());
-            pergunta.setExplicacao(dadosPergunta.explicacao().trim());
+            pergunta.setExplicacoes(new ArrayList<>(dadosPergunta.explicacoes().stream().map(String::trim).toList()));
             questionario.getPerguntas().add(pergunta);
         }
         questionarios.saveAndFlush(questionario);
@@ -129,7 +125,7 @@ public class QuestionarioService {
         List<PlanoEstudoResponse.Avaliacao> avaliacoes = new ArrayList<>();
         for (var questionario : questionarios.findByIdCursoAndPublicadoTrueOrderByIdAsc(idCurso)) {
             if (!disponivel(questionario)
-                    || (questionario.getIdModulo() != null && !modulosAtivos.contains(questionario.getIdModulo())))
+                    || !modulosAtivos.contains(questionario.getIdModulo()))
                 continue;
             var tentativa = ultima(questionario, idAluno);
             avaliacoes.add(new PlanoEstudoResponse.Avaliacao(questionario.getIdModulo(), questionario.getTitulo(),
@@ -155,7 +151,7 @@ public class QuestionarioService {
 
     private void verificarModulo(Long idCurso, Long idModulo) {
         if (idModulo == null)
-            return;
+            throw erro(HttpStatus.BAD_REQUEST, "Selecione um módulo para o questionário.");
         Modulo modulo = modulos.findById(idModulo)
                 .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Modulo nao encontrado"));
         if (!modulo.isAtivo() || !idCurso.equals(modulo.getIdCurso()))
@@ -178,7 +174,7 @@ public class QuestionarioService {
             var p = q.getPerguntas().get(i);
             boolean acertou = tentativa.getRespostas().get(i) == p.getAlternativaCorreta();
             correcoes.add(new ResultadoQuestionarioResponse.Correcao(i, acertou,
-                    concluido ? p.getAlternativaCorreta() : null, acertou ? null : p.getExplicacao()));
+                    concluido ? p.getAlternativaCorreta() : null, acertou ? null : p.getExplicacoes().get(tentativa.getRespostas().get(i))));
         }
         return new ResultadoQuestionarioResponse(tentativa.getAcertos(), tentativa.getTotal(),
                 percentual(tentativa),
@@ -193,7 +189,7 @@ public class QuestionarioService {
         return new QuestionarioGestaoResponse(q.getId(), q.getTitulo(), q.isPublicado(), q.getVersao(),
                 q.getPerguntas().stream()
                         .map(p -> new QuestionarioRequest.Pergunta(p.getEnunciado(), List.copyOf(p.getAlternativas()),
-                                p.getAlternativaCorreta(), p.getExplicacao(),
+                                p.getAlternativaCorreta(), List.copyOf(p.getExplicacoes()),
                                 null))
                         .toList());
     }

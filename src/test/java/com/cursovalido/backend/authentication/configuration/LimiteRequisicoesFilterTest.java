@@ -9,6 +9,14 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class LimiteRequisicoesFilterTest {
+    @Test
+    void exportacaoEHeadCompartilhamIntervaloDoFiltroUnico() throws Exception {
+        var filtro = new LimiteRequisicoesFilter(2, 2);
+        assertThat(enviar(filtro, "GET", "/api/autenticacao/exportar-dados", "192.0.2.1").getStatus()).isEqualTo(200);
+        assertThat(enviar(filtro, "HEAD", "/api/autenticacao/exportar-dados", "192.0.2.1").getStatus()).isEqualTo(429);
+        assertThat(enviar(filtro, "GET", "/api/autenticacao/exportar-dados", "192.0.2.1").getStatus()).isEqualTo(429);
+        assertThat(enviar(filtro, "GET", "/api/autenticacao/exportar-dados", "192.0.2.2").getStatus()).isEqualTo(200);
+    }
     private MockHttpServletResponse enviar(LimiteRequisicoesFilter filtro, String metodo, String caminho, String ip) throws Exception {
         var request = new MockHttpServletRequest(metodo, caminho);
         request.setRemoteAddr(ip);

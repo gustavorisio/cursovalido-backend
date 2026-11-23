@@ -101,15 +101,15 @@ class FiltrosSegurancaTest {
     }
 
     @Test
-    void limitaPedidosPorIpEPermiteOutroIp() throws Exception {
+    void limitaAutenticacaoPadraoPorIpEPermiteOutroIp() throws Exception {
         var filtro = new LimiteRequisicoesFilter();
         var cadeia = mock(FilterChain.class);
-        for (int i = 0; i < 31; i++) {
+        for (int i = 0; i < 6; i++) {
             var requisicao = new MockHttpServletRequest("POST", "/api/autenticacao/login");
             requisicao.setRemoteAddr("192.0.2.1");
             var resposta = new MockHttpServletResponse();
             filtro.doFilter(requisicao, resposta, cadeia);
-            assertEquals(i < 30 ? 200 : 429, resposta.getStatus());
+            assertEquals(i < 5 ? 200 : 429, resposta.getStatus());
         }
         var outra = new MockHttpServletRequest("POST", "/api/autenticacao/login");
         outra.setRemoteAddr("192.0.2.2");

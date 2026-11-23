@@ -172,26 +172,20 @@ public class SecurityConfig {
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
                                                 .hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/diagnostico",
-                                                                "/api/aluno/cursos/*/modulos/*/questionario",
+                                                .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/modulos/*/questionario",
                                                                 "/api/aluno/cursos/*/plano")
                                                 .hasRole("ALUNO")
                                                 .requestMatchers(HttpMethod.POST,
-                                                                "/api/aluno/cursos/*/diagnostico/respostas",
                                                                 "/api/aluno/cursos/*/modulos/*/questionario/respostas")
                                                 .hasRole("ALUNO")
-                                                .requestMatchers(HttpMethod.GET, "/api/professor/cursos/*/diagnostico",
-                                                                "/api/professor/cursos/*/modulos/*/questionario")
+                                                .requestMatchers(HttpMethod.GET, "/api/professor/cursos/*/modulos/*/questionario")
                                                 .hasRole("PROFESSOR")
-                                                .requestMatchers(HttpMethod.PUT, "/api/professor/cursos/*/diagnostico",
-                                                                "/api/professor/cursos/*/modulos/*/questionario")
+                                                .requestMatchers(HttpMethod.PUT, "/api/professor/cursos/*/modulos/*/questionario")
                                                 .hasRole("PROFESSOR")
                                                 .requestMatchers(HttpMethod.GET,
-                                                                "/api/administracao/cursos/*/diagnostico",
                                                                 "/api/administracao/cursos/*/modulos/*/questionario")
                                                 .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT,
-                                                                "/api/administracao/cursos/*/diagnostico",
                                                                 "/api/administracao/cursos/*/modulos/*/questionario")
                                                 .hasRole("ADMINISTRADOR")
                                                 // Comunicados: gestao administrativa e leitura por conta.
@@ -263,7 +257,7 @@ public class SecurityConfig {
                                 .addFilterBefore(tokenJwtFiltro, UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(new HttpsFilter(httpsObrigatorio),
                                                 TokenJwtFilter.class)
-                                .addFilterBefore(new LimiteRequisicoesFilter(limiteRequisicoes, limiteAutenticacao),
+                                .addFilterAfter(new LimiteRequisicoesFilter(limiteRequisicoes, limiteAutenticacao),
                                                 TokenJwtFilter.class);
                 return http.build();
         }
@@ -288,7 +282,7 @@ public class SecurityConfig {
                                 .map(String::trim).filter(origem -> !origem.isEmpty()).distinct().toList());
                 configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"));
                 configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "Cache-Control"));
-                configuracao.setExposedHeaders(List.of("Content-Disposition", "Retry-After"));
+                configuracao.setExposedHeaders(List.of("Content-Disposition", "Retry-After", "X-Intervalo-Acao"));
                 configuracao.setMaxAge(3600L);
                 configuracao.setAllowCredentials(false);
 

@@ -55,6 +55,8 @@ import org.springframework.web.client.RestClient;
 @ExtendWith(PostgresTeste.CicloDeVida.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ForumHttpIntegracaoTest {
+        @Autowired
+        private org.springframework.security.web.SecurityFilterChain cadeiaSeguranca;
         private static final AtomicLong SEQUENCIA = new AtomicLong(100_000_000L);
         private static final String SENHA = "SenhaTeste123!";
         @LocalServerPort
@@ -99,7 +101,10 @@ class ForumHttpIntegracaoTest {
 
         @BeforeEach
         void prepararClienteEDadosIsolados() {
-                cliente = RestClient.builder().baseUrl("http://127.0.0.1:" + porta)
+                cliente = RestClient.builder().requestInterceptor((request, corpo, execucao) -> {
+                        com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
+                        return execucao.execute(request, corpo);
+                }).baseUrl("http://127.0.0.1:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
                                 }).build();
                 // Limpa exclusivamente o schema de teste; nunca usa o banco de desenvolvimento.
