@@ -1,15 +1,16 @@
 package com.cursovalido.backend.forum.repository;
 
-import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.data.domain.Pageable;
+import com.cursovalido.backend.forum.entity.Topico;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TopicoRepository extends JpaRepository<Topico, Long> {
         @Override
@@ -49,6 +50,6 @@ public interface TopicoRepository extends JpaRepository<Topico, Long> {
                         "ORDER BY t.criadoEm DESC, t.id DESC", countQuery = "SELECT COUNT(t) FROM Topico t WHERE t.ativo = true AND t.idAutor = :idAutor "
                                         +
                                         "AND LOWER(t.titulo) LIKE LOWER(CONCAT('%', :busca, '%'))")
-        org.springframework.data.domain.Page<TopicoResumoDTO> listarMeus(Pageable pageable,
+        Page<TopicoResumoDTO> listarMeus(Pageable pageable,
                         @Param("busca") String busca, @Param("idAutor") Long idAutor);
 }

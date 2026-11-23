@@ -1,18 +1,19 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.validation.senha.RegrasSenha;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.cursovalido.backend.authentication.dto.*;
+import com.cursovalido.backend.authentication.validation.senha.RegrasSenha;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class CadastroValidacaoTest {
     private static final ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
@@ -45,7 +46,7 @@ class CadastroValidacaoTest {
 
     @Test
     void bcryptGeraSaltDiferenteParaSenhasIguais() {
-        var encoder = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(4);
+        var encoder = new BCryptPasswordEncoder(4);
         String primeiro = encoder.encode("SenhaTeste123!");
         String segundo = encoder.encode("SenhaTeste123!");
         assertNotEquals(primeiro, segundo);
@@ -65,7 +66,7 @@ class CadastroValidacaoTest {
         assertTrue(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "Senha@1x").isEmpty());
         assertTrue(VALIDATOR.validateValue(CadastroUsuarioRequest.class, "senha", "Aa!x").stream()
                 .anyMatch(erro -> erro.getMessage().equals(RegrasSenha.MENSAGEM_MINIMO)));
-        var esperadas = java.util.Map.of(
+        var esperadas = Map.of(
                 "ABC!", RegrasSenha.MENSAGEM_MINUSCULA,
                 "abc!", RegrasSenha.MENSAGEM_MAIUSCULA,
                 "Abc", RegrasSenha.MENSAGEM_ESPECIAL,

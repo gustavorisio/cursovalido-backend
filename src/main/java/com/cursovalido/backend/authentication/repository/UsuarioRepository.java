@@ -1,12 +1,15 @@
 package com.cursovalido.backend.authentication.repository;
 
-import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.entity.Usuario;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     @Query(value = """
@@ -40,16 +43,16 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
                     AND s.revogada = FALSE AND s.expira_em > :agora
               )
             """, nativeQuery = true)
-    java.util.Optional<UsuarioAutenticacaoProjection> carregarAutenticacao(
-            @org.springframework.data.repository.query.Param("idUsuario") Long idUsuario,
-            @org.springframework.data.repository.query.Param("email") String email,
-            @org.springframework.data.repository.query.Param("idSessao") String idSessao,
-            @org.springframework.data.repository.query.Param("agora") LocalDateTime agora,
-            @org.springframework.data.repository.query.Param("versaoResponsabilidade") String versaoResponsabilidade);
+    Optional<UsuarioAutenticacaoProjection> carregarAutenticacao(
+            @Param("idUsuario") Long idUsuario,
+            @Param("email") String email,
+            @Param("idSessao") String idSessao,
+            @Param("agora") LocalDateTime agora,
+            @Param("versaoResponsabilidade") String versaoResponsabilidade);
 
-    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @org.springframework.data.jpa.repository.Query("select u from Usuario u where u.id = :id")
-    Optional<Usuario> buscarParaAtualizar(@org.springframework.data.repository.query.Param("id") Long id);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from Usuario u where u.id = :id")
+    Optional<Usuario> buscarParaAtualizar(@Param("id") Long id);
 
     List<Usuario> findByExcluidoEmIsNull();
 

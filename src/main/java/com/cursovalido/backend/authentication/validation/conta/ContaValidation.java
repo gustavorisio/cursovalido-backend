@@ -9,7 +9,7 @@ public final class ContaValidation {
 
     public static void validarPendencia(Usuario usuario) {
         if (usuario
-                .getStatusAprovacao() != com.cursovalido.backend.authentication.entity.StatusAprovacao.PENDENTE_APROVACAO
+                .getStatusAprovacao() != StatusAprovacao.PENDENTE_APROVACAO
                 || usuario.getExcluidoEm() != null)
             throw new IllegalArgumentException("Este cadastro não está mais aguardando aprovação.");
     }

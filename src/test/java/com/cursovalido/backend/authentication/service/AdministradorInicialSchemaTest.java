@@ -1,19 +1,22 @@
 package com.cursovalido.backend.authentication.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.cursovalido.backend.forum.configuration.FlywayConfig;
+import com.cursovalido.backend.forum.support.PostgresTeste;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
 import org.flywaydb.core.Flyway;
-import com.cursovalido.backend.forum.configuration.FlywayConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-@org.junit.jupiter.api.extension.ExtendWith(com.cursovalido.backend.forum.support.PostgresTeste.CicloDeVida.class)
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(PostgresTeste.CicloDeVida.class)
 class AdministradorInicialSchemaTest {
     @Test
     void migracoesPermitemAdminSemDadosPessoaisMasPreservamObrigatoriedadeParaAluno() throws Exception {
-        var propriedades = new java.util.HashMap<String, Object>();
-        com.cursovalido.backend.forum.support.PostgresTeste.configurar(
+        var propriedades = new HashMap<String, Object>();
+        PostgresTeste.configurar(
                 (nome, fornecedor) -> propriedades.put(nome, fornecedor.get()), "admin_schema");
         String url = (String) propriedades.get("spring.datasource.url");
         String usuario = (String) propriedades.get("spring.datasource.username");

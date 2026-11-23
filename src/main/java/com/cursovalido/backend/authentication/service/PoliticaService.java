@@ -20,7 +20,7 @@ public class PoliticaService {
     private final PrivilegiosAdministrativosService privilegios;
     private final VersaoDocumentoService versoes;
 
-    // Lista as politicas que estao ativas no momento.
+    // Lista as políticas que estão ativas no momento.
     public List<PoliticaResponse> listarAtivas() {
         return repositorio.findByAtivaTrueOrderByDataPublicacaoDesc().stream()
                 .map(politica -> new PoliticaResponse(politica.getNome(), politica.getVersao(), politica.getConteudo(),
@@ -28,13 +28,13 @@ public class PoliticaService {
                 .toList();
     }
 
-    // Verifica se uma versao de politica esta ativa.
+    // Verifica se uma versão de política esta ativa.
     public boolean versaoAtiva(String versao) {
         return repositorio.existsByAtivaTrueAndVersao(versao);
     }
 
     @Transactional
-    // Publica uma nova versao e pede novo aceite aos usuarios.
+    // Publica uma nova versão e pede novo aceite aos usuários.
     public PoliticaResponse publicar(PoliticaRequest requisicao, Long administradorId) {
         privilegios.verificarPrincipal(administradorId);
         String conteudo = ConteudoDocumento.preparar(requisicao.conteudo());
@@ -52,7 +52,7 @@ public class PoliticaService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<PoliticaResponse> listarHistorico() {
+    public List<PoliticaResponse> listarHistorico() {
         return repositorio.findByAtivaFalseOrderByDataPublicacaoDescIdDesc().stream()
                 .map(this::converter).toList();
     }

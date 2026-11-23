@@ -3,11 +3,13 @@ package com.cursovalido.backend.aulas.controller;
 import com.cursovalido.backend.aulas.dto.*;
 import com.cursovalido.backend.aulas.entity.*;
 import com.cursovalido.backend.aulas.service.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+
+import static com.cursovalido.backend.support.ControllerFixtures.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static com.cursovalido.backend.support.ControllerFixtures.*;
 
 class AlunoAulasControllerTest {
     private final AlunoAulasService servico = mock(AlunoAulasService.class);
@@ -23,7 +25,7 @@ class AlunoAulasControllerTest {
     @Test
     void matriculaUsaAlunoAutenticadoEDevolveDataPersistida() {
         var matricula = new Matricula(); matricula.setId(40L); matricula.setIdCurso(10L);
-        var data = java.time.LocalDateTime.of(2026, 11, 22, 10, 0); matricula.setMatriculadoEm(data);
+        var data = LocalDateTime.of(2026, 11, 22, 10, 0); matricula.setMatriculadoEm(data);
         when(servico.matricular(10L, 7L)).thenReturn(matricula);
         assertThat(controlador.matricular(10L, usuario())).isEqualTo(new MatriculaResponse(40L, 10L, data));
         verify(servico).matricular(10L, 7L);

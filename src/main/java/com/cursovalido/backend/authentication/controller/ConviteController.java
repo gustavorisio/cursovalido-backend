@@ -4,6 +4,7 @@ import com.cursovalido.backend.authentication.dto.ConviteCadastroRequest;
 import com.cursovalido.backend.authentication.dto.ConviteDadosResponse;
 import com.cursovalido.backend.authentication.dto.TokenEmailRequest;
 import com.cursovalido.backend.authentication.service.ConviteAcessoService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,7 @@ public class ConviteController {
     @PostMapping("/completar-cadastro")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void completar(@Valid @RequestBody ConviteCadastroRequest requisicao,
-            jakarta.servlet.http.HttpServletRequest request) {
+            HttpServletRequest request) {
         convites.completar(requisicao.token(), requisicao.cadastro(), request.getRemoteAddr());
     }
 }

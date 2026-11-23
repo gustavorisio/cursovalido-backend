@@ -6,7 +6,7 @@ import jakarta.validation.ConstraintValidatorContext;
 public class SenhaValidaValidator implements ConstraintValidator<SenhaValida, String> {
     @Override
     public boolean isValid(String valor, ConstraintValidatorContext contexto) {
-        // Campo vazio fica a cargo de @NotBlank, que traz a mensagem de preenchimento obrigatorio.
+        // Delega a validação de campo vazio ao @NotBlank.
         if (valor == null || valor.isEmpty()) {
             return true;
         }
@@ -14,7 +14,7 @@ public class SenhaValidaValidator implements ConstraintValidator<SenhaValida, St
         if (problema.isEmpty()) {
             return true;
         }
-        // Informa exatamente qual regra faltou, em vez de uma mensagem generica.
+        // Informa a primeira regra de senha não atendida.
         if (contexto != null) {
             contexto.disableDefaultConstraintViolation();
             contexto.buildConstraintViolationWithTemplate(problema.get()).addConstraintViolation();

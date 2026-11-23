@@ -35,7 +35,7 @@ public class ProtecaoForcaBrutaService {
         tentativas.compute(chave(identificador), (chave, tentativa) -> {
             Instant agora = relogio.instant();
             if (tentativa == null) tentativa = new Tentativa();
-            // Pedidos durante um bloqueio nao o prolongam nem avancam o nivel.
+            // Pedidos durante um bloqueio não o prolongam nem avancam o nivel.
             if (tentativa.bloqueadoAte != null && agora.isBefore(tentativa.bloqueadoAte))
                 return tentativa;
             expirarFalhas(tentativa, agora);
@@ -54,7 +54,7 @@ public class ProtecaoForcaBrutaService {
         });
     }
 
-    // Somente a autenticacao concluida reinicia a progressao dos bloqueios.
+    // Somente a autenticação concluida reinicia a progressao dos bloqueios.
     public void registrarSucesso(String identificador) {
         tentativas.remove(chave(identificador));
     }

@@ -1,21 +1,18 @@
 package com.cursovalido.backend.aulas;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import com.cursovalido.backend.aulas.entity.Aula;
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.aulas.service.AlunoAulasService;
+import com.cursovalido.backend.aulas.service.VimeoClient;
 import com.cursovalido.backend.aulas.service.YoutubeClient;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,6 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
@@ -31,6 +29,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(properties = {
                 "seguranca.limite-requisicoes=10000",
@@ -57,7 +61,7 @@ class AulasIntegracaoTest {
         @Autowired
         private ProgressoAulaRepository progressos;
         @MockitoBean
-        private com.cursovalido.backend.aulas.service.VimeoClient vimeoClient;
+        private VimeoClient vimeoClient;
 
         @MockitoBean
         private YoutubeClient youtubeClient;
@@ -92,7 +96,7 @@ class AulasIntegracaoTest {
         void falhaDoYoutubeNaoCriaNemAlteraAula(int status) throws Exception {
                 long idModulo = prepararModulo();
                 long id = criarAula(idModulo);
-                doThrow(new ResponseStatusException(org.springframework.http.HttpStatus.valueOf(status),
+                doThrow(new ResponseStatusException(HttpStatus.valueOf(status),
                                 "Falha controlada"))
                                 .when(youtubeClient).validarVideo("abcdefghijk");
                 mvc.perform(post("/api/modulos/" + idModulo + "/aulas").with(comoProfessor(professor))
@@ -231,7 +235,7 @@ class AulasIntegracaoTest {
                 if (tipo.equals("aula")) {
                         rota = "/api/modulos/" + idModulo + "/aulas";
                 }
-                var dados = new java.util.HashMap<String, Object>();
+                var dados = new HashMap<String, Object>();
                 dados.put("titulo", "T".repeat(255));
                 dados.put("descricao", "D".repeat(5000));
                 if (!tipo.equals("curso")) {
@@ -241,7 +245,7 @@ class AulasIntegracaoTest {
                         dados.put("youtubeUrl", "https://youtu.be/M7lc1UVf-VE");
                         dados.put("vimeoUrl", "https://vimeo.com/123456789");
                 }
-                var json = new com.fasterxml.jackson.databind.ObjectMapper();
+                var json = new ObjectMapper();
                 mvc.perform(post(rota).with(comoProfessor(professor)).contentType(MediaType.APPLICATION_JSON)
                                 .content(json.writeValueAsString(dados))).andExpect(status().isCreated());
                 long quantidadeCursos = cursos.count();

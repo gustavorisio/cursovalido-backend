@@ -27,7 +27,7 @@ public class CadastroUsuarioService {
     private final ValidacaoEmailService validacaoEmail;
     private final SecureRandom geradorRa = new SecureRandom();
 
-    // A recusa por idade minima mantem o registro de auditoria: nada mais foi gravado antes dela.
+    // Preserva a auditoria da recusa por idade mínima.
     @Transactional
     // Cria uma conta de aluno após a declaração de elegibilidade para adultos.
     public Usuario cadastrar(CadastroUsuarioRequest requisicao, String enderecoIp) {

@@ -1,11 +1,12 @@
 package com.cursovalido.backend.authentication.suporte;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 public class LimiteSuporteException extends ResponseStatusException {
     public static final String CODIGO = "LIMITE_SUPORTE_ATINGIDO";
-    private final org.springframework.http.HttpHeaders cabecalhos = new org.springframework.http.HttpHeaders();
+    private final HttpHeaders cabecalhos = new HttpHeaders();
 
     public LimiteSuporteException(long segundos) {
         super(HttpStatus.TOO_MANY_REQUESTS,
@@ -14,7 +15,7 @@ public class LimiteSuporteException extends ResponseStatusException {
     }
 
     @Override
-    public org.springframework.http.HttpHeaders getHeaders() {
+    public HttpHeaders getHeaders() {
         return cabecalhos;
     }
 }

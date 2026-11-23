@@ -68,7 +68,7 @@ public class GamificacaoService {
         int total = questionario.getPerguntas().size();
         if (total == 0 || acertos != total || !questionario.isPublicado() || questionario.getIdModulo() == null) return null;
         verificarAluno(idAluno);
-        // A trava do aluno e a chave única impedem crédito duplicado entre requisições e instâncias.
+        // Impede crédito duplicado com a trava do aluno e a chave única.
         usuarios.buscarParaAtualizar(idAluno).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Aluno não encontrado"));
         if (recompensas.existsByIdAlunoAndIdQuestionario(idAluno, questionario.getId())) return null;
         gamificacoes.criarSeAusente(idAluno);

@@ -34,8 +34,7 @@ public class AdministradorInicialService {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void criar() {
-        // A migracao cria a linha unica; o fallback atende bancos temporarios com
-        // ddl-auto.
+        // Cria o registro inicial se a migração não o criou.
         var registro = inicializacao.buscarParaAtualizar()
                 .orElseGet(() -> inicializacao.saveAndFlush(new InicializacaoAdministrador()));
         if (registro.isConcluida())

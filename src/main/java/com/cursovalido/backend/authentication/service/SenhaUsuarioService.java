@@ -42,7 +42,7 @@ public class SenhaUsuarioService {
     }
 
     @Transactional(noRollbackFor = IllegalArgumentException.class)
-    // Valida o token e salva a nova senha do usuario.
+    // Valida o token e salva a nova senha do usuário.
     public void alterarSenha(String token, String novaSenha, String confirmacaoSenha) {
         SenhaUsuarioValidation.validarRecuperacao(novaSenha, confirmacaoSenha, auditoria);
         TokenEmail registro;

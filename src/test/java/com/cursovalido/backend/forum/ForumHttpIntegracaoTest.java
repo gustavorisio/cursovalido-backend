@@ -1,47 +1,60 @@
 package com.cursovalido.backend.forum;
 
-import com.cursovalido.backend.authentication.security.AnonimizacaoDados;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-
 import com.cursovalido.backend.authentication.dto.*;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
+import com.cursovalido.backend.authentication.security.AnonimizacaoDados;
+import com.cursovalido.backend.authentication.service.CadastroUsuarioService;
 import com.cursovalido.backend.authentication.service.EmailService;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.authentication.service.ResponsabilidadeService;
+import com.cursovalido.backend.authentication.service.TokenEmailService;
 import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 import com.cursovalido.backend.forum.dto.*;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.repository.*;
 import com.cursovalido.backend.forum.support.PostgresTeste;
+import com.cursovalido.backend.support.TempoLimitesTeste;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.sql.Timestamp;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClient;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  * HTTP real, seguranca e persistencia reais. Apenas o envio externo de email e
@@ -56,7 +69,7 @@ import org.springframework.web.client.RestClient;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ForumHttpIntegracaoTest {
         @Autowired
-        private org.springframework.security.web.SecurityFilterChain cadeiaSeguranca;
+        private SecurityFilterChain cadeiaSeguranca;
         private static final AtomicLong SEQUENCIA = new AtomicLong(100_000_000L);
         private static final String SENHA = "SenhaTeste123!";
         @LocalServerPort
@@ -64,7 +77,7 @@ class ForumHttpIntegracaoTest {
         @Autowired
         private JdbcTemplate jdbc;
         @Autowired
-        private com.cursovalido.backend.authentication.service.CadastroUsuarioService cadastroUsuarios;
+        private CadastroUsuarioService cadastroUsuarios;
         @Autowired
         private TopicoRepository topicos;
         @Autowired
@@ -80,7 +93,7 @@ class ForumHttpIntegracaoTest {
         @Autowired
         private ConviteAcessoRepository convites;
         @Autowired
-        private com.cursovalido.backend.authentication.service.TokenEmailService tokensEmail;
+        private TokenEmailService tokensEmail;
         @MockitoBean
         private EmailService emails;
         @MockitoSpyBean
@@ -90,7 +103,7 @@ class ForumHttpIntegracaoTest {
         private final Map<String, String> codigos = new ConcurrentHashMap<>();
         private final Map<String, String> convitesEnviados = new ConcurrentHashMap<>();
         @Autowired
-        private com.cursovalido.backend.authentication.service.ResponsabilidadeService responsabilidade;
+        private ResponsabilidadeService responsabilidade;
         private RestClient cliente;
         private Sessao autor;
 
@@ -102,7 +115,7 @@ class ForumHttpIntegracaoTest {
         @BeforeEach
         void prepararClienteEDadosIsolados() {
                 cliente = RestClient.builder().requestInterceptor((request, corpo, execucao) -> {
-                        com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
+                        TempoLimitesTeste.avancar(cadeiaSeguranca);
                         return execucao.execute(request, corpo);
                 }).baseUrl("http://127.0.0.1:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
@@ -156,7 +169,7 @@ class ForumHttpIntegracaoTest {
         }
 
         @Test
-        void exclusaoAdministrativaRejeitaAutoexclusaoAlunoEAdministradoresComuns() {
+        void exclusaoAdministrativaExigeRootEPreservaProtecaoDaContaPrincipal() {
                 var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-exclusao@example.com");
                 var comum = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
                 var professor = cadastrarEAutenticar(Perfil.PROFESSOR);
@@ -170,11 +183,11 @@ class ForumHttpIntegracaoTest {
                 assertThat(enviar(HttpMethod.DELETE, rota + comum.id(), professor.token(), null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
                 assertThat(enviar(HttpMethod.DELETE, rota + professor.id(), comum.token(), null, String.class)
-                                .getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+                                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
                 assertThat(enviar(HttpMethod.DELETE, rota + comum.id(), null, null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
                 assertThat(usuarios.findById(principal.id()).orElseThrow().getExcluidoEm()).isNull();
-                assertThat(usuarios.findById(professor.id()).orElseThrow().getExcluidoEm()).isNotNull();
+                assertThat(usuarios.findById(professor.id()).orElseThrow().getExcluidoEm()).isNull();
                 assertThat(enviar(HttpMethod.DELETE, rota + Long.MAX_VALUE, principal.token(), null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         }
@@ -255,8 +268,13 @@ class ForumHttpIntegracaoTest {
                 assertThat(enviar(HttpMethod.GET, usuariosUrl, comum.token(), null, lista).getBody())
                                 .filteredOn(u -> u.id().equals(professor.id())).singleElement().satisfies(u -> {
                                         assertThat(u.podeModerar()).isTrue();
-                                        assertThat(u.podeExcluir()).isTrue();
+                                        assertThat(u.podeExcluir()).isFalse();
                                 });
+                for (var alvo : new Sessao[] { professor, autor }) {
+                        assertThat(enviar(HttpMethod.DELETE, usuariosUrl + "/" + alvo.id(), comum.token(), null,
+                                        String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                        assertThat(usuarios.findById(alvo.id()).orElseThrow().getExcluidoEm()).isNull();
+                }
                 for (var admin : new Sessao[] { principal, outroAdmin, comum }) {
                         assertThat(enviar(HttpMethod.POST, usuariosUrl + "/" + admin.id() + "/suspensoes",
                                         comum.token(), dados, String.class).getStatusCode())
@@ -315,8 +333,7 @@ class ForumHttpIntegracaoTest {
                                 .satisfies(u -> assertThat(u.podeExcluir()).isFalse());
                 assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", comum.token(), null,
                                 UsuarioAdministracaoResposta[].class).getBody())
-                                .allSatisfy(u -> assertThat(u.podeExcluir())
-                                                .isEqualTo(u.perfil() != Perfil.ADMINISTRADOR));
+                                .allSatisfy(u -> assertThat(u.podeExcluir()).isFalse());
                 for (String token : new String[] { principal.token(), comum.token() }) {
                         assertThat(enviar(HttpMethod.GET, "/api/forum/users", token, null, String.class).getBody())
                                         .doesNotContain(emailAluno, emailProfessor, emailComum);
@@ -329,6 +346,35 @@ class ForumHttpIntegracaoTest {
                 assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", autor.token(), null, String.class)
                                 .getBody())
                                 .contains(emailAluno);
+        }
+
+        @Test
+        void somenteRootPodeConvidarEGerenciarConvitesDaEquipe() {
+                var principal = cadastrarEAutenticar(Perfil.ADMINISTRADOR, "principal-convites@example.com");
+                var comum = cadastrarEAutenticar(Perfil.ADMINISTRADOR);
+                String rota = "/api/administracao/convites";
+                for (var perfil : new Perfil[] { Perfil.PROFESSOR, Perfil.ADMINISTRADOR }) {
+                        var dados = Map.of("email", "convite-" + perfil.name().toLowerCase() + "@example.com",
+                                        "perfil", perfil.name());
+                        assertThat(enviar(HttpMethod.POST, rota, comum.token(), dados, String.class).getStatusCode())
+                                        .isEqualTo(HttpStatus.FORBIDDEN);
+                        assertThat(enviar(HttpMethod.POST, rota, principal.token(), dados, String.class).getStatusCode())
+                                        .isEqualTo(HttpStatus.NO_CONTENT);
+                }
+                for (String sufixo : new String[] { "", "/pendentes" }) {
+                        assertThat(enviar(HttpMethod.GET, rota + sufixo, comum.token(), null, String.class).getStatusCode())
+                                        .isEqualTo(HttpStatus.FORBIDDEN);
+                        assertThat(enviar(HttpMethod.GET, rota + sufixo, principal.token(), null, String.class).getStatusCode())
+                                        .isEqualTo(HttpStatus.OK);
+                }
+                for (String sufixo : new String[] { "/aprovar", "/rejeitar", "/reenviar" }) {
+                        assertThat(enviar(HttpMethod.POST, rota + "/999999" + sufixo, comum.token(), null,
+                                        String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                }
+                for (String sufixo : new String[] { "", "/cancelar" }) {
+                        assertThat(enviar(HttpMethod.DELETE, rota + "/999999" + sufixo, comum.token(), null,
+                                        String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+                }
         }
 
         @Test
@@ -402,7 +448,7 @@ class ForumHttpIntegracaoTest {
         }
 
         @ParameterizedTest
-        @org.junit.jupiter.params.provider.EnumSource(value = Perfil.class, names = { "ALUNO", "PROFESSOR", "ADMINISTRADOR" })
+        @EnumSource(value = Perfil.class, names = { "ALUNO", "PROFESSOR", "ADMINISTRADOR" })
         void qualquerPerfilPodeConsultarTopicoDeOutroAutorPelaUrl(Perfil perfil) {
                 var topico = criarTopico("Detalhe individual");
                 var removido = criarComentario(topico.id(), "Resposta removida");
@@ -657,7 +703,7 @@ class ForumHttpIntegracaoTest {
                                 .isEqualTo(HttpStatus.OK);
                 var meus = respostaMeus.getBody();
                 assertThat(meus).containsKey("content");
-                assertThat((java.util.List<?>) meus.get("content")).hasSize(10);
+                assertThat((List<?>) meus.get("content")).hasSize(10);
                 assertThat(meus.get("totalPages")).isEqualTo(2);
         }
 
@@ -678,7 +724,7 @@ class ForumHttpIntegracaoTest {
                                         Map.class);
                         assertThat(meus.getStatusCode()).as("Busca: %s; resposta: %s", busca, meus.getBody())
                                         .isEqualTo(HttpStatus.OK);
-                        assertThat((java.util.List<?>) meus.getBody().get("content")).hasSize(encontrados);
+                        assertThat((List<?>) meus.getBody().get("content")).hasSize(encontrados);
                 }
                 // A consulta autenticada pode registrar auditoria no PostgreSQL.
                 assertThat(jdbc.queryForObject("select count(*) from tb_logs_auditoria where usuario_id=? "
@@ -1196,32 +1242,32 @@ class ForumHttpIntegracaoTest {
         }
 
         @Autowired
-        private org.springframework.transaction.PlatformTransactionManager transacoesComentarios;
+        private PlatformTransactionManager transacoesComentarios;
 
         @Test
         void edicaoConcorrenteNaoReativaComentarioRemovido() throws Exception {
                 var topico = criarTopico("Concorrencia");
                 var publicado = criarComentario(topico.id(), "Original");
-                var carregou = new java.util.concurrent.CountDownLatch(1);
-                var continuar = new java.util.concurrent.CountDownLatch(1);
+                var carregou = new CountDownLatch(1);
+                var continuar = new CountDownLatch(1);
                 doAnswer(invocacao -> {
                         carregou.countDown();
-                        if (!continuar.await(10, java.util.concurrent.TimeUnit.SECONDS)) throw new IllegalStateException("Timeout");
+                        if (!continuar.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Timeout");
                         return null;
                 }).when(auditoria).registrar(eq(autor.id()), eq("EDICAO_COMENTARIO"), anyString(), isNull());
-                var edicao = java.util.concurrent.CompletableFuture.supplyAsync(() ->
+                var edicao = CompletableFuture.supplyAsync(() ->
                         enviar(HttpMethod.PUT, "/api/forum/comentarios/" + publicado.id(), autor.token(),
                                 new ComentarioRequest("Edicao concorrente"), String.class));
                 try {
-                        assertThat(carregou.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
-                        new org.springframework.transaction.support.TransactionTemplate(transacoesComentarios).execute(status -> {
+                        assertThat(carregou.await(10, TimeUnit.SECONDS)).isTrue();
+                        new TransactionTemplate(transacoesComentarios).execute(status -> {
                                 var removido = comentarios.findById(publicado.id()).orElseThrow();
                                 removido.setAtivo(false);
                                 comentarios.saveAndFlush(removido);
                                 return null;
                         });
                 } finally { continuar.countDown(); }
-                var resposta = edicao.get(10, java.util.concurrent.TimeUnit.SECONDS);
+                var resposta = edicao.get(10, TimeUnit.SECONDS);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
                 assertThat(resposta.getBody()).contains("CONTEUDO_ALTERADO");
                 assertThat(comentarios.findById(publicado.id()).orElseThrow().isAtivo()).isFalse();
@@ -1247,7 +1293,7 @@ class ForumHttpIntegracaoTest {
                 assertThat(segunda.pagina()).isEqualTo(1);
                 assertThat(primeira.itens()).extracting(ComentarioResponse::id)
                         .doesNotContainAnyElementsOf(segunda.itens().stream().map(ComentarioResponse::id).toList());
-                for (String parametros : java.util.List.of("size=51", "size=0", "page=-1")) {
+                for (String parametros : List.of("size=51", "size=0", "page=-1")) {
                         assertThat(enviar(HttpMethod.GET, comentariosUrl(topico.id()) + "?" + parametros, autor.token(), null,
                                 String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
                 }
@@ -1316,7 +1362,7 @@ class ForumHttpIntegracaoTest {
                 assertThat(resposta.getBody().path()).startsWith("/api/");
         }
 
-        @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+        @JsonIgnoreProperties(ignoreUnknown = true)
         private record ErroHttp(Integer status, String error, String path, String erro, String codigo) {
         }
 

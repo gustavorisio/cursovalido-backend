@@ -19,7 +19,7 @@ public class UsuarioDetalhesService implements UserDetailsService {
         private final ResponsabilidadeService responsabilidade;
 
         @Override
-        // Busca o usuario usado pelo Spring Security na autenticacao.
+        // Busca o usuário usado pelo Spring Security na autenticação.
         public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
                 Usuario usuario = repositorio.findByEmail(email)
                                 .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado"));

@@ -1,8 +1,5 @@
 package com.cursovalido.backend.forum.controller;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.forum.dto.*;
@@ -17,6 +14,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Conversao dos DTOs e delegacao; validacao HTTP e seguranca ficam na
@@ -117,7 +118,7 @@ class ForumControllerTest {
 
     @Test
     void listarComentarios_comTopico_deveConverterRespostaSemExporEntidades() {
-        when(comentarios.listarPaginaPorTopico(10L, 7L, 0, 20)).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(comentario)));
+        when(comentarios.listarPaginaPorTopico(10L, 7L, 0, 20)).thenReturn(new PageImpl<>(List.of(comentario)));
         assertThat(controlador.listarComentarios(principal, 10L, 0, 20).itens()).containsExactly(new ComentarioResponse(
                 20L, "Resposta", "Autor", "#1a3b5c7d", "ALUNO", 7L, LocalDateTime.of(2026, 11, 15, 22, 27), true));
     }

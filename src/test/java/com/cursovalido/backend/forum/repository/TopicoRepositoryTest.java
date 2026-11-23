@@ -1,15 +1,16 @@
 package com.cursovalido.backend.forum.repository;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.data.domain.PageRequest;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:forum-persistencia;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
@@ -64,12 +65,12 @@ class TopicoRepositoryTest {
             topicos.save(topico);
         }
         topicos.flush();
-        var pagina = topicos.listarMeus(org.springframework.data.domain.PageRequest.of(0, 5), "", autor.getId());
+        var pagina = topicos.listarMeus(PageRequest.of(0, 5), "", autor.getId());
         assertEquals(7, pagina.getTotalElements());
         assertEquals(2, pagina.getTotalPages());
         assertEquals(5, pagina.getContent().size());
         assertTrue(pagina.getContent().stream().allMatch(t -> t.idAutor().equals(autor.getId())));
-        var busca = topicos.listarMeus(org.springframework.data.domain.PageRequest.of(1, 5), "Java", autor.getId());
+        var busca = topicos.listarMeus(PageRequest.of(1, 5), "Java", autor.getId());
         assertEquals(6, busca.getTotalElements());
         assertEquals(1, busca.getContent().size());
     }

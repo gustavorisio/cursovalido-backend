@@ -2,28 +2,37 @@ package com.cursovalido.backend.authentication.configuration;
 
 import com.cursovalido.backend.authentication.dto.Codigo2faErroResponse;
 import com.cursovalido.backend.authentication.dto.TermosPendentesResponse;
+import com.cursovalido.backend.authentication.exception.AcessoRejeitadoException;
+import com.cursovalido.backend.authentication.exception.BanimentoException;
+import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
 import com.cursovalido.backend.authentication.exception.Codigo2faExpiradoException;
-import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
-import com.cursovalido.backend.authentication.exception.TermosNaoAceitosException;
 import com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException;
 import com.cursovalido.backend.authentication.exception.CredenciaisInvalidasException;
-import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
-import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
 import com.cursovalido.backend.authentication.exception.PendenteAprovacaoException;
-import com.cursovalido.backend.authentication.exception.AcessoRejeitadoException;
-import org.springframework.http.ResponseEntity;
+import com.cursovalido.backend.authentication.exception.ServicoEmailIndisponivelException;
+import com.cursovalido.backend.authentication.exception.SuporteIndisponivelException;
+import com.cursovalido.backend.authentication.exception.TermosNaoAceitosException;
+import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
+import com.cursovalido.backend.authentication.suporte.LimiteSuporteException;
+import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.ErrorResponse;
-import org.springframework.security.access.AccessDeniedException;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
@@ -54,12 +63,12 @@ public class AutenticacaoExceptionHandler {
                 "Seu cadastro está aguardando aprovação. Aguarde a liberação do administrador.", "PENDENTE_APROVACAO");
     }
 
-    @ExceptionHandler(com.cursovalido.backend.forum.exception.ConteudoOfensivoException.class)
+    @ExceptionHandler(ConteudoOfensivoException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Codigo2faErroResponse conteudoOfensivo(
-            com.cursovalido.backend.forum.exception.ConteudoOfensivoException excecao) {
+            ConteudoOfensivoException excecao) {
         return new Codigo2faErroResponse(excecao.getReason(),
-                com.cursovalido.backend.forum.exception.ConteudoOfensivoException.CODIGO);
+                ConteudoOfensivoException.CODIGO);
     }
 
     @ExceptionHandler(AcessoRejeitadoException.class)
@@ -70,26 +79,26 @@ public class AutenticacaoExceptionHandler {
                 "ACESSO_REJEITADO");
     }
 
-    @ExceptionHandler(com.cursovalido.backend.authentication.suporte.LimiteSuporteException.class)
+    @ExceptionHandler(LimiteSuporteException.class)
     public ResponseEntity<Codigo2faErroResponse> limiteSuporte(
-            com.cursovalido.backend.authentication.suporte.LimiteSuporteException excecao) {
+            LimiteSuporteException excecao) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).headers(excecao.getHeaders())
                 .body(new Codigo2faErroResponse(excecao.getReason(),
-                        com.cursovalido.backend.authentication.suporte.LimiteSuporteException.CODIGO));
+                        LimiteSuporteException.CODIGO));
     }
 
-    @ExceptionHandler(com.cursovalido.backend.authentication.exception.SuporteIndisponivelException.class)
+    @ExceptionHandler(SuporteIndisponivelException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     public Codigo2faErroResponse suporteIndisponivel(
-            com.cursovalido.backend.authentication.exception.SuporteIndisponivelException excecao) {
+            SuporteIndisponivelException excecao) {
         return new Codigo2faErroResponse(excecao.getReason(),
-                com.cursovalido.backend.authentication.exception.SuporteIndisponivelException.CODIGO);
+                SuporteIndisponivelException.CODIGO);
     }
 
-    @ExceptionHandler(com.cursovalido.backend.authentication.exception.BanimentoException.class)
+    @ExceptionHandler(BanimentoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Codigo2faErroResponse banimento(
-            com.cursovalido.backend.authentication.exception.BanimentoException excecao) {
+            BanimentoException excecao) {
         return new Codigo2faErroResponse(excecao.getReason(), "CONTA_SUSPENSA");
     }
 
@@ -128,7 +137,7 @@ public class AutenticacaoExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> camposInvalidos(MethodArgumentNotValidException excecao) {
         Map<String, String> campos = new LinkedHashMap<>();
-        // Um campo pode violar mais de uma regra; o aviso de preenchimento obrigatorio tem prioridade.
+        // Prioriza o aviso de campo obrigatório.
         for (var erro : excecao.getBindingResult().getFieldErrors()) {
             if (!campos.containsKey(erro.getField()) || campoObrigatorio(erro.getCode()))
                 campos.put(erro.getField(), erro.getDefaultMessage());
@@ -141,19 +150,19 @@ public class AutenticacaoExceptionHandler {
         return "NotBlank".equals(codigo) || "NotNull".equals(codigo);
     }
 
-    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> parametroInvalido(
-            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException excecao) {
+            MethodArgumentTypeMismatchException excecao) {
         return Map.of("erro", "Não foi possível abrir esta página. Confira os dados e tente novamente.", "codigo",
                 "PARAMETRO_INVALIDO",
                 "campos", Map.of(excecao.getName(), "Confira o valor informado."));
     }
 
-    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> parametroAusente(
-            org.springframework.web.bind.MissingServletRequestParameterException excecao) {
+            MissingServletRequestParameterException excecao) {
         return Map.of("erro", "Faltam informações para continuar. Volte à página anterior e tente novamente.", "codigo",
                 "PARAMETRO_INVALIDO",
                 "campos", Map.of(excecao.getParameterName(), "Preencha este campo."));
@@ -190,9 +199,9 @@ public class AutenticacaoExceptionHandler {
         return new Codigo2faErroResponse("Você não tem permissão para fazer isso.", "ACESSO_NEGADO");
     }
 
-    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    @ExceptionHandler(OptimisticLockingFailureException.class)
     public ResponseEntity<Codigo2faErroResponse> conflitoDeAtualizacao(
-            org.springframework.dao.OptimisticLockingFailureException excecao) {
+            OptimisticLockingFailureException excecao) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new Codigo2faErroResponse(
                         "Este conteúdo foi alterado ou removido. Atualize a página antes de tentar novamente.",
@@ -203,7 +212,7 @@ public class AutenticacaoExceptionHandler {
     public ResponseEntity<Codigo2faErroResponse> erroInesperado(Exception excecao) {
         if (excecao instanceof ErrorResponse erro && !erro.getStatusCode().is5xxServerError()) {
             return ResponseEntity.status(erro.getStatusCode()).headers(erro.getHeaders())
-                    .cacheControl(org.springframework.http.CacheControl.noStore())
+                    .cacheControl(CacheControl.noStore())
                     .body(new Codigo2faErroResponse("Requisicao nao permitida ou recurso indisponivel",
                             "REQUISICAO_RECUSADA"));
         }
@@ -212,10 +221,10 @@ public class AutenticacaoExceptionHandler {
     }
 
     private ResponseEntity<Codigo2faErroResponse> falhaInterna(Exception excecao,
-            org.springframework.http.HttpStatusCode status) {
+            HttpStatusCode status) {
         log.error("Falha interna ao atender requisicao", excecao);
         return ResponseEntity.status(status)
-                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .cacheControl(CacheControl.noStore())
                 .body(new Codigo2faErroResponse("Nao foi possivel concluir a operacao. Tente novamente mais tarde.",
                         "ERRO_INTERNO"));
     }

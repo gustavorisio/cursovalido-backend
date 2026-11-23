@@ -1,22 +1,25 @@
 package com.cursovalido.backend.forum.service;
 
-import lombok.RequiredArgsConstructor;
-
-import com.cursovalido.backend.forum.entity.Comentario;
-import com.cursovalido.backend.forum.entity.UsuarioForum;
-import com.cursovalido.backend.forum.entity.Topico;
-import com.cursovalido.backend.forum.repository.ComentarioRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.forum.entity.Comentario;
+import com.cursovalido.backend.forum.entity.Topico;
+import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.ConflitoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.cursovalido.backend.forum.repository.ComentarioRepository;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,19 +31,19 @@ public class ComentarioService {
     private final LogAuditoriaService auditoria;
     private final FiltroConteudoOfensivo filtroConteudo = new FiltroConteudoOfensivo();
 
-    // Lista os comentarios de um topico, incluindo os excluidos logicamente.
+    // Lista os comentários de um tópico, incluindo os excluidos logicamente.
     public List<Comentario> listarPorTopico(Long idTopico) {
         return listarPorTopico(idTopico, null);
     }
 
-    // Lista comentarios e registra a consulta do usuario.
+    // Lista comentários e registra a consulta do usuário.
     public List<Comentario> listarPorTopico(Long idTopico, Long idUsuario) {
         servicoTopicos.buscarAtivo(idTopico);
         registrar(idUsuario, "CONSULTA_COMENTARIOS", "Topico " + idTopico);
         return repositorioComentarios.listarPorTopicoAtivo(idTopico);
     }
 
-    public org.springframework.data.domain.Page<Comentario> listarPaginaPorTopico(Long idTopico, Long idUsuario,
+    public Page<Comentario> listarPaginaPorTopico(Long idTopico, Long idUsuario,
             int pagina, int tamanho) {
         if (pagina < 0 || tamanho < 1 || tamanho > 50) {
             throw new RequisicaoInvalidaException("Página deve ser maior ou igual a zero e tamanho deve estar entre 1 e 50.");
@@ -48,10 +51,10 @@ public class ComentarioService {
         servicoTopicos.buscarAtivo(idTopico);
         registrar(idUsuario, "CONSULTA_COMENTARIOS", "Topico " + idTopico);
         return repositorioComentarios.listarPorTopicoAtivo(idTopico,
-                org.springframework.data.domain.PageRequest.of(pagina, tamanho));
+                PageRequest.of(pagina, tamanho));
     }
 
-    // Cria um comentario em um topico aberto.
+    // Cria um comentário em um tópico aberto.
     @Transactional
     public Comentario criar(Long idTopico, Comentario comentario, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.bloquearAtivo(idUsuario);
@@ -62,8 +65,8 @@ public class ComentarioService {
         }
         LocalDateTime agora = LocalDateTime.now(ZoneOffset.UTC);
         if (repositorioComentarios.existsByIdAutorAndCriadoEmAfter(usuario.getId(), agora.minusSeconds(20))) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.TOO_MANY_REQUESTS,
+            throw new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
                     "Você já enviou um comentário recentemente. Aguarde 20 segundos entre comentários, mesmo em tópicos diferentes.");
         }
         comentario.setConteudo(censurarConteudo(idUsuario, comentario.getConteudo()));
@@ -80,7 +83,7 @@ public class ComentarioService {
         return comentarioSalvo;
     }
 
-    // Edita um comentario somente pelo seu autor.
+    // Edita um comentário somente pelo seu autor.
     @Transactional
     public Comentario editar(Long idComentario, Comentario dadosAtualizados, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
@@ -101,7 +104,7 @@ public class ComentarioService {
         return comentarioSalvo;
     }
 
-    // Desativa um comentario pelo autor ou administrador.
+    // Desativa um comentário pelo autor ou administrador.
     @Transactional
     public void apagar(Long idComentario, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
@@ -118,7 +121,7 @@ public class ComentarioService {
         registrar(idUsuario, "EXCLUSAO_COMENTARIO", "Comentario " + idComentario);
     }
 
-    // Confere o topico e desativa o comentario informado.
+    // Confere o tópico e desativa o comentário informado.
     @Transactional
     public void apagarDoTopico(Long idTopico, Long idComentario, Long idUsuario) {
         Comentario comentario = buscar(idComentario);
@@ -135,7 +138,7 @@ public class ComentarioService {
 
     private String censurarConteudo(Long idUsuario, String texto) {
         String censurado = filtroConteudo.censurar(texto);
-        if (!java.util.Objects.equals(texto, censurado)) {
+        if (!Objects.equals(texto, censurado)) {
             registrar(idUsuario, "CONTEUDO_OFENSIVO_OCULTADO", "Comentario");
         }
         return censurado;

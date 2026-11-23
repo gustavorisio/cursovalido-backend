@@ -5,11 +5,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
@@ -31,7 +33,7 @@ class YoutubeClientTest {
     @ParameterizedTest
     @ValueSource(strings = { "public", "unlisted" })
     void consultarVideoComChaveNoCabecalho(String privacidade) {
-        servidor.expect(requestTo(URL)).andExpect(method(org.springframework.http.HttpMethod.GET))
+        servidor.expect(requestTo(URL)).andExpect(method(HttpMethod.GET))
                 .andExpect(header("X-Goog-Api-Key", "chave-ficticia"))
                 .andRespond(withSuccess(video(true, privacidade, "processed"), MediaType.APPLICATION_JSON));
         cliente.validarVideo(ID);

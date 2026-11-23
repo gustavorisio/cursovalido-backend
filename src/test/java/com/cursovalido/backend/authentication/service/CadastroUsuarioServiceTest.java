@@ -1,6 +1,23 @@
 package com.cursovalido.backend.authentication.service;
 
+import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
+import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.entity.StatusAprovacao;
+import com.cursovalido.backend.authentication.entity.Usuario;
+import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
+import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,18 +25,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
-import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.exception.CadastroDuplicadoException;
-import com.cursovalido.backend.authentication.exception.TermosNaoDisponiveisException;
-import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class CadastroUsuarioServiceTest {
@@ -40,13 +45,13 @@ class CadastroUsuarioServiceTest {
     @Test
     void deveInterromperCadastroAntesDeSalvarQuandoEmailForInvalido() {
         var requisicao = requisicaoPadrao();
-        org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.BAD_REQUEST, "E-mail invalido"))
+        Mockito.doThrow(new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "E-mail invalido"))
                 .when(validacaoEmail).validar(requisicao.email());
 
-        assertThrows(org.springframework.web.server.ResponseStatusException.class,
+        assertThrows(ResponseStatusException.class,
                 () -> servico.cadastrar(requisicao, "127.0.0.1"));
-        org.mockito.Mockito.verifyNoInteractions(repositorio, codificadorSenha, politicas);
+        Mockito.verifyNoInteractions(repositorio, codificadorSenha, politicas);
     }
 
     @Test
@@ -108,11 +113,11 @@ class CadastroUsuarioServiceTest {
 
         Usuario resultado = servico.cadastrar(requisicaoPadrao(), "127.0.0.1");
 
-        assertEquals(com.cursovalido.backend.authentication.entity.Perfil.ALUNO, resultado.getPerfil());
-        assertEquals(com.cursovalido.backend.authentication.entity.StatusAprovacao.APROVADO,
+        assertEquals(Perfil.ALUNO, resultado.getPerfil());
+        assertEquals(StatusAprovacao.APROVADO,
                 resultado.getStatusAprovacao());
-        org.junit.jupiter.api.Assertions.assertTrue(resultado.isAtivo());
-        org.junit.jupiter.api.Assertions.assertTrue(resultado.getDeclarouMaiorIdade());
+        Assertions.assertTrue(resultado.isAtivo());
+        Assertions.assertTrue(resultado.getDeclarouMaiorIdade());
     }
 
     private CadastroUsuarioRequest requisicao(boolean declarouMaiorIdade) {

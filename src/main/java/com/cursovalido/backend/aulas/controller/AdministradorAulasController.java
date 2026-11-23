@@ -4,9 +4,10 @@ import com.cursovalido.backend.aulas.dto.*;
 import com.cursovalido.backend.aulas.entity.*;
 import com.cursovalido.backend.aulas.service.AdministradorAulasService;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
-import java.util.List;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class AdministradorAulasController {
     }
 
     @DeleteMapping("/cursos/{id}")
-    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluirCurso(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado usuario) {
         servico.excluirCurso(id, usuario.getId());
     }

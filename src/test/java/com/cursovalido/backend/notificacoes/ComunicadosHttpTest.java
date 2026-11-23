@@ -1,18 +1,22 @@
 package com.cursovalido.backend.notificacoes;
 
 import com.cursovalido.backend.authentication.entity.*;
-import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.repository.PoliticaRepository;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.ResponsabilidadeService;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
 import com.cursovalido.backend.forum.configuration.FlywayConfig;
 import com.cursovalido.backend.forum.support.PostgresTeste;
 import com.cursovalido.backend.notificacoes.dto.*;
+import com.cursovalido.backend.support.TempoLimitesTeste;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,8 +31,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.*;
 import org.springframework.web.client.RestClient;
+
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.jpa.hibernate.ddl-auto=validate")
@@ -37,7 +43,7 @@ import static org.assertj.core.api.Assertions.*;
 @Import(ComunicadosHttpTest.MigracaoTeste.class)
 class ComunicadosHttpTest {
         @Autowired
-        private org.springframework.security.web.SecurityFilterChain cadeiaSeguranca;
+        private SecurityFilterChain cadeiaSeguranca;
         @LocalServerPort
         int porta;
         @Autowired
@@ -69,7 +75,7 @@ class ComunicadosHttpTest {
                 if (politicas.listarAtivas().isEmpty())
                         repositorioPoliticas.save(new Politica("Termos de teste", "comunicados-teste", "Conteudo de teste"));
                 cliente = RestClient.builder().requestInterceptor((request, corpo, execucao) -> {
-                        com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
+                        TempoLimitesTeste.avancar(cadeiaSeguranca);
                         return execucao.execute(request, corpo);
                 }).baseUrl("http://127.0.0.1:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
@@ -281,7 +287,7 @@ class ComunicadosHttpTest {
                 assertThat(bloqueado.getBody()).contains("30 segundos");
                 // Usa o mesmo relogio da aplicacao, com margem fora dos 30 segundos de bloqueio.
                 jdbc.update("UPDATE tb_publicacoes_comunicados SET ultima_publicacao_em = ?",
-                                java.sql.Timestamp.valueOf(LocalDateTime.now().minusSeconds(31)));
+                                Timestamp.valueOf(LocalDateTime.now().minusSeconds(31)));
                 assertThat(enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, ComunicadoResponse.class).getStatusCode())
                         .isEqualTo(HttpStatus.CREATED);
         }
@@ -291,11 +297,11 @@ class ComunicadosHttpTest {
                 for (int i = 0; i < 29; i++) publicar("Aviso " + i);
                 var outroAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
                 var dados = new ComunicadoRequest("Ultima vaga", "Texto");
-                var primeiro = java.util.concurrent.CompletableFuture.supplyAsync(() ->
+                var primeiro = CompletableFuture.supplyAsync(() ->
                         enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, String.class).getStatusCode());
-                var segundo = java.util.concurrent.CompletableFuture.supplyAsync(() ->
+                var segundo = CompletableFuture.supplyAsync(() ->
                         enviar(HttpMethod.POST, "/api/administracao/comunicados", outroAdmin, dados, String.class).getStatusCode());
-                assertThat(java.util.List.of(primeiro.join(), segundo.join()))
+                assertThat(List.of(primeiro.join(), segundo.join()))
                         .containsExactlyInAnyOrder(HttpStatus.CREATED, HttpStatus.CONFLICT);
                 assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tb_comunicados", Long.class)).isEqualTo(30);
                 var bloqueado = enviar(HttpMethod.POST, "/api/administracao/comunicados", outroAdmin, dados, String.class);
@@ -310,7 +316,7 @@ class ComunicadosHttpTest {
                         .isEqualTo(HttpStatus.CREATED);
                 // Usa o mesmo relógio da aplicação para liberar as fixtures.
                 jdbc.update("UPDATE tb_publicacoes_comunicados SET ultima_publicacao_em = ?",
-                        java.sql.Timestamp.valueOf(LocalDateTime.now().minusSeconds(31)));
+                        Timestamp.valueOf(LocalDateTime.now().minusSeconds(31)));
                 var corpo = resposta.getBody();
                 return new ComunicadoResponse(((Number) corpo.get("id")).longValue(), (String) corpo.get("titulo"),
                         (String) corpo.get("conteudo"), LocalDateTime.parse((String) corpo.get("criadoEm")), false);

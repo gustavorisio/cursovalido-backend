@@ -1,5 +1,28 @@
 package com.cursovalido.backend.forum.service;
 
+import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.forum.entity.Topico;
+import com.cursovalido.backend.forum.entity.UsuarioForum;
+import com.cursovalido.backend.forum.exception.AcessoNegadoException;
+import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
+import com.cursovalido.backend.forum.repository.TopicoRepository;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.web.server.ResponseStatusException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,25 +30,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.cursovalido.backend.authentication.service.LogAuditoriaService;
-import com.cursovalido.backend.forum.entity.Topico;
-import com.cursovalido.backend.forum.entity.UsuarioForum;
-import com.cursovalido.backend.forum.exception.AcessoNegadoException;
-import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
-import com.cursovalido.backend.forum.repository.TopicoRepository;
-import java.util.List;
-import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import static org.assertj.core.api.Assertions.assertThat;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.data.domain.PageRequest;
 
 @ExtendWith(MockitoExtension.class)
 class TopicoServiceTest {
@@ -118,11 +122,11 @@ class TopicoServiceTest {
         topico.setQuantidadeRespostas(12);
         when(usuarios.bloquearAtivo(7L)).thenReturn(usuario);
         when(repositorio.save(topico)).thenReturn(topico);
-        var antes = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC);
+        var antes = LocalDateTime.now(ZoneOffset.UTC);
         Topico resultado = servico.criar(topico, 7L);
         assertThat(resultado.getIdAutor()).isEqualTo(7L);
         assertThat(resultado.getUsuarioAutor()).isSameAs(usuario);
-        assertThat(resultado.getCriadoEm()).isBetween(antes, java.time.LocalDateTime.now(java.time.ZoneOffset.UTC));
+        assertThat(resultado.getCriadoEm()).isBetween(antes, LocalDateTime.now(ZoneOffset.UTC));
         assertThat(resultado.isAtivo()).isTrue();
         assertThat(resultado.isFechado()).isFalse();
         assertThat(resultado.getQuantidadeRespostas()).isZero();
@@ -254,14 +258,14 @@ class TopicoServiceTest {
     void limiteDeTresMinutosImpedeSalvarOutroTopico() {
         when(usuarios.bloquearAtivo(7L)).thenReturn(usuario);
         when(repositorio.existsByIdAutorAndCriadoEmAfter(eq(7L), any())).thenReturn(true);
-        var inicio = java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(3);
-        var erro = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+        var inicio = LocalDateTime.now(ZoneOffset.UTC).minusMinutes(3);
+        var erro = assertThrows(ResponseStatusException.class,
                 () -> servico.criar(new Topico(), 7L));
         assertEquals(429, erro.getStatusCode().value());
         assertThat(erro.getReason()).contains("3 minutos");
-        var limite = org.mockito.ArgumentCaptor.forClass(java.time.LocalDateTime.class);
+        var limite = ArgumentCaptor.forClass(LocalDateTime.class);
         verify(repositorio).existsByIdAutorAndCriadoEmAfter(eq(7L), limite.capture());
-        assertThat(limite.getValue()).isBetween(inicio, java.time.LocalDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(3));
+        assertThat(limite.getValue()).isBetween(inicio, LocalDateTime.now(ZoneOffset.UTC).minusMinutes(3));
         verify(repositorio, never()).save(any());
     }
 }

@@ -3,10 +3,6 @@ package com.cursovalido.backend.dashboard.service;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.AtividadeDia;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.CursoPopular;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.MatriculasMes;
@@ -14,8 +10,13 @@ import com.cursovalido.backend.dashboard.dto.DashboardResponse.Resumo;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.UsuariosPerfil;
 import com.cursovalido.backend.dashboard.repository.DashboardRepository;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -51,8 +52,8 @@ class DashboardServiceTest {
     void devePreencherMesSemMatriculasComZero() {
         cadastrarUsuario(Perfil.ADMINISTRADOR);
         LocalDate mesAtual = LocalDate.now(ZoneId.of("America/Sao_Paulo")).withDayOfMonth(1);
-        String mesAnterior = java.time.YearMonth.from(mesAtual.minusMonths(1)).toString();
-        String mes = java.time.YearMonth.from(mesAtual).toString();
+        String mesAnterior = YearMonth.from(mesAtual.minusMonths(1)).toString();
+        String mes = YearMonth.from(mesAtual).toString();
         when(dashboard.matriculasPorMes(mesAtual.minusMonths(1), mesAtual.plusMonths(1)))
                 .thenReturn(List.of(new MatriculasMes(mes, 4)));
 

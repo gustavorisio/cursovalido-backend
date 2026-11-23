@@ -4,6 +4,7 @@ import com.cursovalido.backend.notificacoes.dto.ComunicadoResponse;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Repository;
 public class ComunicadoRepository {
     private final JdbcTemplate jdbc;
 
-    // Serializa publicações de todos os administradores para proteger o máximo global.
+    // Bloqueia as publicações antes de conferir o limite global.
     public void bloquearPublicacoes() {
         jdbc.execute("LOCK TABLE tb_comunicados IN SHARE ROW EXCLUSIVE MODE");
     }
@@ -60,7 +61,7 @@ public class ComunicadoRepository {
                 rs.getBoolean("lida")), usuario, tamanho, (long) pagina * tamanho);
     }
 
-    public java.util.Optional<ComunicadoResponse> editar(Long id, String titulo, String conteudo) {
+    public Optional<ComunicadoResponse> editar(Long id, String titulo, String conteudo) {
         return jdbc.query("""
                 UPDATE tb_comunicados SET titulo = ?, conteudo = ? WHERE id = ?
                 RETURNING id, titulo, conteudo, criado_em

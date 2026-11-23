@@ -35,12 +35,6 @@ public class PrivilegiosAdministrativosService {
                 .orElse(false);
     }
 
-    public void verificarPodeGerenciarPerfil(Long idAdministrador, Perfil perfilAlvo) {
-        verificarAdministrador(idAdministrador);
-        if (perfilAlvo == Perfil.ADMINISTRADOR && !ehPrincipal(idAdministrador))
-            throw negado();
-    }
-
     public void verificarPrincipal(Long id) {
         verificarAdministrador(id);
         if (!ehPrincipal(id))

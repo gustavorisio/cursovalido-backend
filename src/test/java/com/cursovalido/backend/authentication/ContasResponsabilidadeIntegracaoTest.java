@@ -1,31 +1,42 @@
 package com.cursovalido.backend.authentication;
 
-import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
-
+import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
-import com.cursovalido.backend.authentication.service.*;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import com.cursovalido.backend.authentication.service.*;
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
+
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
-@org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class ContasResponsabilidadeIntegracaoTest {
         @Autowired
-        org.springframework.test.web.servlet.MockMvc mvc;
+        MockMvc mvc;
         @Autowired
         UsuarioRepository usuarios;
         @Autowired
@@ -57,7 +68,7 @@ class ContasResponsabilidadeIntegracaoTest {
         @MockitoBean
         EmailService emails;
         @MockitoBean
-        com.cursovalido.backend.forum.service.UsuarioForumService usuariosForum;
+        UsuarioForumService usuariosForum;
         @MockitoBean
         ValidacaoEmailService validacaoEmail;
         @Autowired
@@ -84,7 +95,7 @@ class ContasResponsabilidadeIntegracaoTest {
                 assertThat(usuarios.existsByEmail(email)).isFalse();
                 assertThat(aceites.existsByUsuarioIdAndPerfilAndVersao(usuario.getId(), perfil, "1.0")).isTrue();
                 assertThat(logs.findByUsuarioIdOrderByDataHoraAsc(usuario.getId())).isEmpty();
-                var idsLogsAntes = logsAntes.stream().map(LogAuditoria::getId).collect(java.util.stream.Collectors.toSet());
+                var idsLogsAntes = logsAntes.stream().map(LogAuditoria::getId).collect(Collectors.toSet());
                 assertThat(logs.findAll().stream().filter(log -> idsLogsAntes.contains(log.getId())))
                                 .allSatisfy(log -> assertThat(log.getUsuarioId()).isNull());
                 assertThat(auditoria.verificarIntegridade()).isTrue();
@@ -141,31 +152,31 @@ class ContasResponsabilidadeIntegracaoTest {
         void conviteExigeAceiteDoPerfilAntesDeCriarUsuario(Perfil perfil) throws Exception {
                 String email = UUID.randomUUID() + "@example.com";
                 String token = UUID.randomUUID().toString();
-                String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
-                                .digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                                .digest(token.getBytes(StandardCharsets.UTF_8)));
                 var convite = new ConviteAcesso(email, perfil, hash, LocalDateTime.now().plusDays(1));
                 convite.setEmailConfirmado(true);
                 convites.saveAndFlush(convite);
-                mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                mvc.perform(MockMvcRequestBuilders
                                 .post("/api/convites/consultar")
-                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"token\":\"" + token + "\"}"))
-                                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                                .andExpect(MockMvcResultMatchers.status()
                                                 .isOk())
-                                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                                .andExpect(MockMvcResultMatchers
                                                 .jsonPath("$.email").value(email))
-                                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                                .andExpect(MockMvcResultMatchers
                                                 .jsonPath("$.perfil").value(perfil.name()));
                 politicas.findByAtivaTrueOrderByDataPublicacaoDesc().forEach(politica -> politica.setAtiva(false));
                 politicas.flush();
                 politicas.saveAndFlush(new Politica("Termos", "convite-responsabilidade", "Termos gerais"));
-                var semAceite = new com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest(
+                var semAceite = new CadastroUsuarioRequest(
                                 "Convidado", email, "SenhaTeste123!", "SenhaTeste123!",
                                 true, true, "convite-responsabilidade", null, null);
                 assertThatThrownBy(() -> servicoConvites.completar(token, semAceite, "127.0.0.1"))
                                 .isInstanceOf(IllegalArgumentException.class);
                 assertThat(usuarios.existsByEmail(email)).isFalse();
-                var comAceite = new com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest(
+                var comAceite = new CadastroUsuarioRequest(
                                 "Convidado", email, "SenhaTeste123!", "SenhaTeste123!",
                                 true, true, "convite-responsabilidade", true, "1.0");
                 servicoConvites.completar(token, comAceite, "127.0.0.1");
@@ -173,32 +184,32 @@ class ContasResponsabilidadeIntegracaoTest {
                 assertThat(usuario.getPerfil()).isEqualTo(perfil);
                 assertThat(responsabilidade.atualizado(usuario)).isTrue();
                 assertThat(convite.getStatus()).isEqualTo(StatusConvite.CONCLUIDO);
-                mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                mvc.perform(MockMvcRequestBuilders
                                 .post("/api/convites/consultar")
-                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"token\":\"" + token + "\"}"))
-                                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                                .andExpect(MockMvcResultMatchers.status()
                                                 .isBadRequest());
         }
 
         @Test
         void consultaDoConviteRecusaTokenInvalidoEExpirado() throws Exception {
-                mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                mvc.perform(MockMvcRequestBuilders
                                 .post("/api/convites/consultar")
-                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"token\":\"invalido\"}"))
-                                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                                .andExpect(MockMvcResultMatchers.status()
                                                 .isBadRequest());
                 String token = "expirado";
-                String hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
-                                .digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                String hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                                .digest(token.getBytes(StandardCharsets.UTF_8)));
                 convites.saveAndFlush(new ConviteAcesso("expirado@example.com", Perfil.PROFESSOR, hash,
                                 LocalDateTime.now().minusDays(1)));
-                mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                mvc.perform(MockMvcRequestBuilders
                                 .post("/api/convites/consultar")
-                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"token\":\"expirado\"}"))
-                                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                                .andExpect(MockMvcResultMatchers.status()
                                                 .isBadRequest());
         }
 

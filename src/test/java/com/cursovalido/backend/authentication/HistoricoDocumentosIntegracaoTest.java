@@ -3,12 +3,15 @@ package com.cursovalido.backend.authentication;
 import com.cursovalido.backend.authentication.dto.PoliticaRequest;
 import com.cursovalido.backend.authentication.entity.Politica;
 import com.cursovalido.backend.authentication.entity.PoliticaPrivacidade;
+import com.cursovalido.backend.authentication.entity.VersaoDocumento;
 import com.cursovalido.backend.authentication.repository.PoliticaRepository;
 import com.cursovalido.backend.authentication.repository.PrivacidadeRepository;
+import com.cursovalido.backend.authentication.repository.VersaoDocumentoRepository;
+import com.cursovalido.backend.authentication.service.EmailService;
 import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.PrivacidadeService;
-import com.cursovalido.backend.authentication.service.EmailService;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,11 +34,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class HistoricoDocumentosIntegracaoTest {
-    @Autowired com.cursovalido.backend.authentication.repository.VersaoDocumentoRepository versoes;
-    @org.junit.jupiter.api.BeforeEach
+    @Autowired VersaoDocumentoRepository versoes;
+    @BeforeEach
     void prepararVersoes() {
-        versoes.saveAndFlush(new com.cursovalido.backend.authentication.entity.VersaoDocumento("TERMOS", 0));
-        versoes.saveAndFlush(new com.cursovalido.backend.authentication.entity.VersaoDocumento("PRIVACIDADE", 0));
+        versoes.saveAndFlush(new VersaoDocumento("TERMOS", 0));
+        versoes.saveAndFlush(new VersaoDocumento("PRIVACIDADE", 0));
     }
 
     @Autowired MockMvc mvc;

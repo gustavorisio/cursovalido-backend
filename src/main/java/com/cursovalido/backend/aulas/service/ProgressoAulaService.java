@@ -44,7 +44,7 @@ public class ProgressoAulaService {
 
     @Transactional
     public ProgressoAula concluir(Long idAula, Long idAluno) {
-        // Serializa conclusões do mesmo aluno, inclusive entre cursos diferentes.
+        // Bloqueia o aluno durante o registro da conclusão.
         usuarios.buscarParaAtualizar(idAluno);
         Matricula matricula = buscarMatriculaAutorizada(idAula, idAluno);
         bloquearMatricula(matricula.getId());

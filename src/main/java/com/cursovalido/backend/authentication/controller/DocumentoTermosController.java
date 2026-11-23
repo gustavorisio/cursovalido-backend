@@ -3,8 +3,10 @@ package com.cursovalido.backend.authentication.controller;
 import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.PrivacidadeService;
+import com.cursovalido.backend.authentication.validation.politica.ConteudoDocumento;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
@@ -51,12 +53,12 @@ public class DocumentoTermosController {
                 + "</h1><p class=\"atualizacao\"><strong>Versão: " + HtmlUtils.htmlEscape(politica.versao())
                 + "</strong></p><article style=\"overflow-wrap:anywhere;white-space:pre-wrap\">" + conteudo + "</article></main>";
         return modelo.replaceFirst("(?is)<main\\b[^>]*>.*?</main>",
-                java.util.regex.Matcher.quoteReplacement(principal));
+                Matcher.quoteReplacement(principal));
     }
 
     static String renderizarConteudo(String conteudo) {
         if (conteudo == null)
             return "";
-        return HtmlUtils.htmlEscape(com.cursovalido.backend.authentication.validation.politica.ConteudoDocumento.preparar(conteudo));
+        return HtmlUtils.htmlEscape(ConteudoDocumento.preparar(conteudo));
     }
 }

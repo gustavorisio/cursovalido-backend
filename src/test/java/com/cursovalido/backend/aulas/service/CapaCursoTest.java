@@ -1,11 +1,14 @@
 package com.cursovalido.backend.aulas.service;
 
+import com.cursovalido.backend.aulas.dto.CursoResponse;
+import com.cursovalido.backend.aulas.entity.Curso;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class CapaCursoTest {
@@ -21,9 +24,9 @@ class CapaCursoTest {
         CapaCurso.validar(imagem(550, 250, "jpeg"));
         CapaCurso.validar(imagem(275, 125, "jpeg"));
         CapaCurso.validar(imagem(1, 1, "jpeg"));
-        var curso = new com.cursovalido.backend.aulas.entity.Curso();
+        var curso = new Curso();
         curso.setCapaJpeg(imagem(550, 250, "jpeg"));
-        assertEquals(curso.getCapaJpeg(), com.cursovalido.backend.aulas.dto.CursoResponse.de(curso).capaJpeg());
+        assertEquals(curso.getCapaJpeg(), CursoResponse.de(curso).capaJpeg());
     }
 
     @Test

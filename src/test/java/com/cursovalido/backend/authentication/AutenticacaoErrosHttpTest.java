@@ -1,17 +1,18 @@
 package com.cursovalido.backend.authentication;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 import com.cursovalido.backend.authentication.configuration.AutenticacaoExceptionHandler;
 import com.cursovalido.backend.authentication.controller.ConviteController;
+import com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException;
 import com.cursovalido.backend.authentication.service.ConviteAcessoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class AutenticacaoErrosHttpTest {
         private final ConviteAcessoService convites = mock(ConviteAcessoService.class);
@@ -60,7 +61,7 @@ class AutenticacaoErrosHttpTest {
 
         @Test
         void conflitoDeConviteChegaComCodigoEMensagem() throws Exception {
-                doThrow(new com.cursovalido.backend.authentication.exception.ConviteAcessoInvalidoException(
+                doThrow(new ConviteAcessoInvalidoException(
                                 HttpStatus.CONFLICT, "CONVITE_JA_PENDENTE", "Já existe um convite pendente para este e-mail."))
                                 .when(convites).consultar("token");
                 MockMvcBuilders.standaloneSetup(new ConviteController(convites))
