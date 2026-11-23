@@ -68,16 +68,15 @@ class ForumControllerTest {
     }
 
     @Test
-    void buscarTopico_porUrl_deveRetornarDetalhesCensurados() throws Exception {
-        topico.setTitulo("idiota");
-        when(topicos.buscarAtivo(10L)).thenReturn(topico);
-        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controlador).build();
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/forum/topicos/10"))
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.id").value(10))
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.titulo").value("***"))
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.descricao").value("Duvida"));
-        verify(topicos).buscarAtivo(10L);
+    void consultarTopico_deveUsarPrincipalEConverterHorario() {
+        var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "#1a3b5c7d", "ALUNO", 7L,
+                topico.getCriadoEm(), 2, true, false);
+        when(topicos.consultar(10L, 7L)).thenReturn(resumo);
+        var resposta = controlador.consultarTopico(principal, 10L);
+        assertThat(resposta.id()).isEqualTo(10L);
+        assertThat(resposta.quantidadeRespostas()).isEqualTo(2);
+        assertThat(resposta.criadoEm()).isEqualTo(LocalDateTime.of(2026, 11, 15, 22, 27));
+        verify(topicos).consultar(10L, 7L);
     }
 
     @Test

@@ -142,6 +142,47 @@ class AulasHttpIntegracaoTest {
         }
 
         @Test
+        void xpSomenteNaPrimeiraAprovacaoIntegralMesmoComConcorrenciaENovaVersao() throws Exception {
+                String rotaGestao = "/api/professor/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
+                var pergunta = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Incorreta"), 0,
+                                List.of("", "Motivo do erro"), null);
+                var dados = new QuestionarioRequest("Questionário", true, List.of(pergunta, pergunta));
+                var salva = enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, dados, QuestionarioGestaoResponse.class);
+                assertThat(salva.getStatusCode()).isEqualTo(HttpStatus.OK);
+                int versao = salva.getBody().versao();
+                matricular();
+                var aula = enviar(HttpMethod.POST, "/api/aluno/aulas/" + idAula + "/conclusao", tokenAluno, null, String.class);
+                assertThat(aula.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(aula.getBody()).doesNotContain("recompensa");
+                String rota = "/api/aluno/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
+                var parcial = enviar(HttpMethod.POST, rota + "/respostas", tokenAluno,
+                                new RespostasQuestionarioRequest(versao, List.of(0, 1)), ResultadoQuestionarioResponse.class);
+                assertThat(parcial.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(parcial.getBody().percentual()).isEqualTo(50);
+                assertThat(parcial.getBody().recompensa()).isNull();
+                assertThat(enviar(HttpMethod.GET, "/api/aluno/gamificacao", tokenAluno, null, GamificacaoResponse.class)
+                                .getBody().xpTotal()).isZero();
+                var perfeitas = simultaneas(() -> enviar(HttpMethod.POST, rota + "/respostas", tokenAluno,
+                                new RespostasQuestionarioRequest(versao, List.of(0, 0)), ResultadoQuestionarioResponse.class));
+                assertThat(perfeitas).allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
+                assertThat(perfeitas.stream().filter(resposta -> resposta.getBody().recompensa() != null).count()).isEqualTo(1);
+                assertThat(perfeitas.stream().map(ResponseEntity::getBody).map(ResultadoQuestionarioResponse::recompensa)
+                                .filter(java.util.Objects::nonNull).findFirst().orElseThrow().xpGanho()).isEqualTo(100);
+                var novaVersao = enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, dados, QuestionarioGestaoResponse.class);
+                assertThat(novaVersao.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(enviar(HttpMethod.POST, rota + "/respostas", tokenAluno,
+                                new RespostasQuestionarioRequest(novaVersao.getBody().versao(), List.of(0, 0)),
+                                ResultadoQuestionarioResponse.class).getBody().recompensa()).isNull();
+                assertThat(enviar(HttpMethod.GET, rota, tokenAluno, null, String.class).getBody()).doesNotContain("recompensa");
+                var saldo = enviar(HttpMethod.GET, "/api/aluno/gamificacao", tokenAluno, null, GamificacaoResponse.class).getBody();
+                assertThat(saldo.xpTotal()).isEqualTo(100);
+                assertThat(saldo.questionariosConcluidos()).isEqualTo(1);
+                assertThat(saldo.cursosConcluidos()).isEqualTo(1);
+                assertThat(jdbc.queryForObject("select count(*) from tb_recompensas_questionarios where aluno_id = ?", Long.class,
+                                aluno.getId())).isEqualTo(1);
+        }
+
+        @Test
         void administradorEditaArquivaEReabreSemPerderProgresso() {
                 String tokenAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
                 matricular();

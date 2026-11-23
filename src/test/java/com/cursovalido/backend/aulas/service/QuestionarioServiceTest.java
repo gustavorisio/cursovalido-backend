@@ -34,7 +34,7 @@ class QuestionarioServiceTest {
     }
     private final QuestionarioService service = new QuestionarioService(questionarios, tentativas, cursos,
             modulos, usuarios, mock(CursoService.class), mock(AdministradorAulasService.class),
-            mock(AlunoAulasService.class), mock(LogAuditoriaService.class));
+            mock(AlunoAulasService.class), mock(LogAuditoriaService.class), mock(GamificacaoService.class));
 
     @Test
     void deveSalvarPerguntasComTextoLimpo() {

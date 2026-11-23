@@ -62,6 +62,14 @@ public class TopicoService {
         return repositorioTopicos.listarMeus(PageRequest.of(pagina, tamanho), termo, idUsuario);
     }
 
+    // Consulta um tópico ativo pela URL individual.
+    public TopicoResumoDTO consultar(Long idTopico, Long idUsuario) {
+        var topico = repositorioTopicos.buscarDetalhe(idTopico)
+                .orElseThrow(RecursoNaoEncontradoException::topicoNaoEncontrado);
+        registrar(idUsuario, "CONSULTA_TOPICO", "Topico " + idTopico);
+        return topico;
+    }
+
     // Cria um novo topico para o usuario informado.
     @Transactional
     public Topico criar(Topico topico, Long idUsuario) {

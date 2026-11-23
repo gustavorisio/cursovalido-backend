@@ -59,9 +59,10 @@ public class ForumController {
         return servicoTopicos.listarMeus(page, size, busca, usuario.getId()).map(this::converter);
     }
 
-    @GetMapping("/topicos/{id}")
-    public TopicoResponse buscarTopico(@PathVariable Long id) {
-        return converter(servicoTopicos.buscarAtivo(id));
+    @GetMapping("/topicos/{idTopico}")
+    public TopicoResumoDTO consultarTopico(@AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable Long idTopico) {
+        return converter(servicoTopicos.consultar(idTopico, usuario.getId()));
     }
 
     @PostMapping("/topicos")
