@@ -21,6 +21,9 @@ import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.repository.*;
 import com.cursovalido.backend.forum.support.PostgresTeste;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.sql.Timestamp;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1112,7 +1115,8 @@ class ForumHttpIntegracaoTest {
                 alterarEstado(primeiro.getBody().id(), "arquivar", autor.token());
                 assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, String.class).getStatusCode())
                         .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
-                jdbc.update("UPDATE tb_topics SET created_at = CURRENT_TIMESTAMP - INTERVAL '3 minutes'");
+                jdbc.update("UPDATE tb_topics SET created_at = ?",
+                                Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(3).minusSeconds(1)));
                 assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, TopicoResponse.class).getStatusCode())
                         .isEqualTo(HttpStatus.OK);
         }
@@ -1127,7 +1131,8 @@ class ForumHttpIntegracaoTest {
                 var bloqueado = enviar(HttpMethod.POST, comentariosUrl(segundo.id()), autor.token(), dados, String.class);
                 assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
                 assertThat(bloqueado.getBody()).contains("20 segundos");
-                jdbc.update("UPDATE tb_comments SET created_at = CURRENT_TIMESTAMP - INTERVAL '20 seconds'");
+                jdbc.update("UPDATE tb_comments SET created_at = ?",
+                                Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(21)));
                 assertThat(enviar(HttpMethod.POST, comentariosUrl(segundo.id()), autor.token(), dados, ComentarioResponse.class).getStatusCode())
                         .isEqualTo(HttpStatus.OK);
         }
@@ -1221,8 +1226,9 @@ class ForumHttpIntegracaoTest {
                                 new TopicoRequest(titulo, "Descricao " + titulo), TopicoResponse.class);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resposta.getBody().id()).isPositive();
-                // Libera o limite de criação entre tópicos dentro dos cenários de paginação.
-                jdbc.update("UPDATE tb_topics SET created_at = CURRENT_TIMESTAMP - INTERVAL '3 minutes' WHERE id = ?",
+                // Usa o relogio UTC da aplicacao, com margem fora do intervalo de bloqueio.
+                jdbc.update("UPDATE tb_topics SET created_at = ? WHERE id = ?",
+                                Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(3).minusSeconds(1)),
                                 resposta.getBody().id());
                 return resposta.getBody();
         }
@@ -1233,8 +1239,9 @@ class ForumHttpIntegracaoTest {
                                 ComentarioResponse.class);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resposta.getBody().conteudo()).isEqualTo(conteudo);
-                // Fixtures de listagem não exercitam o intervalo entre publicações.
-                jdbc.update("UPDATE tb_comments SET created_at = CURRENT_TIMESTAMP - INTERVAL '20 seconds' WHERE id = ?",
+                // Fixtures de listagem nao exercitam o intervalo entre publicacoes.
+                jdbc.update("UPDATE tb_comments SET created_at = ? WHERE id = ?",
+                                Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(21)),
                                 resposta.getBody().id());
                 return resposta.getBody();
         }

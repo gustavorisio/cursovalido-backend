@@ -21,7 +21,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - run: mvn --batch-mode --no-transfer-progress -Dtest.postgres.mode=container clean verify
+          cache: maven
+          cache-dependency-path: |
+            pom.xml
+            .mvn/ci-settings.xml
+      - run: mvn --settings .mvn/ci-settings.xml --batch-mode --no-transfer-progress -Dtest.postgres.mode=container clean verify
       - shell: bash
         run: |
           set -euo pipefail

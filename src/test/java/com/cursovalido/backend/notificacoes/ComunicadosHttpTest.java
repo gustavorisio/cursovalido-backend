@@ -274,7 +274,9 @@ class ComunicadosHttpTest {
                 var bloqueado = enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, String.class);
                 assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
                 assertThat(bloqueado.getBody()).contains("30 segundos");
-                jdbc.update("UPDATE tb_publicacoes_comunicados SET ultima_publicacao_em = CURRENT_TIMESTAMP - INTERVAL '30 seconds'");
+                // Usa o mesmo relogio da aplicacao, com margem fora dos 30 segundos de bloqueio.
+                jdbc.update("UPDATE tb_publicacoes_comunicados SET ultima_publicacao_em = ?",
+                                java.sql.Timestamp.valueOf(LocalDateTime.now().minusSeconds(31)));
                 assertThat(enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, ComunicadoResponse.class).getStatusCode())
                         .isEqualTo(HttpStatus.CREATED);
         }
