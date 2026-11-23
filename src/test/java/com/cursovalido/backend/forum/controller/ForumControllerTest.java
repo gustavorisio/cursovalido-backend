@@ -68,6 +68,19 @@ class ForumControllerTest {
     }
 
     @Test
+    void buscarTopico_porUrl_deveRetornarDetalhesCensurados() throws Exception {
+        topico.setTitulo("idiota");
+        when(topicos.buscarAtivo(10L)).thenReturn(topico);
+        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controlador).build();
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/forum/topicos/10"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.id").value(10))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.titulo").value("***"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.descricao").value("Duvida"));
+        verify(topicos).buscarAtivo(10L);
+    }
+
+    @Test
     void criarTopico_comRequisicao_deveConverterEntradaESaida() {
         when(topicos.criar(any(), eq(7L))).thenReturn(topico);
         var resposta = controlador.criarTopico(principal, new TopicoRequest("Java", "Duvida"));
