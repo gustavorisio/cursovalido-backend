@@ -30,7 +30,6 @@ public class DashboardService {
         return dashboard.resumo();
     }
 
-
     public AtividadeDia atividadeDia(Long id, LocalDate data) {
         verificarAdministrador(id);
         if (data.isAfter(LocalDate.now(FUSO_DASHBOARD))) {

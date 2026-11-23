@@ -41,7 +41,8 @@ public class QuestionarioService {
                 .orElseThrow(() -> erro(HttpStatus.NOT_FOUND, "Curso nao encontrado"));
         for (var pergunta : dados.perguntas()) {
             if (!pergunta.isExplicacoesValidas()) {
-                throw erro(HttpStatus.BAD_REQUEST, "Informe uma explicação para cada alternativa incorreta e uma alternativa correta válida");
+                throw erro(HttpStatus.BAD_REQUEST,
+                        "Informe uma explicação para cada alternativa incorreta e uma alternativa correta válida");
             }
         }
         Questionario questionario = questionarios.findByIdCursoAndIdModulo(idCurso, idModulo)
@@ -178,7 +179,8 @@ public class QuestionarioService {
             var p = q.getPerguntas().get(i);
             boolean acertou = tentativa.getRespostas().get(i) == p.getAlternativaCorreta();
             correcoes.add(new ResultadoQuestionarioResponse.Correcao(i, acertou,
-                    concluido ? p.getAlternativaCorreta() : null, acertou ? null : p.getExplicacoes().get(tentativa.getRespostas().get(i))));
+                    concluido ? p.getAlternativaCorreta() : null,
+                    acertou ? null : p.getExplicacoes().get(tentativa.getRespostas().get(i))));
         }
         return new ResultadoQuestionarioResponse(tentativa.getAcertos(), tentativa.getTotal(),
                 percentual(tentativa),

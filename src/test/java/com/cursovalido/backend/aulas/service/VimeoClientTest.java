@@ -30,7 +30,8 @@ class VimeoClientTest {
     @Test
     void aceitaSomenteProprietarioAutorizadoEEnviaTokenNoCabecalho() {
         servidor.expect(requestTo(URL)).andExpect(header("Authorization", "Bearer token-ficticio"))
-                .andRespond(withSuccess("{\"uri\":\"/videos/123\",\"user\":{\"uri\":\"/users/456\"}}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("{\"uri\":\"/videos/123\",\"user\":{\"uri\":\"/users/456\"}}",
+                        MediaType.APPLICATION_JSON));
         cliente.validarVideo("123");
         servidor.verify();
     }

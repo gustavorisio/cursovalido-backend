@@ -98,6 +98,7 @@ class CadastroContratoHttpTest {
                 mvc.perform(post("/api/autenticacao/cadastro").contentType(MediaType.APPLICATION_JSON)
                                 .content(divergente))
                                 .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.campos.confirmacaoSenhaValida").value("As senhas devem coincidir."));
+                                .andExpect(jsonPath("$.campos.confirmacaoSenhaValida")
+                                                .value("As senhas devem coincidir."));
         }
 }

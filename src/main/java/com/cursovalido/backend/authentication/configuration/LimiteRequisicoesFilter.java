@@ -81,7 +81,8 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
             }
             if (aguardar == 0 && segundos > 0) {
                 proximas.entrySet().removeIf(item -> item.getValue() <= agora);
-                if (proximas.size() >= CAPACIDADE) aguardar = segundos;
+                if (proximas.size() >= CAPACIDADE)
+                    aguardar = segundos;
                 else {
                     proximas.put(chave, agora + segundos * 1000L);
                     response.setHeader("X-Intervalo-Acao", Integer.toString(segundos));
@@ -100,17 +101,20 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
     private int intervalo(HttpServletRequest request, String caminho) {
         String metodo = "HEAD".equals(request.getMethod()) ? "GET" : request.getMethod();
         Integer intervaloConta = INTERVALOS_CONTA.get(metodo + " " + caminho);
-        if (intervaloConta != null) return intervaloConta;
+        if (intervaloConta != null)
+            return intervaloConta;
         // Usa o prazo salvo no banco para estas ações.
         if (("POST".equals(metodo) && (caminho.equals("/api/administracao/comunicados")
                 || caminho.equals("/api/administracao/convites")))
-                || caminho.matches("^/api/administracao/convites/[^/]+/reenviar$")) return 0;
+                || caminho.matches("^/api/administracao/convites/[^/]+/reenviar$"))
+            return 0;
         var autenticacao = SecurityContextHolder.getContext().getAuthentication();
-        boolean administrador = autenticacao != null && autenticacao.getPrincipal() instanceof UsuarioAutenticado usuario
+        boolean administrador = autenticacao != null
+                && autenticacao.getPrincipal() instanceof UsuarioAutenticado usuario
                 && usuario.getPerfil() == Perfil.ADMINISTRADOR;
         boolean moderacao = caminho.matches("^/api/forum/topicos/[^/]+/(fechar|arquivar)$")
                 || ("DELETE".equals(request.getMethod())
-                && caminho.matches("^/api/forum/(comentarios/[^/]+|topicos/[^/]+/comentarios/[^/]+)$"));
+                        && caminho.matches("^/api/forum/(comentarios/[^/]+|topicos/[^/]+/comentarios/[^/]+)$"));
         boolean administrativa = caminho.matches("^/api/(administracao|politicas)(/.*)?$")
                 || (administrador && (caminho.matches("^/api/temas(/.*)?$") || moderacao));
         return ALTERACOES.contains(metodo) && administrativa ? 10 : 0;
@@ -119,7 +123,8 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
     private String chave(HttpServletRequest request, String caminho) {
         var autenticacao = SecurityContextHolder.getContext().getAuthentication();
         String origem = autenticacao != null && autenticacao.getPrincipal() instanceof UsuarioAutenticado usuario
-                ? "usuario:" + usuario.getId() : "ip:" + request.getRemoteAddr();
+                ? "usuario:" + usuario.getId()
+                : "ip:" + request.getRemoteAddr();
         return origem + " " + ("HEAD".equals(request.getMethod()) ? "GET" : request.getMethod()) + " " + caminho;
     }
 
@@ -143,8 +148,10 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
 
     // Agrupa as rotas em contadores fixos.
     private static String grupo(HttpServletRequest request, String caminho) {
-        if (ROTAS_AUTENTICACAO_RESTRITAS.contains(caminho)) return caminho;
-        if (caminho.equals("/api/autenticacao/exportar-dados")) return "EXPORTACAO_DADOS";
+        if (ROTAS_AUTENTICACAO_RESTRITAS.contains(caminho))
+            return caminho;
+        if (caminho.equals("/api/autenticacao/exportar-dados"))
+            return "EXPORTACAO_DADOS";
         if (caminho.startsWith("/api/forum/"))
             return "GET".equals(request.getMethod()) ? "FORUM_LEITURA" : "FORUM_ESCRITA";
         return caminho.startsWith("/api/") ? "API_ESCRITA" : "DOCUMENTOS";

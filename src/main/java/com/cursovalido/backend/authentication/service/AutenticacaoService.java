@@ -43,7 +43,8 @@ public class AutenticacaoService {
                 protecaoForcaBruta, moderacao, politicas, responsabilidade, privacidade, null);
     }
 
-    // Valida a senha e pede código quando o 2FA está ativo ou o e-mail ainda não foi confirmado.
+    // Valida a senha e pede código quando o 2FA está ativo ou o e-mail ainda não
+    // foi confirmado.
     public AutenticacaoResponse autenticar(LoginRequest requisicao, String enderecoIp) {
         String identificador = identificador(requisicao.email());
         protecaoForcaBruta.verificar(identificador);
@@ -54,7 +55,8 @@ public class AutenticacaoService {
         if (usuario.getPerfil().equipe() || usuario.isDoisFatoresAtivos() || !usuario.isEmailConfirmado()) {
             envio2fa.enviar(usuario.getId(), enderecoIp, false);
             String finalidadeCodigo = usuario.getPerfil().equipe() || usuario.isDoisFatoresAtivos()
-                    ? "SEGUNDO_FATOR" : "CONFIRMAR_EMAIL";
+                    ? "SEGUNDO_FATOR"
+                    : "CONFIRMAR_EMAIL";
             return new AutenticacaoResponse(null, null, null, null, true, finalidadeCodigo);
         }
         protecaoForcaBruta.registrarSucesso(identificador);

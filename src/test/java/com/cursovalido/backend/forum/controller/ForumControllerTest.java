@@ -60,7 +60,8 @@ class ForumControllerTest {
 
     @Test
     void listarTopicos_comParametros_deveEncaminharBuscaPaginaEUsuario() {
-        var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "#1a3b5c7d", "ALUNO", 7L, topico.getCriadoEm(), 2, true,
+        var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "#1a3b5c7d", "ALUNO", 7L, topico.getCriadoEm(),
+                2, true,
                 false);
         when(topicos.listarRecentes(1, 3, "java", 7L)).thenReturn(List.of(resumo));
         assertThat(controlador.listarTopicosRecentes(principal, 1, 3, "java")).containsExactly(

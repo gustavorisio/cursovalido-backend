@@ -358,13 +358,16 @@ class ForumHttpIntegracaoTest {
                                         "perfil", perfil.name());
                         assertThat(enviar(HttpMethod.POST, rota, comum.token(), dados, String.class).getStatusCode())
                                         .isEqualTo(HttpStatus.FORBIDDEN);
-                        assertThat(enviar(HttpMethod.POST, rota, principal.token(), dados, String.class).getStatusCode())
+                        assertThat(enviar(HttpMethod.POST, rota, principal.token(), dados, String.class)
+                                        .getStatusCode())
                                         .isEqualTo(HttpStatus.NO_CONTENT);
                 }
                 for (String sufixo : new String[] { "", "/pendentes" }) {
-                        assertThat(enviar(HttpMethod.GET, rota + sufixo, comum.token(), null, String.class).getStatusCode())
+                        assertThat(enviar(HttpMethod.GET, rota + sufixo, comum.token(), null, String.class)
+                                        .getStatusCode())
                                         .isEqualTo(HttpStatus.FORBIDDEN);
-                        assertThat(enviar(HttpMethod.GET, rota + sufixo, principal.token(), null, String.class).getStatusCode())
+                        assertThat(enviar(HttpMethod.GET, rota + sufixo, principal.token(), null, String.class)
+                                        .getStatusCode())
                                         .isEqualTo(HttpStatus.OK);
                 }
                 for (String sufixo : new String[] { "/aprovar", "/rejeitar", "/reenviar" }) {
@@ -466,7 +469,8 @@ class ForumHttpIntegracaoTest {
                 assertThat(enviar(HttpMethod.GET, "/api/forum/topicos/999999", leitor.token(), null, String.class)
                                 .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
                 jdbc.update("UPDATE tb_topics SET closed = true WHERE id = ?", topico.id());
-                assertThat(enviar(HttpMethod.GET, rota, leitor.token(), null, TopicoResumoDTO.class).getBody().fechado()).isTrue();
+                assertThat(enviar(HttpMethod.GET, rota, leitor.token(), null, TopicoResumoDTO.class).getBody()
+                                .fechado()).isTrue();
                 jdbc.update("UPDATE tb_topics SET active = false WHERE id = ?", topico.id());
                 assertThat(enviar(HttpMethod.GET, rota, leitor.token(), null, String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.NOT_FOUND);
@@ -629,7 +633,8 @@ class ForumHttpIntegracaoTest {
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resposta.getBody().itens()).extracting(ComentarioResponse::id).containsExactly(primeiro.id(),
                                 segundo.id(), apagado.id());
-                assertThat(resposta.getBody().itens()).extracting(ComentarioResponse::conteudo).containsExactly("Primeiro",
+                assertThat(resposta.getBody().itens()).extracting(ComentarioResponse::conteudo).containsExactly(
+                                "Primeiro",
                                 "Segundo", "Esta mensagem foi excluída.");
                 assertThat(resposta.getBody().itens().get(2).ativo()).isFalse();
         }
@@ -1185,18 +1190,21 @@ class ForumHttpIntegracaoTest {
         void topicosExigemTresMinutosInclusiveAposArquivar() {
                 autor = cadastrarEAutenticar(Perfil.PROFESSOR);
                 var dados = new TopicoRequest("Primeiro", "Descricao");
-                var primeiro = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, TopicoResponse.class);
+                var primeiro = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados,
+                                TopicoResponse.class);
                 assertThat(primeiro.getStatusCode()).isEqualTo(HttpStatus.OK);
                 var bloqueado = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, String.class);
                 assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
                 assertThat(bloqueado.getBody()).contains("3 minutos");
                 alterarEstado(primeiro.getBody().id(), "arquivar", autor.token());
-                assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, String.class).getStatusCode())
-                        .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+                assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, String.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
                 jdbc.update("UPDATE tb_topics SET created_at = ?",
                                 Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(3).minusSeconds(1)));
-                assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, TopicoResponse.class).getStatusCode())
-                        .isEqualTo(HttpStatus.OK);
+                assertThat(enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(), dados, TopicoResponse.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.OK);
         }
 
         @Test
@@ -1204,27 +1212,31 @@ class ForumHttpIntegracaoTest {
                 var primeiro = criarTopico("Primeiro");
                 var segundo = criarTopico("Segundo");
                 var dados = new ComentarioRequest("Resposta");
-                assertThat(enviar(HttpMethod.POST, comentariosUrl(primeiro.id()), autor.token(), dados, ComentarioResponse.class).getStatusCode())
-                        .isEqualTo(HttpStatus.OK);
-                var bloqueado = enviar(HttpMethod.POST, comentariosUrl(segundo.id()), autor.token(), dados, String.class);
+                assertThat(enviar(HttpMethod.POST, comentariosUrl(primeiro.id()), autor.token(), dados,
+                                ComentarioResponse.class).getStatusCode())
+                                .isEqualTo(HttpStatus.OK);
+                var bloqueado = enviar(HttpMethod.POST, comentariosUrl(segundo.id()), autor.token(), dados,
+                                String.class);
                 assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
                 assertThat(bloqueado.getBody()).contains("20 segundos");
                 jdbc.update("UPDATE tb_comments SET created_at = ?",
                                 Timestamp.valueOf(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(21)));
-                assertThat(enviar(HttpMethod.POST, comentariosUrl(segundo.id()), autor.token(), dados, ComentarioResponse.class).getStatusCode())
-                        .isEqualTo(HttpStatus.OK);
+                assertThat(enviar(HttpMethod.POST, comentariosUrl(segundo.id()), autor.token(), dados,
+                                ComentarioResponse.class).getStatusCode())
+                                .isEqualTo(HttpStatus.OK);
         }
 
         @Test
         void apiSalvaEDevolveOfensasOcultas() {
                 var resposta = enviar(HttpMethod.POST, "/api/forum/topicos", autor.token(),
-                        new TopicoRequest("idiota", "lixo, fodace, foda-se, pau no cu, otario"), TopicoResponse.class);
+                                new TopicoRequest("idiota", "lixo, fodace, foda-se, pau no cu, otario"),
+                                TopicoResponse.class);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resposta.getBody().titulo()).isEqualTo("***");
                 assertThat(topicos.findById(resposta.getBody().id()).orElseThrow().getDescricao())
-                        .isEqualTo("***, ***, ***, ***, ***");
+                                .isEqualTo("***, ***, ***, ***, ***");
                 var comentario = enviar(HttpMethod.POST, comentariosUrl(resposta.getBody().id()), autor.token(),
-                        new ComentarioRequest("OTÁRIO!"), ComentarioResponse.class);
+                                new ComentarioRequest("OTÁRIO!"), ComentarioResponse.class);
                 assertThat(comentario.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(comentario.getBody().conteudo()).isEqualTo("***!");
         }
@@ -1234,7 +1246,7 @@ class ForumHttpIntegracaoTest {
         void alunoNaoPodeFecharNemArquivarSeuTopico(String acao) {
                 var topico = criarTopico("Topico do aluno");
                 var resposta = enviar(HttpMethod.PUT, "/api/forum/topicos/" + topico.id() + "/" + acao,
-                        autor.token(), null, String.class);
+                                autor.token(), null, String.class);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
                 var salvo = topicos.findById(topico.id()).orElseThrow();
                 assertThat(salvo.isAtivo()).isTrue();
@@ -1252,12 +1264,13 @@ class ForumHttpIntegracaoTest {
                 var continuar = new CountDownLatch(1);
                 doAnswer(invocacao -> {
                         carregou.countDown();
-                        if (!continuar.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("Timeout");
+                        if (!continuar.await(10, TimeUnit.SECONDS))
+                                throw new IllegalStateException("Timeout");
                         return null;
                 }).when(auditoria).registrar(eq(autor.id()), eq("EDICAO_COMENTARIO"), anyString(), isNull());
-                var edicao = CompletableFuture.supplyAsync(() ->
-                        enviar(HttpMethod.PUT, "/api/forum/comentarios/" + publicado.id(), autor.token(),
-                                new ComentarioRequest("Edicao concorrente"), String.class));
+                var edicao = CompletableFuture.supplyAsync(
+                                () -> enviar(HttpMethod.PUT, "/api/forum/comentarios/" + publicado.id(), autor.token(),
+                                                new ComentarioRequest("Edicao concorrente"), String.class));
                 try {
                         assertThat(carregou.await(10, TimeUnit.SECONDS)).isTrue();
                         new TransactionTemplate(transacoesComentarios).execute(status -> {
@@ -1266,7 +1279,9 @@ class ForumHttpIntegracaoTest {
                                 comentarios.saveAndFlush(removido);
                                 return null;
                         });
-                } finally { continuar.countDown(); }
+                } finally {
+                        continuar.countDown();
+                }
                 var resposta = edicao.get(10, TimeUnit.SECONDS);
                 assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
                 assertThat(resposta.getBody()).contains("CONTEUDO_ALTERADO");
@@ -1278,24 +1293,28 @@ class ForumHttpIntegracaoTest {
                 var topico = criarTopico("Paginacao");
                 var original = criarComentario(topico.id(), "Original");
                 jdbc.update("""
-                        INSERT INTO tb_comments (content, author_id, topic_id, created_at, active, versao)
-                        SELECT 'Resposta ' || numero, author_id, topic_id, created_at + numero * INTERVAL '1 second', true, 0
-                        FROM tb_comments CROSS JOIN generate_series(1, 24) numero WHERE id = ?
-                        """, original.id());
+                                INSERT INTO tb_comments (content, author_id, topic_id, created_at, active, versao)
+                                SELECT 'Resposta ' || numero, author_id, topic_id, created_at + numero * INTERVAL '1 second', true, 0
+                                FROM tb_comments CROSS JOIN generate_series(1, 24) numero WHERE id = ?
+                                """,
+                                original.id());
                 var primeira = enviar(HttpMethod.GET, comentariosUrl(topico.id()), autor.token(), null,
-                        PaginaComentariosResponse.class).getBody();
-                var segunda = enviar(HttpMethod.GET, comentariosUrl(topico.id()) + "?page=1&size=20", autor.token(), null,
-                        PaginaComentariosResponse.class).getBody();
+                                PaginaComentariosResponse.class).getBody();
+                var segunda = enviar(HttpMethod.GET, comentariosUrl(topico.id()) + "?page=1&size=20", autor.token(),
+                                null,
+                                PaginaComentariosResponse.class).getBody();
                 assertThat(primeira.itens()).hasSize(20);
                 assertThat(primeira.totalElementos()).isEqualTo(25);
                 assertThat(primeira.totalPaginas()).isEqualTo(2);
                 assertThat(segunda.itens()).hasSize(5);
                 assertThat(segunda.pagina()).isEqualTo(1);
                 assertThat(primeira.itens()).extracting(ComentarioResponse::id)
-                        .doesNotContainAnyElementsOf(segunda.itens().stream().map(ComentarioResponse::id).toList());
+                                .doesNotContainAnyElementsOf(
+                                                segunda.itens().stream().map(ComentarioResponse::id).toList());
                 for (String parametros : List.of("size=51", "size=0", "page=-1")) {
-                        assertThat(enviar(HttpMethod.GET, comentariosUrl(topico.id()) + "?" + parametros, autor.token(), null,
-                                String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                        assertThat(enviar(HttpMethod.GET, comentariosUrl(topico.id()) + "?" + parametros, autor.token(),
+                                        null,
+                                        String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
                 }
         }
 

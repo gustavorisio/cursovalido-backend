@@ -15,7 +15,8 @@ class AdministradorAulasControllerTest {
 
     @Test
     void consultaAdministrativaIncluiDisponibilidadeDaAula() {
-        var aula = aula(); aula.setAtivo(false);
+        var aula = aula();
+        aula.setAtivo(false);
         when(servico.buscarAula(30L, 7L)).thenReturn(aula);
         var resposta = controlador.buscarAula(30L, usuario());
         assertThat(resposta.ativo()).isFalse();
@@ -26,7 +27,8 @@ class AdministradorAulasControllerTest {
     @Test
     void listaModulosDoCursoComAdministradorAutenticado() {
         when(servico.listarModulos(10L, 7L)).thenReturn(List.of(modulo()));
-        assertThat(controlador.listarModulos(10L, usuario())).containsExactly(new ModuloResponse(20L, "Inicio", "Fundamentos", 10L, 2));
+        assertThat(controlador.listarModulos(10L, usuario()))
+                .containsExactly(new ModuloResponse(20L, "Inicio", "Fundamentos", 10L, 2));
         verify(servico).listarModulos(10L, 7L);
     }
 

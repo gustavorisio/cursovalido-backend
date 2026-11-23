@@ -70,7 +70,8 @@ public class DenunciaForumService {
         return denuncias.findByStatusOrderByCriadaEmAscIdAsc(filtro).stream().map(this::converter).toList();
     }
 
-    // Uma decisão com remocao encerra todas as denúncias pendentes do mesmo conteúdo.
+    // Uma decisão com remocao encerra todas as denúncias pendentes do mesmo
+    // conteúdo.
     @Transactional
     public DenunciaResponse decidir(Long idDenuncia, DecisaoDenunciaRequest decisao, Long idAdministrador) {
         privilegios.verificarAdministrador(idAdministrador);
@@ -81,13 +82,15 @@ public class DenunciaForumService {
         boolean procedente = Boolean.TRUE.equals(decisao.procedente());
         boolean remover = procedente && Boolean.TRUE.equals(decisao.removerConteudo());
         if (Boolean.TRUE.equals(decisao.aplicarRestricao())) {
-            if (!procedente) throw new RequisicaoInvalidaException("A restrição só pode ser aplicada a uma denúncia procedente.");
+            if (!procedente)
+                throw new RequisicaoInvalidaException("A restrição só pode ser aplicada a uma denúncia procedente.");
             if (decisao.escopoRestricao() != EscopoSuspensao.CONTA
                     && decisao.escopoRestricao() != EscopoSuspensao.FORUM) {
                 throw new RequisicaoInvalidaException("Escolha acesso à conta ou ao fórum para a restrição.");
             }
             moderacao.aplicar(denuncia.getIdAutorConteudo(),
-                    new SuspensaoRequest(decisao.escopoRestricao(), decisao.observacao(), decisao.expiraEm()), idAdministrador);
+                    new SuspensaoRequest(decisao.escopoRestricao(), decisao.observacao(), decisao.expiraEm()),
+                    idAdministrador);
         }
         String observacao = decisao.observacao().trim();
         if (remover) {
@@ -139,7 +142,8 @@ public class DenunciaForumService {
             gamertagAutor = comentario == null ? null : comentario.getGamertagAutor();
         }
         return new DenunciaResponse(denuncia.getId(), denuncia.getTipo(), denuncia.getIdConteudo(), idTopico, trecho,
-                ativo, denuncia.getIdAutorConteudo(), nomeAutor, gamertagAutor, denuncia.getMotivo(), denuncia.getDescricao(),
+                ativo, denuncia.getIdAutorConteudo(), nomeAutor, gamertagAutor, denuncia.getMotivo(),
+                denuncia.getDescricao(),
                 denuncias.countByTipoAndIdConteudoAndStatus(denuncia.getTipo(), denuncia.getIdConteudo(),
                         StatusDenuncia.PENDENTE),
                 denuncia.getStatus(), denuncia.getCriadaEm(), denuncia.getDecididaEm(),

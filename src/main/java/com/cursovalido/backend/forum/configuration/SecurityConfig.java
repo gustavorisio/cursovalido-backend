@@ -172,15 +172,18 @@ public class SecurityConfig {
                                                                 "/api/administracao/aulas/*/arquivar",
                                                                 "/api/administracao/aulas/*/reabrir")
                                                 .hasRole("ADMINISTRADOR")
-                                                .requestMatchers(HttpMethod.GET, "/api/aluno/cursos/*/modulos/*/questionario",
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/aluno/cursos/*/modulos/*/questionario",
                                                                 "/api/aluno/cursos/*/plano")
                                                 .hasRole("ALUNO")
                                                 .requestMatchers(HttpMethod.POST,
                                                                 "/api/aluno/cursos/*/modulos/*/questionario/respostas")
                                                 .hasRole("ALUNO")
-                                                .requestMatchers(HttpMethod.GET, "/api/professor/cursos/*/modulos/*/questionario")
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/professor/cursos/*/modulos/*/questionario")
                                                 .hasRole("PROFESSOR")
-                                                .requestMatchers(HttpMethod.PUT, "/api/professor/cursos/*/modulos/*/questionario")
+                                                .requestMatchers(HttpMethod.PUT,
+                                                                "/api/professor/cursos/*/modulos/*/questionario")
                                                 .hasRole("PROFESSOR")
                                                 .requestMatchers(HttpMethod.GET,
                                                                 "/api/administracao/cursos/*/modulos/*/questionario")
@@ -216,7 +219,8 @@ public class SecurityConfig {
                                                                 "/api/aluno/cursos/*",
                                                                 "/api/aluno/matriculas", "/api/aluno/cursos/*/modulos",
                                                                 "/api/aluno/modulos/*/aulas", "/api/aluno/aulas/*",
-                                                                "/api/aluno/aulas/*/progresso", "/api/aluno/gamificacao")
+                                                                "/api/aluno/aulas/*/progresso",
+                                                                "/api/aluno/gamificacao")
                                                 .hasRole("ALUNO")
                                                 .requestMatchers("/api/aluno", "/api/aluno/**").denyAll()
                                                 // As rotas de gestao continuam exclusivas do professor.

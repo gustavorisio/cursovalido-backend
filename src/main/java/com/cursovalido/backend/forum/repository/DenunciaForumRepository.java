@@ -8,13 +8,13 @@ import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DenunciaForumRepository extends JpaRepository<DenunciaForum, Long> {
-    boolean existsByIdDenuncianteAndIdAutorConteudoAndCriadaEmAfter(Long idDenunciante, Long idAutorConteudo,
-            LocalDateTime desde);
+        boolean existsByIdDenuncianteAndIdAutorConteudoAndCriadaEmAfter(Long idDenunciante, Long idAutorConteudo,
+                        LocalDateTime desde);
 
-    List<DenunciaForum> findByStatusOrderByCriadaEmAscIdAsc(StatusDenuncia status);
+        List<DenunciaForum> findByStatusOrderByCriadaEmAscIdAsc(StatusDenuncia status);
 
-    List<DenunciaForum> findByTipoAndIdConteudoAndStatus(TipoConteudoForum tipo, Long idConteudo,
-            StatusDenuncia status);
+        List<DenunciaForum> findByTipoAndIdConteudoAndStatus(TipoConteudoForum tipo, Long idConteudo,
+                        StatusDenuncia status);
 
-    long countByTipoAndIdConteudoAndStatus(TipoConteudoForum tipo, Long idConteudo, StatusDenuncia status);
+        long countByTipoAndIdConteudoAndStatus(TipoConteudoForum tipo, Long idConteudo, StatusDenuncia status);
 }

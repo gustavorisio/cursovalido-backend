@@ -25,7 +25,8 @@ class AtualizacaoBancoLegadoPostgresTest {
         Flyway flyway = FlywayConfig.configuracao().dataSource(fonte).load();
         flyway.migrate();
 
-        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("1", "2", "3", "4", "5", "6");
+        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("1", "2",
+                "3", "4", "5", "6");
         assertThat(flyway.info().pending()).isEmpty();
 
         var jdbc = new JdbcTemplate(fonte);

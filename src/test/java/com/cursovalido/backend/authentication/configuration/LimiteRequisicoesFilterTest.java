@@ -20,11 +20,14 @@ class LimiteRequisicoesFilterTest {
         assertThat(enviar(filtro, "GET", "/api/autenticacao/exportar-dados", "192.0.2.1").getStatus()).isEqualTo(429);
         assertThat(enviar(filtro, "GET", "/api/autenticacao/exportar-dados", "192.0.2.2").getStatus()).isEqualTo(200);
     }
-    private MockHttpServletResponse enviar(LimiteRequisicoesFilter filtro, String metodo, String caminho, String ip) throws Exception {
+
+    private MockHttpServletResponse enviar(LimiteRequisicoesFilter filtro, String metodo, String caminho, String ip)
+            throws Exception {
         var request = new MockHttpServletRequest(metodo, caminho);
         request.setRemoteAddr(ip);
         var response = new MockHttpServletResponse();
-        filtro.doFilter(request, response, (req, res) -> {});
+        filtro.doFilter(request, response, (req, res) -> {
+        });
         return response;
     }
 
@@ -40,7 +43,8 @@ class LimiteRequisicoesFilterTest {
     @Test
     void ataqueComDezMilCaminhosNaoBloqueiaOutraOrigem() throws Exception {
         var filtro = new LimiteRequisicoesFilter(30, 5);
-        for (int i = 0; i < 10000; i++) enviar(filtro, "POST", "/api/forum/topicos/" + i + "/comentarios", "192.0.2.1");
+        for (int i = 0; i < 10000; i++)
+            enviar(filtro, "POST", "/api/forum/topicos/" + i + "/comentarios", "192.0.2.1");
         assertThat(enviar(filtro, "POST", "/api/autenticacao/login", "192.0.2.2").getStatus()).isEqualTo(200);
         var cache = (Map<?, ?>) ReflectionTestUtils.getField(filtro, "janelas");
         assertThat(cache).hasSize(2);
@@ -49,7 +53,8 @@ class LimiteRequisicoesFilterTest {
     @Test
     void cacheCheioNaoRecusaNovoIP() throws Exception {
         var filtro = new LimiteRequisicoesFilter();
-        for (int i = 0; i < 10001; i++) enviar(filtro, "POST", "/api/forum/topicos", "198.51." + i / 256 + "." + i % 256);
+        for (int i = 0; i < 10001; i++)
+            enviar(filtro, "POST", "/api/forum/topicos", "198.51." + i / 256 + "." + i % 256);
         assertThat(enviar(filtro, "POST", "/api/autenticacao/login", "192.0.2.2").getStatus()).isEqualTo(200);
         var cache = (Map<?, ?>) ReflectionTestUtils.getField(filtro, "janelas");
         assertThat(cache).hasSize(10000);

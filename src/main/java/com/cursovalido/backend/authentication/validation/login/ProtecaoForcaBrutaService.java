@@ -34,7 +34,8 @@ public class ProtecaoForcaBrutaService {
     public void registrarFalha(String identificador) {
         tentativas.compute(chave(identificador), (chave, tentativa) -> {
             Instant agora = relogio.instant();
-            if (tentativa == null) tentativa = new Tentativa();
+            if (tentativa == null)
+                tentativa = new Tentativa();
             // Pedidos durante um bloqueio não o prolongam nem avancam o nivel.
             if (tentativa.bloqueadoAte != null && agora.isBefore(tentativa.bloqueadoAte))
                 return tentativa;

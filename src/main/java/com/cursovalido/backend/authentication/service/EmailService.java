@@ -73,7 +73,8 @@ public class EmailService {
                         + "Se voce nao esperava este convite, ignore esta mensagem.");
     }
 
-    // Avisa o professor ou administrador convidado de que o login já pode ser feito.
+    // Avisa o professor ou administrador convidado de que o login já pode ser
+    // feito.
     public void enviarAcessoAprovado(Usuario usuario) {
         enviar(usuario.getEmail(), "Seu acesso ao Curso Valido foi aprovado",
                 "Ola, " + usuario.getNomeCompleto() + ".\n\n"

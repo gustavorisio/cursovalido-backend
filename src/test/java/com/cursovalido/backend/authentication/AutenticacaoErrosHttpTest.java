@@ -62,7 +62,8 @@ class AutenticacaoErrosHttpTest {
         @Test
         void conflitoDeConviteChegaComCodigoEMensagem() throws Exception {
                 doThrow(new ConviteAcessoInvalidoException(
-                                HttpStatus.CONFLICT, "CONVITE_JA_PENDENTE", "Já existe um convite pendente para este e-mail."))
+                                HttpStatus.CONFLICT, "CONVITE_JA_PENDENTE",
+                                "Já existe um convite pendente para este e-mail."))
                                 .when(convites).consultar("token");
                 MockMvcBuilders.standaloneSetup(new ConviteController(convites))
                                 .setControllerAdvice(new AutenticacaoExceptionHandler()).build()

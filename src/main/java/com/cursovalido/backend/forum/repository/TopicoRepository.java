@@ -21,7 +21,8 @@ public interface TopicoRepository extends JpaRepository<Topico, Long> {
 
         @Query("SELECT new com.cursovalido.backend.forum.dto.TopicoResumoDTO(" +
                         "t.id, t.titulo, t.descricao, u.nome, u.gamertag, u.perfil, t.idAutor, t.criadoEm, " +
-                        "(SELECT COUNT(c) FROM Comentario c WHERE c.topico = t AND c.ativo = true), t.ativo, t.fechado) " +
+                        "(SELECT COUNT(c) FROM Comentario c WHERE c.topico = t AND c.ativo = true), t.ativo, t.fechado) "
+                        +
                         "FROM Topico t JOIN t.usuarioAutor u WHERE t.id = :id AND t.ativo = true")
         Optional<TopicoResumoDTO> buscarDetalhe(@Param("id") Long id);
 
