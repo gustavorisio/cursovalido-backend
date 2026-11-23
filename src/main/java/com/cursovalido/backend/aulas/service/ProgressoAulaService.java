@@ -1,7 +1,6 @@
 package com.cursovalido.backend.aulas.service;
 
 import com.cursovalido.backend.aulas.dto.ProgressoAulaRequest;
-import com.cursovalido.backend.aulas.dto.RecompensaCursoResponse;
 import com.cursovalido.backend.aulas.entity.Matricula;
 import com.cursovalido.backend.aulas.entity.ProgressoAula;
 import com.cursovalido.backend.aulas.repository.MatriculaRepository;
@@ -45,12 +44,6 @@ public class ProgressoAulaService {
 
     @Transactional
     public ProgressoAula concluir(Long idAula, Long idAluno) {
-        return concluirComRecompensa(idAula, idAluno).progresso();
-    }
-
-    // Conclui a aula e, se for a ultima pendente do curso, concede o XP do curso.
-    @Transactional
-    public ResultadoConclusao concluirComRecompensa(Long idAula, Long idAluno) {
         // Serializa conclusões do mesmo aluno, inclusive entre cursos diferentes.
         usuarios.buscarParaAtualizar(idAluno);
         Matricula matricula = buscarMatriculaAutorizada(idAula, idAluno);
@@ -71,12 +64,9 @@ public class ProgressoAulaService {
             progresso = progressos.saveAndFlush(progresso);
             auditoria.registrar(idAluno, "CONCLUSAO_AULA", "Aula " + idAula, null);
         }
-        RecompensaCursoResponse recompensa = gamificacao.registrarConclusao(idAluno, matricula.getIdCurso(),
+        gamificacao.registrarConclusao(idAluno, matricula.getIdCurso(),
                 matricula.getId());
-        return new ResultadoConclusao(progresso, recompensa);
-    }
-
-    public record ResultadoConclusao(ProgressoAula progresso, RecompensaCursoResponse recompensa) {
+        return progresso;
     }
 
     private Matricula buscarMatriculaAutorizada(Long idAula, Long idAluno) {

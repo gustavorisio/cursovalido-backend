@@ -32,11 +32,7 @@ public class ProgressoAulaController {
     @PostMapping("/conclusao")
     public ProgressoAulaResponse concluir(@PathVariable Long idAula,
             @AuthenticationPrincipal UsuarioAutenticado usuario) {
-        var resultado = servico.concluirComRecompensa(idAula, usuario.getId());
-        var progresso = resultado.progresso();
-        return new ProgressoAulaResponse(progresso.getIdAula(), progresso.getPosicaoSegundos(),
-                progresso.isConcluida(), progresso.getConcluidaEm(), progresso.getAtualizadoEm(),
-                resultado.recompensa());
+        return converter(servico.concluir(idAula, usuario.getId()));
     }
 
     private ProgressoAulaResponse converter(ProgressoAula progresso) {
