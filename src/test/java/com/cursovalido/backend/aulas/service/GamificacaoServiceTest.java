@@ -22,7 +22,8 @@ class GamificacaoServiceTest {
     private final CursoRepository cursos = mock(CursoRepository.class);
     private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
     private final LogAuditoriaService auditoria = mock(LogAuditoriaService.class);
-    private final GamificacaoService servico = new GamificacaoService(recompensas, gamificacoes, conclusoes, cursos, usuarios, auditoria);
+    private final GamificacaoService servico = new GamificacaoService(recompensas, gamificacoes, conclusoes, cursos,
+            usuarios, auditoria);
     private GamificacaoAluno registro;
     private Questionario questionario;
 
@@ -61,7 +62,8 @@ class GamificacaoServiceTest {
 
     @Test
     void resultadoParcialOuInvalidoNaoConcedeXp() {
-        for (int acertos : List.of(0, 1, 3)) assertThat(servico.registrarAprovacao(1L, questionario, acertos)).isNull();
+        for (int acertos : List.of(0, 1, 3))
+            assertThat(servico.registrarAprovacao(1L, questionario, acertos)).isNull();
         verifyNoInteractions(recompensas, gamificacoes);
     }
 

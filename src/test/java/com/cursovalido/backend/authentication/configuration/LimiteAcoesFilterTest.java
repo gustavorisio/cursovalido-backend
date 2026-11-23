@@ -30,22 +30,29 @@ class LimiteAcoesFilterTest {
     private final LimiteRequisicoesFilter intervalo = new LimiteRequisicoesFilter(10000, 10000, relogio);
 
     @BeforeEach
-    void configurarRelogio() { when(relogio.instant()).thenAnswer(invocacao -> Instant.ofEpochMilli(relogio.millis())); }
+    void configurarRelogio() {
+        when(relogio.instant()).thenAnswer(invocacao -> Instant.ofEpochMilli(relogio.millis()));
+    }
 
     @AfterEach
-    void limpar() { SecurityContextHolder.clearContext(); }
+    void limpar() {
+        SecurityContextHolder.clearContext();
+    }
 
     private MockHttpServletResponse enviar(String metodo, String caminho, String corpo) throws Exception {
         var request = new MockHttpServletRequest(metodo, caminho);
         request.setContent(corpo.getBytes(StandardCharsets.UTF_8));
         var response = new MockHttpServletResponse();
-        intervalo.doFilter(request, response, (req, res) -> {});
+        intervalo.doFilter(request, response, (req, res) -> {
+        });
         return response;
     }
 
     private void autenticar(long id) {
-        var usuario = new UsuarioAutenticado(id, "usuario@example.com", "senha", Perfil.ADMINISTRADOR, true, true, true);
-        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities()));
+        var usuario = new UsuarioAutenticado(id, "usuario@example.com", "senha", Perfil.ADMINISTRADOR, true, true,
+                true);
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities()));
     }
 
     @Test
@@ -59,7 +66,8 @@ class LimiteAcoesFilterTest {
         assertThat(repetida.getHeader("Retry-After")).isEqualTo("10");
         assertThat(repetida.getContentAsString()).contains("LIMITE_REQUISICOES_ATINGIDO", "10 segundos");
         when(relogio.millis()).thenReturn(inicio + 9999);
-        assertThat(enviar("POST", "/api/administracao/usuarios/7/suspensoes", "outro").getHeader("Retry-After")).isEqualTo("1");
+        assertThat(enviar("POST", "/api/administracao/usuarios/7/suspensoes", "outro").getHeader("Retry-After"))
+                .isEqualTo("1");
         when(relogio.millis()).thenReturn(inicio + 10000);
         assertThat(enviar("POST", "/api/administracao/usuarios/7/suspensoes", "outro").getStatus()).isEqualTo(200);
     }
@@ -89,7 +97,8 @@ class LimiteAcoesFilterTest {
     @Test
     void gestaoDeConteudoTambemTemIntervalo() throws Exception {
         autenticar(1);
-        for (String caminho : new String[] { "/api/administracao/cursos/1", "/api/administracao/aulas/2", "/api/temas/3", "/api/politicas/privacidade", "/api/forum/topicos/1/fechar" }) {
+        for (String caminho : new String[] { "/api/administracao/cursos/1", "/api/administracao/aulas/2",
+                "/api/temas/3", "/api/politicas/privacidade", "/api/forum/topicos/1/fechar" }) {
             assertThat(enviar("PUT", caminho, "a").getStatus()).isEqualTo(200);
             assertThat(enviar("PUT", caminho, "b").getStatus()).isEqualTo(429);
         }
@@ -97,8 +106,10 @@ class LimiteAcoesFilterTest {
 
     @Test
     void consultasEOperacoesComunsNaoRecebemIntervaloNovo() throws Exception {
-        var professor = new UsuarioAutenticado(3L, "professor@example.com", "senha", Perfil.PROFESSOR, true, true, true);
-        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(professor, null, professor.getAuthorities()));
+        var professor = new UsuarioAutenticado(3L, "professor@example.com", "senha", Perfil.PROFESSOR, true, true,
+                true);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(professor, null, professor.getAuthorities()));
         for (int i = 0; i < 5; i++) {
             assertThat(enviar("GET", "/api/administracao/usuarios", "").getStatus()).isEqualTo(200);
             assertThat(enviar("POST", "/api/autenticacao/login", "a").getStatus()).isEqualTo(200);
@@ -141,15 +152,16 @@ class LimiteAcoesFilterTest {
         assertThat(enviar("DELETE", "/api/autenticacao/conta", "111111").getStatus()).isEqualTo(429);
     }
 
-
     @Test
     void exportacoesSimultaneasAdmitemUmaUnicaRequisicao() throws Exception {
         try (var executor = Executors.newFixedThreadPool(8)) {
             var tarefas = IntStream.range(0, 20)
-                    .<Callable<Integer>>mapToObj(i -> () -> enviar("GET", "/api/autenticacao/exportar-dados", "").getStatus())
+                    .<Callable<Integer>>mapToObj(
+                            i -> () -> enviar("GET", "/api/autenticacao/exportar-dados", "").getStatus())
                     .toList();
             var respostas = new ArrayList<Integer>();
-            for (var resultado : executor.invokeAll(tarefas)) respostas.add(resultado.get());
+            for (var resultado : executor.invokeAll(tarefas))
+                respostas.add(resultado.get());
             assertThat(respostas).containsOnly(200, 429);
             assertThat(respostas.stream().filter(status -> status == 200).count()).isEqualTo(1);
         }
@@ -174,6 +186,9 @@ class LimiteAcoesFilterTest {
         int chamadas;
 
         @PostMapping("/api/administracao/usuarios/7/suspensoes")
-        public String enviar() { chamadas++; return "ok"; }
+        public String enviar() {
+            chamadas++;
+            return "ok";
+        }
     }
 }

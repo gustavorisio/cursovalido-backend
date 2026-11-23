@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.*;
 public class CursoController {
     private final CursoService servico;
 
-    public record CursoPublico(Long id, String titulo, String descricao, Long idTema, String nomeTema, String capaJpeg) {
+    public record CursoPublico(Long id, String titulo, String descricao, Long idTema, String nomeTema,
+            String capaJpeg) {
     }
 
     @GetMapping("/catalogo/cursos")

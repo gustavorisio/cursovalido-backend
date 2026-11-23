@@ -77,7 +77,8 @@ public class AulaService {
     private void preencher(Aula aula, AulaRequest dados) {
         String vimeoUrl = vimeo.validarVideo(dados.vimeoUrl());
         String videoId = dados.youtubeUrl() == null || dados.youtubeUrl().isBlank()
-                ? null : youtube.validarVideo(dados.youtubeUrl());
+                ? null
+                : youtube.validarVideo(dados.youtubeUrl());
         if (vimeoUrl == null || videoId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Informe um vídeo válido para o Server 1 (Vimeo) e para o Server 2 (YouTube).");

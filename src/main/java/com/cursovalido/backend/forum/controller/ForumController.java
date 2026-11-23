@@ -32,8 +32,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/forum")
 @RequiredArgsConstructor
 public class ForumController {
-    private final FiltroConteudoOfensivo filtroConteudo =
-            new FiltroConteudoOfensivo();
+    private final FiltroConteudoOfensivo filtroConteudo = new FiltroConteudoOfensivo();
     private static final ZoneId BRASILIA = ZoneId.of("America/Sao_Paulo");
 
     private final TopicoService servicoTopicos;
@@ -101,7 +100,8 @@ public class ForumController {
     public PaginaComentariosResponse listarComentarios(
             @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable Long idTopico,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        var pagina = servicoComentarios.listarPaginaPorTopico(idTopico, usuario == null ? null : usuario.getId(), page, size);
+        var pagina = servicoComentarios.listarPaginaPorTopico(idTopico, usuario == null ? null : usuario.getId(), page,
+                size);
         return new PaginaComentariosResponse(
                 pagina.getContent().stream().map(this::converter).toList(), pagina.getNumber(),
                 pagina.getTotalPages(), pagina.getTotalElements());
@@ -147,21 +147,24 @@ public class ForumController {
     }
 
     private TopicoResumoDTO converter(TopicoResumoDTO topico) {
-        return new TopicoResumoDTO(topico.id(), filtroConteudo.censurar(topico.titulo()), filtroConteudo.censurar(topico.descricao()), topico.nomeAutor(), topico.gamertagAutor(),
+        return new TopicoResumoDTO(topico.id(), filtroConteudo.censurar(topico.titulo()),
+                filtroConteudo.censurar(topico.descricao()), topico.nomeAutor(), topico.gamertagAutor(),
                 topico.papelAutor(), topico.idAutor(), horarioDeBrasilia(topico.criadoEm()),
                 topico.quantidadeRespostas(),
                 topico.ativo(), topico.fechado());
     }
 
     private TopicoResponse converter(Topico topico) {
-        return new TopicoResponse(topico.getId(), filtroConteudo.censurar(topico.getTitulo()), filtroConteudo.censurar(topico.getDescricao()), topico.getNomeAutor(), topico.getGamertagAutor(),
+        return new TopicoResponse(topico.getId(), filtroConteudo.censurar(topico.getTitulo()),
+                filtroConteudo.censurar(topico.getDescricao()), topico.getNomeAutor(), topico.getGamertagAutor(),
                 topico.getPapelAutor(), topico.getIdAutor(), horarioDeBrasilia(topico.getCriadoEm()),
                 topico.getQuantidadeRespostas(), topico.isAtivo(), topico.isFechado());
     }
 
     private ComentarioResponse converter(Comentario comentario) {
         return new ComentarioResponse(comentario.getId(),
-                comentario.isAtivo() ? filtroConteudo.censurar(comentario.getConteudo()) : "Esta mensagem foi excluída.",
+                comentario.isAtivo() ? filtroConteudo.censurar(comentario.getConteudo())
+                        : "Esta mensagem foi excluída.",
                 comentario.getNomeAutor(), comentario.getGamertagAutor(),
                 comentario.getPapelAutor(), comentario.getIdAutor(), horarioDeBrasilia(comentario.getCriadoEm()),
                 comentario.isAtivo());

@@ -13,7 +13,9 @@ class TemaControllerTest {
     @Test
     void listaTemasECriaUmNovoUsandoIdentidadeAutenticada() {
         var servico = mock(TemaService.class);
-        var tema = new Tema(); tema.setId(5L); tema.setNome("Programacao");
+        var tema = new Tema();
+        tema.setId(5L);
+        tema.setNome("Programacao");
         var controlador = new TemaController(servico);
         when(servico.listar()).thenReturn(List.of(tema));
         assertThat(controlador.listar()).extracting(TemaResponse::nome).containsExactly("Programacao");

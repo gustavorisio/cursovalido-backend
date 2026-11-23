@@ -42,7 +42,8 @@ class AutenticacaoExceptionHandlerTest {
         resultado.addError(erro("email", "Size", "O e-mail deve ter no máximo 254 caracteres."));
         var parametro = new MethodParameter(Object.class.getMethod("equals", Object.class), 0);
 
-        Map<String, Object> resposta = handler.camposInvalidos(new MethodArgumentNotValidException(parametro, resultado));
+        Map<String, Object> resposta = handler
+                .camposInvalidos(new MethodArgumentNotValidException(parametro, resultado));
 
         assertThat(resposta).containsEntry("codigo", "CAMPOS_INVALIDOS");
         var campos = (Map<String, String>) resposta.get("campos");
@@ -52,7 +53,8 @@ class AutenticacaoExceptionHandlerTest {
 
     @Test
     void erroDeRegraDeNegocioDevolveAMensagemParaOUsuario() {
-        var resposta = handler.requisicaoInvalida(new IllegalArgumentException("Use o mesmo e-mail que recebeu o convite."));
+        var resposta = handler
+                .requisicaoInvalida(new IllegalArgumentException("Use o mesmo e-mail que recebeu o convite."));
         assertThat(resposta.codigo()).isEqualTo("REQUISICAO_INVALIDA");
         assertThat(resposta.erro()).isEqualTo("Use o mesmo e-mail que recebeu o convite.");
     }

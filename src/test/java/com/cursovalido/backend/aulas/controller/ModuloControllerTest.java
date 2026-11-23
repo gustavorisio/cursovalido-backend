@@ -16,7 +16,8 @@ class ModuloControllerTest {
     @Test
     void listaModulosDoCursoPreservandoIdentidadeEOrdem() {
         when(servico.listar(10L, 7L)).thenReturn(List.of(modulo()));
-        assertThat(controlador.listar(10L, usuario())).containsExactly(new ModuloResponse(20L, "Inicio", "Fundamentos", 10L, 2));
+        assertThat(controlador.listar(10L, usuario()))
+                .containsExactly(new ModuloResponse(20L, "Inicio", "Fundamentos", 10L, 2));
         verify(servico).listar(10L, 7L);
     }
 

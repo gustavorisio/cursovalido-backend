@@ -24,8 +24,11 @@ class AlunoAulasControllerTest {
 
     @Test
     void matriculaUsaAlunoAutenticadoEDevolveDataPersistida() {
-        var matricula = new Matricula(); matricula.setId(40L); matricula.setIdCurso(10L);
-        var data = LocalDateTime.of(2026, 11, 22, 10, 0); matricula.setMatriculadoEm(data);
+        var matricula = new Matricula();
+        matricula.setId(40L);
+        matricula.setIdCurso(10L);
+        var data = LocalDateTime.of(2026, 11, 22, 10, 0);
+        matricula.setMatriculadoEm(data);
         when(servico.matricular(10L, 7L)).thenReturn(matricula);
         assertThat(controlador.matricular(10L, usuario())).isEqualTo(new MatriculaResponse(40L, 10L, data));
         verify(servico).matricular(10L, 7L);

@@ -120,11 +120,13 @@ class AulasHttpIntegracaoTest {
 
         @Test
         void exportacaoRespeitaFiltroUnicoMesmoTrocandoTokenDaMesmaConta() {
-                var primeira = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", tokenAluno, null, String.class);
+                var primeira = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", tokenAluno, null,
+                                String.class);
                 assertThat(primeira.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(primeira.getHeaders().getFirst("X-Intervalo-Acao")).isEqualTo("10");
                 String novoToken = tokens.gerar(aluno);
-                var repetida = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", novoToken, null, String.class);
+                var repetida = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", novoToken, null,
+                                String.class);
                 assertThat(repetida.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
                 assertThat(repetida.getHeaders().getFirst("Retry-After")).isNotBlank();
         }
@@ -134,22 +136,29 @@ class AulasHttpIntegracaoTest {
                 String rota = "/api/professor/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
                 var pergunta = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Erro A", "Erro B"), 0,
                                 List.of("", "Motivo A", "Motivo B"), null);
-                var semExplicacao = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Erro A", "Erro B"), 0, List.of("", "", "Motivo B"), null);
-                assertThat(enviar(HttpMethod.PUT, rota, tokenProfessor, new QuestionarioRequest("Questionário", true, List.of(semExplicacao)), String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                var semExplicacao = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Erro A", "Erro B"),
+                                0, List.of("", "", "Motivo B"), null);
+                assertThat(enviar(HttpMethod.PUT, rota, tokenProfessor,
+                                new QuestionarioRequest("Questionário", true, List.of(semExplicacao)), String.class)
+                                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
                 var dados = new QuestionarioRequest("Questionário do módulo", true, List.of(pergunta));
                 var salva = enviar(HttpMethod.PUT, rota, tokenProfessor, dados, QuestionarioGestaoResponse.class);
                 assertThat(salva.getStatusCode()).isEqualTo(HttpStatus.OK);
                 var consulta = enviar(HttpMethod.GET, rota, tokenProfessor, null, QuestionarioGestaoResponse.class);
-                assertThat(consulta.getBody().perguntas().getFirst().explicacoes()).containsExactly("", "Motivo A", "Motivo B");
+                assertThat(consulta.getBody().perguntas().getFirst().explicacoes()).containsExactly("", "Motivo A",
+                                "Motivo B");
                 matricular();
                 String rotaAluno = "/api/aluno/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
-                assertThat(enviar(HttpMethod.GET, rotaAluno, tokenAluno, null, String.class).getBody()).doesNotContain("Motivo A", "Motivo B", "alternativaCorreta", "explicacoes");
+                assertThat(enviar(HttpMethod.GET, rotaAluno, tokenAluno, null, String.class).getBody())
+                                .doesNotContain("Motivo A", "Motivo B", "alternativaCorreta", "explicacoes");
                 var resultado = enviar(HttpMethod.POST, rotaAluno + "/respostas", tokenAluno,
-                                new RespostasQuestionarioRequest(salva.getBody().versao(), List.of(2)), ResultadoQuestionarioResponse.class);
+                                new RespostasQuestionarioRequest(salva.getBody().versao(), List.of(2)),
+                                ResultadoQuestionarioResponse.class);
                 assertThat(resultado.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(resultado.getBody().correcoes().getFirst().explicacao()).isEqualTo("Motivo B");
                 assertThat(resultado.getBody().correcoes().getFirst().alternativaCorreta()).isNull();
-                assertThat(enviar(HttpMethod.GET, "/api/aluno/cursos/" + idCurso + "/diagnostico", tokenAluno, null, String.class).getStatusCode().is4xxClientError()).isTrue();
+                assertThat(enviar(HttpMethod.GET, "/api/aluno/cursos/" + idCurso + "/diagnostico", tokenAluno, null,
+                                String.class).getStatusCode().is4xxClientError()).isTrue();
         }
 
         @Test
@@ -162,34 +171,44 @@ class AulasHttpIntegracaoTest {
                 assertThat(salva.getStatusCode()).isEqualTo(HttpStatus.OK);
                 int versao = salva.getBody().versao();
                 matricular();
-                var aula = enviar(HttpMethod.POST, "/api/aluno/aulas/" + idAula + "/conclusao", tokenAluno, null, String.class);
+                var aula = enviar(HttpMethod.POST, "/api/aluno/aulas/" + idAula + "/conclusao", tokenAluno, null,
+                                String.class);
                 assertThat(aula.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(aula.getBody()).doesNotContain("recompensa");
                 String rota = "/api/aluno/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
                 var parcial = enviar(HttpMethod.POST, rota + "/respostas", tokenAluno,
-                                new RespostasQuestionarioRequest(versao, List.of(0, 1)), ResultadoQuestionarioResponse.class);
+                                new RespostasQuestionarioRequest(versao, List.of(0, 1)),
+                                ResultadoQuestionarioResponse.class);
                 assertThat(parcial.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(parcial.getBody().percentual()).isEqualTo(50);
                 assertThat(parcial.getBody().recompensa()).isNull();
                 assertThat(enviar(HttpMethod.GET, "/api/aluno/gamificacao", tokenAluno, null, GamificacaoResponse.class)
                                 .getBody().xpTotal()).isZero();
                 var perfeitas = simultaneas(() -> enviar(HttpMethod.POST, rota + "/respostas", tokenAluno,
-                                new RespostasQuestionarioRequest(versao, List.of(0, 0)), ResultadoQuestionarioResponse.class));
-                assertThat(perfeitas).allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
-                assertThat(perfeitas.stream().filter(resposta -> resposta.getBody().recompensa() != null).count()).isEqualTo(1);
-                assertThat(perfeitas.stream().map(ResponseEntity::getBody).map(ResultadoQuestionarioResponse::recompensa)
+                                new RespostasQuestionarioRequest(versao, List.of(0, 0)),
+                                ResultadoQuestionarioResponse.class));
+                assertThat(perfeitas)
+                                .allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
+                assertThat(perfeitas.stream().filter(resposta -> resposta.getBody().recompensa() != null).count())
+                                .isEqualTo(1);
+                assertThat(perfeitas.stream().map(ResponseEntity::getBody)
+                                .map(ResultadoQuestionarioResponse::recompensa)
                                 .filter(Objects::nonNull).findFirst().orElseThrow().xpGanho()).isEqualTo(100);
-                var novaVersao = enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, dados, QuestionarioGestaoResponse.class);
+                var novaVersao = enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, dados,
+                                QuestionarioGestaoResponse.class);
                 assertThat(novaVersao.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(enviar(HttpMethod.POST, rota + "/respostas", tokenAluno,
                                 new RespostasQuestionarioRequest(novaVersao.getBody().versao(), List.of(0, 0)),
                                 ResultadoQuestionarioResponse.class).getBody().recompensa()).isNull();
-                assertThat(enviar(HttpMethod.GET, rota, tokenAluno, null, String.class).getBody()).doesNotContain("recompensa");
-                var saldo = enviar(HttpMethod.GET, "/api/aluno/gamificacao", tokenAluno, null, GamificacaoResponse.class).getBody();
+                assertThat(enviar(HttpMethod.GET, rota, tokenAluno, null, String.class).getBody())
+                                .doesNotContain("recompensa");
+                var saldo = enviar(HttpMethod.GET, "/api/aluno/gamificacao", tokenAluno, null,
+                                GamificacaoResponse.class).getBody();
                 assertThat(saldo.xpTotal()).isEqualTo(100);
                 assertThat(saldo.questionariosConcluidos()).isEqualTo(1);
                 assertThat(saldo.cursosConcluidos()).isEqualTo(1);
-                assertThat(jdbc.queryForObject("select count(*) from tb_recompensas_questionarios where aluno_id = ?", Long.class,
+                assertThat(jdbc.queryForObject("select count(*) from tb_recompensas_questionarios where aluno_id = ?",
+                                Long.class,
                                 aluno.getId())).isEqualTo(1);
         }
 
@@ -457,7 +476,8 @@ class AulasHttpIntegracaoTest {
                                 .when(youtube).validarVideo("abcdefghijk");
                 var falha = enviar(HttpMethod.PUT, "/api/aulas/" + idAula, tokenProfessor,
                                 new AulaRequest("Nao salvar", "Novo", 2, "https://youtu.be/abcdefghijk",
-                                                "https://vimeo.com/123456789"), String.class);
+                                                "https://vimeo.com/123456789"),
+                                String.class);
                 assertThat(falha.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
                 var aula = enviar(HttpMethod.GET, "/api/aulas/" + idAula, tokenProfessor, null, AulaResponse.class)
                                 .getBody();

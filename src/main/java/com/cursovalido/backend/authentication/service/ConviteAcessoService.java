@@ -220,7 +220,8 @@ public class ConviteAcessoService {
 
     private ConviteAcesso localizar(String token) {
         ConviteAcesso convite = convites.findByTokenHash(hash(token))
-                .orElseThrow(() -> new IllegalArgumentException("O link do convite é inválido. Peça um novo convite à administração."));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "O link do convite é inválido. Peça um novo convite à administração."));
         ConviteValidation.validarPendente(convite);
         return convite;
     }

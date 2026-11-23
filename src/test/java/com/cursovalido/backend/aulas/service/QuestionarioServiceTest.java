@@ -33,11 +33,13 @@ class QuestionarioServiceTest {
     private final CursoRepository cursos = mock(CursoRepository.class);
     private final UsuarioRepository usuarios = mock(UsuarioRepository.class);
     private final ModuloRepository modulos = mock(ModuloRepository.class);
+
     @BeforeEach
     void configurarModulo() {
         when(modulos.findById(20L)).thenReturn(Optional.of(AulasTestSupport.modulo()));
         when(modulos.findByIdCursoAndAtivoTrueOrderByOrdemAscIdAsc(10L)).thenReturn(List.of(AulasTestSupport.modulo()));
     }
+
     private final QuestionarioService service = new QuestionarioService(questionarios, tentativas, cursos,
             modulos, usuarios, mock(CursoService.class), mock(AdministradorAulasService.class),
             mock(AlunoAulasService.class), mock(LogAuditoriaService.class), mock(GamificacaoService.class));
@@ -46,7 +48,8 @@ class QuestionarioServiceTest {
     void deveSalvarPerguntasComTextoLimpo() {
         when(usuarios.findById(1L)).thenReturn(Optional.of(AulasTestSupport.usuario(Perfil.PROFESSOR)));
         when(cursos.buscarParaMatricula(10L)).thenReturn(Optional.of(AulasTestSupport.curso()));
-        var pergunta = new QuestionarioRequest.Pergunta(" Quanto é 2 + 2? ", List.of(" 3 ", " 4 "), 1, List.of(" Soma ", ""), null);
+        var pergunta = new QuestionarioRequest.Pergunta(" Quanto é 2 + 2? ", List.of(" 3 ", " 4 "), 1,
+                List.of(" Soma ", ""), null);
 
         var resposta = service.salvar(10L, 20L, new QuestionarioRequest(" Avaliação ", true, List.of(pergunta)), 1L);
 
@@ -59,7 +62,8 @@ class QuestionarioServiceTest {
     @Test
     void deveRecusarQuestionarioForaDeModulo() {
         when(usuarios.findById(1L)).thenReturn(Optional.of(AulasTestSupport.usuario(Perfil.PROFESSOR)));
-        var pergunta = new QuestionarioRequest.Pergunta("Questão", List.of("A", "B"), 1, List.of("Explicação", ""), null);
+        var pergunta = new QuestionarioRequest.Pergunta("Questão", List.of("A", "B"), 1, List.of("Explicação", ""),
+                null);
         var dados = new QuestionarioRequest("Avaliação", true, Collections.nCopies(11, pergunta));
 
         var erro = assertThrows(ResponseStatusException.class, () -> service.salvar(10L, null, dados, 1L));
@@ -156,12 +160,15 @@ class QuestionarioServiceTest {
         var q = questionarioPublicado();
         var pergunta = q.getPerguntas().getFirst();
         q.getPerguntas().clear();
-        for (int i = 0; i < total; i++) q.getPerguntas().add(pergunta);
+        for (int i = 0; i < total; i++)
+            q.getPerguntas().add(pergunta);
         when(cursos.buscarParaMatricula(10L)).thenReturn(Optional.of(AulasTestSupport.curso()));
         when(questionarios.findByIdCursoAndIdModulo(10L, 20L)).thenReturn(Optional.of(q));
         var respostas = new ArrayList<Integer>();
-        for (int i = 0; i < total; i++) respostas.add(i < acertos ? 1 : 0);
-        assertEquals(esperado, service.responder(10L, 20L, new RespostasQuestionarioRequest(2, respostas), 2L).percentual());
+        for (int i = 0; i < total; i++)
+            respostas.add(i < acertos ? 1 : 0);
+        assertEquals(esperado,
+                service.responder(10L, 20L, new RespostasQuestionarioRequest(2, respostas), 2L).percentual());
     }
 
     private Questionario questionarioPublicado() {

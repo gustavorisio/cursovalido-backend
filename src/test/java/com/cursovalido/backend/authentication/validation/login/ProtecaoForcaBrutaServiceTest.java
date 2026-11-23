@@ -15,7 +15,7 @@ class ProtecaoForcaBrutaServiceTest {
 
     @Test
     void bloqueiosDuramQuinzeTrintaESessentaMinutos() {
-        for (int minutos : new int[]{15, 30, 60, 60}) {
+        for (int minutos : new int[] { 15, 30, 60, 60 }) {
             falharCincoVezes();
             assertThrows(AcessoTemporariamenteBloqueadoException.class, () -> service.verificar(EMAIL));
             relogio.avancar(Duration.ofMinutes(minutos).minusSeconds(1));
@@ -48,7 +48,8 @@ class ProtecaoForcaBrutaServiceTest {
 
     @Test
     void quatroFalhasPermitemNovaTentativaEFalhasIsoladasExpiram() {
-        for (int i = 0; i < 4; i++) service.registrarFalha(EMAIL);
+        for (int i = 0; i < 4; i++)
+            service.registrarFalha(EMAIL);
         assertDoesNotThrow(() -> service.verificar(EMAIL));
         relogio.avancar(Duration.ofMinutes(15));
         service.registrarFalha(EMAIL);
@@ -56,14 +57,30 @@ class ProtecaoForcaBrutaServiceTest {
     }
 
     private void falharCincoVezes() {
-        for (int i = 0; i < 5; i++) service.registrarFalha(EMAIL);
+        for (int i = 0; i < 5; i++)
+            service.registrarFalha(EMAIL);
     }
 
     private static class Relogio extends Clock {
         private Instant agora = Instant.parse("2026-11-22T12:00:00Z");
-        void avancar(Duration duracao) { agora = agora.plus(duracao); }
-        @Override public ZoneId getZone() { return ZoneId.of("UTC"); }
-        @Override public Clock withZone(ZoneId zone) { return this; }
-        @Override public Instant instant() { return agora; }
+
+        void avancar(Duration duracao) {
+            agora = agora.plus(duracao);
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneId.of("UTC");
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return agora;
+        }
     }
 }

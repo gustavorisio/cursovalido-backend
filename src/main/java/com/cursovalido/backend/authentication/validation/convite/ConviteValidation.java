@@ -46,7 +46,8 @@ public final class ConviteValidation {
                 LocalDateTime.now().minusHours(1));
         if (enviadosNaUltimaHora >= MAXIMO_CONVITES_POR_HORA)
             throw new ConviteAcessoInvalidoException(HttpStatus.TOO_MANY_REQUESTS, "LIMITE_CONVITES",
-                    "Limite de " + MAXIMO_CONVITES_POR_HORA + " convites por hora atingido. Tente novamente mais tarde.");
+                    "Limite de " + MAXIMO_CONVITES_POR_HORA
+                            + " convites por hora atingido. Tente novamente mais tarde.");
     }
 
     public static void validarReenvio(ConviteAcesso convite) {
@@ -72,7 +73,8 @@ public final class ConviteValidation {
             throw new IllegalArgumentException("Use o mesmo e-mail que recebeu o convite.");
         }
         if (!politicas.versaoAtiva(cadastro.versaoTermos()))
-            throw new IllegalArgumentException("Os termos foram atualizados. Recarregue a página e aceite a versão atual.");
+            throw new IllegalArgumentException(
+                    "Os termos foram atualizados. Recarregue a página e aceite a versão atual.");
         if (!Boolean.TRUE.equals(cadastro.aceitouTermosLgpd()))
             throw new IllegalArgumentException("Aceite os Termos de Uso e a Política de Privacidade para continuar.");
         if (usuarios.existsByEmail(convite.getEmail())) {
@@ -82,7 +84,8 @@ public final class ConviteValidation {
 
     public static void validarPendente(ConviteAcesso convite) {
         if (!StatusConvite.PENDENTE.equals(convite.getStatus()))
-            throw new IllegalArgumentException("Este convite já foi usado ou cancelado. Peça um novo convite à administração.");
+            throw new IllegalArgumentException(
+                    "Este convite já foi usado ou cancelado. Peça um novo convite à administração.");
     }
 
     public static void validarPrazo(ConviteAcesso convite) {

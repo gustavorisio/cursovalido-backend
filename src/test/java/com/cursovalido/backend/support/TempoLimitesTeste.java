@@ -6,9 +6,13 @@ import java.time.Duration;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.util.ReflectionTestUtils;
 
-/** Avança apenas o relógio do limite HTTP, sem dormir nem alterar validade de tokens. */
+/**
+ * Avança apenas o relógio do limite HTTP, sem dormir nem alterar validade de
+ * tokens.
+ */
 public final class TempoLimitesTeste {
-    private TempoLimitesTeste() {}
+    private TempoLimitesTeste() {
+    }
 
     public static void avancar(SecurityFilterChain cadeia) {
         cadeia.getFilters().stream().filter(LimiteRequisicoesFilter.class::isInstance).forEach(filtro -> {

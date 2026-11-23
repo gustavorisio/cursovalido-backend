@@ -45,7 +45,8 @@ public class DashboardRepository {
                                         long engajados = rs.getLong("alunos_engajados");
                                         return new Resumo(rs.getLong("alunos"), rs.getLong("professores"),
                                                         rs.getLong("cursos"), rs.getLong("aulas"), matriculas,
-                                                        rs.getLong("topicos"), rs.getLong("comentarios"), aulasConcluidas, cursosConcluidos,
+                                                        rs.getLong("topicos"), rs.getLong("comentarios"),
+                                                        aulasConcluidas, cursosConcluidos,
                                                         engajados, percentual(cursosConcluidos, matriculas),
                                                         decimal(rs.getObject("nivel_medio")));
                                 });
