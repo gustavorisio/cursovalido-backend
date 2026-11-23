@@ -237,6 +237,7 @@ public class SecurityConfig {
                                                 .hasRole("PROFESSOR")
                                                 // Forum: autoria e moderacao sao verificadas pelos servicos.
                                                 .requestMatchers(HttpMethod.GET, "/api/forum/topicos",
+                                                                "/api/forum/topicos/*",
                                                                 "/api/forum/topicos/*/comentarios",
                                                                 "/api/forum/topicos/meus", "/api/forum/users")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")

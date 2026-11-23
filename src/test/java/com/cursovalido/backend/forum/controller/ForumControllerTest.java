@@ -68,6 +68,18 @@ class ForumControllerTest {
     }
 
     @Test
+    void consultarTopico_deveUsarPrincipalEConverterHorario() {
+        var resumo = new TopicoResumoDTO(10L, "Java", "Duvida", "Autor", "#1a3b5c7d", "ALUNO", 7L,
+                topico.getCriadoEm(), 2, true, false);
+        when(topicos.consultar(10L, 7L)).thenReturn(resumo);
+        var resposta = controlador.consultarTopico(principal, 10L);
+        assertThat(resposta.id()).isEqualTo(10L);
+        assertThat(resposta.quantidadeRespostas()).isEqualTo(2);
+        assertThat(resposta.criadoEm()).isEqualTo(LocalDateTime.of(2026, 11, 15, 22, 27));
+        verify(topicos).consultar(10L, 7L);
+    }
+
+    @Test
     void criarTopico_comRequisicao_deveConverterEntradaESaida() {
         when(topicos.criar(any(), eq(7L))).thenReturn(topico);
         var resposta = controlador.criarTopico(principal, new TopicoRequest("Java", "Duvida"));

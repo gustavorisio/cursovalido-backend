@@ -380,6 +380,8 @@ class ForumHttpIntegracaoTest {
                                 new TopicoRequest("Leitura aberta", "Descricao publica"), TopicoResponse.class)
                                 .getBody();
                 String caminho = "/api/forum/topicos/" + criado.id();
+                assertThat(enviar(HttpMethod.GET, caminho, null, null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.UNAUTHORIZED);
                 assertThat(enviar(HttpMethod.GET, "/api/forum/topicos", null, null, String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.UNAUTHORIZED);
                 assertThat(enviar(HttpMethod.GET, "/api/forum/topicos/meus", null, null, String.class).getStatusCode())
@@ -397,6 +399,31 @@ class ForumHttpIntegracaoTest {
                                 .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
                 assertThat(enviar(HttpMethod.DELETE, caminho, null, null, String.class).getStatusCode())
                                 .isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+
+        @ParameterizedTest
+        @org.junit.jupiter.params.provider.EnumSource(value = Perfil.class, names = { "ALUNO", "PROFESSOR", "ADMINISTRADOR" })
+        void qualquerPerfilPodeConsultarTopicoDeOutroAutorPelaUrl(Perfil perfil) {
+                var topico = criarTopico("Detalhe individual");
+                var removido = criarComentario(topico.id(), "Resposta removida");
+                criarComentario(topico.id(), "Resposta visivel");
+                excluirComentario(removido.id(), autor.token());
+                var leitor = cadastrarEAutenticar(perfil);
+                String rota = "/api/forum/topicos/" + topico.id();
+                var resposta = enviar(HttpMethod.GET, rota, leitor.token(), null, TopicoResumoDTO.class);
+                assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(resposta.getBody().id()).isEqualTo(topico.id());
+                assertThat(resposta.getBody().titulo()).isEqualTo(topico.titulo());
+                assertThat(resposta.getBody().idAutor()).isEqualTo(topico.idAutor());
+                assertThat(resposta.getBody().nomeAutor()).isEqualTo(topico.nomeAutor());
+                assertThat(resposta.getBody().quantidadeRespostas()).isEqualTo(1);
+                assertThat(enviar(HttpMethod.GET, "/api/forum/topicos/999999", leitor.token(), null, String.class)
+                                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                jdbc.update("UPDATE tb_topics SET closed = true WHERE id = ?", topico.id());
+                assertThat(enviar(HttpMethod.GET, rota, leitor.token(), null, TopicoResumoDTO.class).getBody().fechado()).isTrue();
+                jdbc.update("UPDATE tb_topics SET active = false WHERE id = ?", topico.id());
+                assertThat(enviar(HttpMethod.GET, rota, leitor.token(), null, String.class).getStatusCode())
+                                .isEqualTo(HttpStatus.NOT_FOUND);
         }
 
         @Test

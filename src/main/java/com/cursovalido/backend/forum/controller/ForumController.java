@@ -59,6 +59,12 @@ public class ForumController {
         return servicoTopicos.listarMeus(page, size, busca, usuario.getId()).map(this::converter);
     }
 
+    @GetMapping("/topicos/{idTopico}")
+    public TopicoResumoDTO consultarTopico(@AuthenticationPrincipal UsuarioAutenticado usuario,
+            @PathVariable Long idTopico) {
+        return converter(servicoTopicos.consultar(idTopico, usuario.getId()));
+    }
+
     @PostMapping("/topicos")
     public TopicoResponse criarTopico(@AuthenticationPrincipal UsuarioAutenticado usuario,
             @Valid @RequestBody TopicoRequest requisicao) {
