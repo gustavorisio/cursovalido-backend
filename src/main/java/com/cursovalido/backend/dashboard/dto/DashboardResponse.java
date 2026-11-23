@@ -7,7 +7,8 @@ public final class DashboardResponse {
         }
 
         public record Resumo(long alunosAtivos, long professoresAtivos, long cursosAtivos,
-                        long aulasAtivas, long matriculas, long topicosAtivos, long comentariosAtivos, long aulasConcluidas,
+                        long aulasAtivas, long matriculas, long topicosAtivos, long comentariosAtivos,
+                        long aulasConcluidas,
                         long cursosConcluidos, long alunosEngajados, double taxaConclusaoMatriculas,
                         Double nivelMedioAlunos) {
         }

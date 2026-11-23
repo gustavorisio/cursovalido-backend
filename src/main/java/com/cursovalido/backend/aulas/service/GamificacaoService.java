@@ -53,11 +53,14 @@ public class GamificacaoService {
     @Transactional
     public boolean registrarConclusao(Long idAluno, Long idCurso, Long idMatricula) {
         if (conclusoes.existsByIdAlunoAndIdCurso(idAluno, idCurso)
-                || cursos.findById(idCurso).filter(Curso::isAtivo).isEmpty()) return false;
+                || cursos.findById(idCurso).filter(Curso::isAtivo).isEmpty())
+            return false;
         long totalAulas = conclusoes.contarAulasAtivas(idCurso);
-        if (totalAulas == 0 || conclusoes.contarAulasConcluidas(idMatricula, idCurso) < totalAulas) return false;
+        if (totalAulas == 0 || conclusoes.contarAulasConcluidas(idMatricula, idCurso) < totalAulas)
+            return false;
         usuarios.buscarParaAtualizar(idAluno);
-        if (conclusoes.existsByIdAlunoAndIdCurso(idAluno, idCurso)) return false;
+        if (conclusoes.existsByIdAlunoAndIdCurso(idAluno, idCurso))
+            return false;
         conclusoes.save(new ConclusaoCurso(idAluno, idCurso, 0));
         auditoria.registrar(idAluno, "CONCLUSAO_CURSO", "Curso " + idCurso, null);
         return true;
@@ -66,11 +69,14 @@ public class GamificacaoService {
     @Transactional
     public RecompensaQuestionarioResponse registrarAprovacao(Long idAluno, Questionario questionario, int acertos) {
         int total = questionario.getPerguntas().size();
-        if (total == 0 || acertos != total || !questionario.isPublicado() || questionario.getIdModulo() == null) return null;
+        if (total == 0 || acertos != total || !questionario.isPublicado() || questionario.getIdModulo() == null)
+            return null;
         verificarAluno(idAluno);
         // Impede crédito duplicado com a trava do aluno e a chave única.
-        usuarios.buscarParaAtualizar(idAluno).orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Aluno não encontrado"));
-        if (recompensas.existsByIdAlunoAndIdQuestionario(idAluno, questionario.getId())) return null;
+        usuarios.buscarParaAtualizar(idAluno)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Aluno não encontrado"));
+        if (recompensas.existsByIdAlunoAndIdQuestionario(idAluno, questionario.getId()))
+            return null;
         gamificacoes.criarSeAusente(idAluno);
         GamificacaoAluno registro = gamificacoes.bloquear(idAluno)
                 .orElseThrow(() -> new IllegalStateException("Registro de gamificacao indisponivel"));
@@ -90,12 +96,14 @@ public class GamificacaoService {
         return conclusoes.matriculasSemConclusao();
     }
 
-    private GamificacaoResponse montar(int nivel, long xpNivel, long xpTotal, long cursosConcluidos, long questionariosConcluidos) {
+    private GamificacaoResponse montar(int nivel, long xpNivel, long xpTotal, long cursosConcluidos,
+            long questionariosConcluidos) {
         boolean nivelMaximo = nivel >= ProgressaoNivel.NIVEL_MAXIMO;
         long meta = ProgressaoNivel.meta(nivel);
         long faltam = nivelMaximo ? 0 : Math.max(0, meta - xpNivel);
         int percentual = nivelMaximo ? 100 : (int) Math.min(100, Math.floor(xpNivel * 100.0 / meta));
-        return new GamificacaoResponse(nivel, xpNivel, meta, faltam, percentual, xpTotal, cursosConcluidos, questionariosConcluidos,
+        return new GamificacaoResponse(nivel, xpNivel, meta, faltam, percentual, xpTotal, cursosConcluidos,
+                questionariosConcluidos,
                 nivelMaximo);
     }
 

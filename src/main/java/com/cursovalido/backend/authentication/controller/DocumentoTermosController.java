@@ -51,7 +51,8 @@ public class DocumentoTermosController {
         String conteudo = renderizarConteudo(politica.conteudo());
         String principal = "<main>" + botoes + "<h1>" + HtmlUtils.htmlEscape(politica.nome())
                 + "</h1><p class=\"atualizacao\"><strong>Versão: " + HtmlUtils.htmlEscape(politica.versao())
-                + "</strong></p><article style=\"overflow-wrap:anywhere;white-space:pre-wrap\">" + conteudo + "</article></main>";
+                + "</strong></p><article style=\"overflow-wrap:anywhere;white-space:pre-wrap\">" + conteudo
+                + "</article></main>";
         return modelo.replaceFirst("(?is)<main\\b[^>]*>.*?</main>",
                 Matcher.quoteReplacement(principal));
     }

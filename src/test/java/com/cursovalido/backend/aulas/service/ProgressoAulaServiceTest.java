@@ -109,7 +109,6 @@ class ProgressoAulaServiceTest {
         verify(gamificacao).registrarConclusao(1L, 10L, 40L);
     }
 
-
     @Test
     void repetirConclusaoNaoAlteraDataNemAudita() {
         permitirEscrita();

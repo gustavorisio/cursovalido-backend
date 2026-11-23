@@ -35,7 +35,8 @@ class SchemaInicialPostgresTest {
 
     @Test
     void bancoNovoAplicaMigracoesEDeixaDocumentosParaOPublicacaoDoRoot() {
-        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("1", "2", "3", "4", "5", "6");
+        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("1", "2",
+                "3", "4", "5", "6");
         assertThat(flyway.info().pending()).isEmpty();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tb_politicas", Long.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tb_politicas_privacidade", Long.class)).isZero();

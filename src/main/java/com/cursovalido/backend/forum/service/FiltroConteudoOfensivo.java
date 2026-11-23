@@ -15,13 +15,17 @@ import org.springframework.stereotype.Component;
 public class FiltroConteudoOfensivo {
     // Termos comparados palavra a palavra, sem acentos e sem letras repetidas.
     private static final Set<String> TERMOS = normalizarLista(List.of(
-            "porra", "porras", "caralho", "caralhos", "carai", "caraio", "krl", "merda", "merdas", "bosta", "bostas", "cacete", "foda", "fodase",
+            "porra", "porras", "caralho", "caralhos", "carai", "caraio", "krl", "merda", "merdas", "bosta", "bostas",
+            "cacete", "foda", "fodase",
             "foder", "fode", "fodeu", "fodido", "fodida", "fuder", "fudido", "fudida", "fdp", "pqp", "vsf",
             "vtnc", "tnc", "puta", "puto", "putaria", "putinha", "buceta", "boceta", "xoxota", "piroca", "cu",
             "cuzao", "cuzinho", "arrombado", "arrombada", "desgraca", "desgracado", "desgracada", "otario",
-            "otaria", "idiota", "idiotas", "imbecil", "imbecis", "retardado", "retardada", "retardados", "babaca", "babacas", "escroto", "escrota",
-            "vagabundo", "vagabunda", "vadia", "vadias", "corno", "cornos", "corna", "cornas", "viado", "viados", "sapatao", "sapatoes", "traveco", "travecos", "mongoloide",
-            "lixo", "lixo humano", "fodace", "foda-se", "pau no cu", "fuck", "fucking", "fucker", "motherfucker", "shit", "bitch", "asshole", "cunt",
+            "otaria", "idiota", "idiotas", "imbecil", "imbecis", "retardado", "retardada", "retardados", "babaca",
+            "babacas", "escroto", "escrota",
+            "vagabundo", "vagabunda", "vadia", "vadias", "corno", "cornos", "corna", "cornas", "viado", "viados",
+            "sapatao", "sapatoes", "traveco", "travecos", "mongoloide",
+            "lixo", "lixo humano", "fodace", "foda-se", "pau no cu", "fuck", "fucking", "fucker", "motherfucker",
+            "shit", "bitch", "asshole", "cunt",
             "nigger", "niggers", "nigga", "niggas", "faggot", "faggots", "retard"));
 
     // Radicais que cobrem variações como plural, diminutivo e aumentativo.
@@ -43,7 +47,8 @@ public class FiltroConteudoOfensivo {
 
     // Preserva os índices do texto ao ocultar ofensas.
     public String censurar(String texto) {
-        if (texto == null || texto.isBlank()) return texto;
+        if (texto == null || texto.isBlank())
+            return texto;
         var tokens = new ArrayList<Token>();
         var matcher = Pattern.compile("[\\p{L}\\p{M}\\p{N}@$]+").matcher(texto);
         while (matcher.find()) {
@@ -53,9 +58,11 @@ public class FiltroConteudoOfensivo {
         for (int i = 0; i < tokens.size(); i++) {
             StringBuilder frase = new StringBuilder();
             for (int j = i; j < tokens.size() && j < i + 4; j++) {
-                if (j > i) frase.append(' ');
+                if (j > i)
+                    frase.append(' ');
                 frase.append(tokens.get(j).valor());
-                if (ofensiva(frase.toString())) marcar(ocultos, tokens.get(i).inicio(), tokens.get(j).fim());
+                if (ofensiva(frase.toString()))
+                    marcar(ocultos, tokens.get(i).inicio(), tokens.get(j).fim());
             }
             if (tokens.get(i).valor().length() == 1) {
                 StringBuilder letras = new StringBuilder();
@@ -68,13 +75,16 @@ public class FiltroConteudoOfensivo {
         }
         StringBuilder resultado = new StringBuilder();
         for (int i = 0; i < texto.length(); i++) {
-            if (!ocultos[i]) resultado.append(texto.charAt(i));
-            else if (i == 0 || !ocultos[i - 1]) resultado.append("***");
+            if (!ocultos[i])
+                resultado.append(texto.charAt(i));
+            else if (i == 0 || !ocultos[i - 1])
+                resultado.append("***");
         }
         return resultado.toString();
     }
 
-    private record Token(String valor, int inicio, int fim) {}
+    private record Token(String valor, int inicio, int fim) {
+    }
 
     private static void marcar(boolean[] ocultos, int inicio, int fim) {
         Arrays.fill(ocultos, inicio, fim, true);
@@ -85,7 +95,8 @@ public class FiltroConteudoOfensivo {
             return false;
         if (TERMOS.contains(palavra))
             return true;
-        if (palavra.contains(" ")) return false;
+        if (palavra.contains(" "))
+            return false;
         for (String radical : RADICAIS) {
             if (palavra.startsWith(radical))
                 return true;

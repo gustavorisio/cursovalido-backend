@@ -46,7 +46,8 @@ public class ComentarioService {
     public Page<Comentario> listarPaginaPorTopico(Long idTopico, Long idUsuario,
             int pagina, int tamanho) {
         if (pagina < 0 || tamanho < 1 || tamanho > 50) {
-            throw new RequisicaoInvalidaException("Página deve ser maior ou igual a zero e tamanho deve estar entre 1 e 50.");
+            throw new RequisicaoInvalidaException(
+                    "Página deve ser maior ou igual a zero e tamanho deve estar entre 1 e 50.");
         }
         servicoTopicos.buscarAtivo(idTopico);
         registrar(idUsuario, "CONSULTA_COMENTARIOS", "Topico " + idTopico);

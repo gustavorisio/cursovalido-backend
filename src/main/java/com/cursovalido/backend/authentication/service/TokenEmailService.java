@@ -50,7 +50,8 @@ public class TokenEmailService {
         return registro.getUsuario();
     }
 
-    // Confere o código sem consumi-lo e devolve o identificador do usuário dono do código.
+    // Confere o código sem consumi-lo e devolve o identificador do usuário dono do
+    // código.
     @Transactional
     public Long conferirCodigo2fa(String email, String codigo) {
         return localizarCodigo2fa(email, codigo).getUsuario().getId();

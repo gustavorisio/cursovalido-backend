@@ -25,7 +25,8 @@ class SuporteMigracaoPostgresTest {
                 propriedades.get("spring.datasource.password").get().toString());
         var flyway = FlywayConfig.configuracao().dataSource(fonte).load();
         flyway.migrate();
-        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("1", "2", "3", "4", "5", "6");
+        assertThat(flyway.info().applied()).extracting(item -> item.getVersion().getVersion()).containsExactly("1", "2",
+                "3", "4", "5", "6");
         var jdbc = new JdbcTemplate(fonte);
         var servico = new LimiteSuporteService(jdbc, new DataSourceTransactionManager(fonte));
         var envios = new AtomicInteger();

@@ -207,17 +207,22 @@ class ModeracaoIntegracaoTest {
                 mvc.perform(get("/api/administracao/permissoes").with(como(principal)))
                                 .andExpect(status().isOk()).andExpect(jsonPath("$.principal").value(true));
                 mvc.perform(get("/api/administracao/convites").with(como(administrador)))
-                                .andExpect(status().isOk());
-                String convite = "{\"email\":\"" + UUID.randomUUID()
-                                + "@example.com\",\"perfil\":\"PROFESSOR\"}";
+                                .andExpect(status().isForbidden());
+                String emailConvite = UUID.randomUUID() + "@example.com";
+                String convite = "{\"email\":\"" + emailConvite + "\",\"perfil\":\"PROFESSOR\"}";
                 mvc.perform(post("/api/administracao/convites").with(como(administrador))
                                 .contentType(MediaType.APPLICATION_JSON).content(convite))
-                                .andExpect(status().isNoContent());
+                                .andExpect(status().isForbidden());
                 mvc.perform(post("/api/administracao/convites").with(como(principal))
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"email\":\"outro-" + UUID.randomUUID()
-                                                + "@example.com\",\"perfil\":\"PROFESSOR\"}"))
+                                .contentType(MediaType.APPLICATION_JSON).content(convite))
                                 .andExpect(status().isNoContent());
+                mvc.perform(get("/api/administracao/convites").with(como(principal)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[*].email", Matchers.hasItem(emailConvite)));
+                mvc.perform(get("/api/administracao/convites/pendentes").with(como(administrador)))
+                                .andExpect(status().isForbidden());
+                mvc.perform(get("/api/administracao/convites/pendentes").with(como(principal)))
+                                .andExpect(status().isOk());
                 String termos = "{\"nome\":\"Termos\",\"versao\":\"moderacao-v1\",\"conteudo\":\"Novos termos\"}";
                 mvc.perform(post("/api/politicas").with(como(administrador)).contentType(MediaType.APPLICATION_JSON)
                                 .content(termos))
@@ -251,7 +256,7 @@ class ModeracaoIntegracaoTest {
                 var convite = convites.findByEmail("convite@example.com").orElseThrow();
                 mvc.perform(post("/api/administracao/convites/" + convite.getId() + "/reenviar")
                                 .with(como(administrador)))
-                                .andExpect(status().isTooManyRequests());
+                                .andExpect(status().isForbidden());
                 mvc.perform(post("/api/administracao/convites/" + convite.getId() + "/reenviar").with(como(principal)))
                                 .andExpect(status().isTooManyRequests())
                                 .andExpect(jsonPath("$.codigo").value("REENVIO_CONVITE_AGUARDE"));

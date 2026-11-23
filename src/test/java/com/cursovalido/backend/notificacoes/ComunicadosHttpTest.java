@@ -73,7 +73,8 @@ class ComunicadosHttpTest {
         void preparar() {
                 jdbc.update("DELETE FROM tb_comunicados");
                 if (politicas.listarAtivas().isEmpty())
-                        repositorioPoliticas.save(new Politica("Termos de teste", "comunicados-teste", "Conteudo de teste"));
+                        repositorioPoliticas.save(
+                                        new Politica("Termos de teste", "comunicados-teste", "Conteudo de teste"));
                 cliente = RestClient.builder().requestInterceptor((request, corpo, execucao) -> {
                         TempoLimitesTeste.avancar(cadeiaSeguranca);
                         return execucao.execute(request, corpo);
@@ -277,34 +278,41 @@ class ComunicadosHttpTest {
         @Test
         void intervaloPersisteMesmoAposExcluirComunicado() {
                 var dados = new ComunicadoRequest("Aviso", "Texto");
-                var primeiro = enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, ComunicadoResponse.class);
+                var primeiro = enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados,
+                                ComunicadoResponse.class);
                 assertThat(primeiro.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-                assertThat(enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, String.class).getStatusCode())
-                        .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
-                enviar(HttpMethod.DELETE, "/api/administracao/comunicados/" + primeiro.getBody().id(), admin, null, String.class);
+                assertThat(enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, String.class)
+                                .getStatusCode())
+                                .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+                enviar(HttpMethod.DELETE, "/api/administracao/comunicados/" + primeiro.getBody().id(), admin, null,
+                                String.class);
                 var bloqueado = enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, String.class);
                 assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
                 assertThat(bloqueado.getBody()).contains("30 segundos");
-                // Usa o mesmo relogio da aplicacao, com margem fora dos 30 segundos de bloqueio.
+                // Usa o mesmo relogio da aplicacao, com margem fora dos 30 segundos de
+                // bloqueio.
                 jdbc.update("UPDATE tb_publicacoes_comunicados SET ultima_publicacao_em = ?",
                                 Timestamp.valueOf(LocalDateTime.now().minusSeconds(31)));
-                assertThat(enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, ComunicadoResponse.class).getStatusCode())
-                        .isEqualTo(HttpStatus.CREATED);
+                assertThat(enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados,
+                                ComunicadoResponse.class).getStatusCode())
+                                .isEqualTo(HttpStatus.CREATED);
         }
 
         @Test
         void limiteGlobalNaoEhUltrapassadoPorPublicacoesSimultaneas() {
-                for (int i = 0; i < 29; i++) publicar("Aviso " + i);
+                for (int i = 0; i < 29; i++)
+                        publicar("Aviso " + i);
                 var outroAdmin = tokens.gerar(criarUsuario(Perfil.ADMINISTRADOR));
                 var dados = new ComunicadoRequest("Ultima vaga", "Texto");
-                var primeiro = CompletableFuture.supplyAsync(() ->
-                        enviar(HttpMethod.POST, "/api/administracao/comunicados", admin, dados, String.class).getStatusCode());
-                var segundo = CompletableFuture.supplyAsync(() ->
-                        enviar(HttpMethod.POST, "/api/administracao/comunicados", outroAdmin, dados, String.class).getStatusCode());
+                var primeiro = CompletableFuture.supplyAsync(() -> enviar(HttpMethod.POST,
+                                "/api/administracao/comunicados", admin, dados, String.class).getStatusCode());
+                var segundo = CompletableFuture.supplyAsync(() -> enviar(HttpMethod.POST,
+                                "/api/administracao/comunicados", outroAdmin, dados, String.class).getStatusCode());
                 assertThat(List.of(primeiro.join(), segundo.join()))
-                        .containsExactlyInAnyOrder(HttpStatus.CREATED, HttpStatus.CONFLICT);
+                                .containsExactlyInAnyOrder(HttpStatus.CREATED, HttpStatus.CONFLICT);
                 assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM tb_comunicados", Long.class)).isEqualTo(30);
-                var bloqueado = enviar(HttpMethod.POST, "/api/administracao/comunicados", outroAdmin, dados, String.class);
+                var bloqueado = enviar(HttpMethod.POST, "/api/administracao/comunicados", outroAdmin, dados,
+                                String.class);
                 assertThat(bloqueado.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
                 assertThat(bloqueado.getBody()).contains("30 comunicados");
         }
@@ -313,13 +321,14 @@ class ComunicadosHttpTest {
                 var resposta = enviar(HttpMethod.POST, "/api/administracao/comunicados", admin,
                                 new ComunicadoRequest(titulo, "Conteúdo do comunicado"), Map.class);
                 assertThat(resposta.getStatusCode()).withFailMessage("Publicação recusada: %s", resposta.getBody())
-                        .isEqualTo(HttpStatus.CREATED);
+                                .isEqualTo(HttpStatus.CREATED);
                 // Usa o mesmo relógio da aplicação para liberar as fixtures.
                 jdbc.update("UPDATE tb_publicacoes_comunicados SET ultima_publicacao_em = ?",
-                        Timestamp.valueOf(LocalDateTime.now().minusSeconds(31)));
+                                Timestamp.valueOf(LocalDateTime.now().minusSeconds(31)));
                 var corpo = resposta.getBody();
                 return new ComunicadoResponse(((Number) corpo.get("id")).longValue(), (String) corpo.get("titulo"),
-                        (String) corpo.get("conteudo"), LocalDateTime.parse((String) corpo.get("criadoEm")), false);
+                                (String) corpo.get("conteudo"), LocalDateTime.parse((String) corpo.get("criadoEm")),
+                                false);
         }
 
         private <T> ResponseEntity<T> enviar(HttpMethod metodo, String rota, String token, Object dados,

@@ -55,7 +55,8 @@ public class Usuario {
 
     @PrePersist
     private void gerarGamertagSeAusente() {
-        if (gamertag != null && !gamertag.isBlank()) return;
+        if (gamertag != null && !gamertag.isBlank())
+            return;
         do {
             StringBuilder tag = new StringBuilder("#");
             for (int i = 0; i < 8; i++) {

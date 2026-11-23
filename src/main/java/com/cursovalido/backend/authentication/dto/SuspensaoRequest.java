@@ -5,5 +5,5 @@ import jakarta.validation.constraints.*;
 import java.time.Instant;
 
 public record SuspensaoRequest(@NotNull EscopoSuspensao escopo,
-        @NotBlank @Size(max = 1000) String motivo, @Future Instant expiraEm) {
+                @NotBlank @Size(max = 1000) String motivo, @Future Instant expiraEm) {
 }

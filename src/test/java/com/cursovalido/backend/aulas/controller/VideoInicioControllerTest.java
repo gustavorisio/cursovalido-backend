@@ -14,7 +14,8 @@ class VideoInicioControllerTest {
     void consultaPublicaPreservaAusenciaOuLinkComPrivacidade() {
         var servico = mock(VideoInicioService.class);
         var controlador = new VideoInicioController(servico);
-        when(servico.consultar()).thenReturn(new VideoInicioResponse(null), new VideoInicioResponse("https://vimeo.com/123/abc"));
+        when(servico.consultar()).thenReturn(new VideoInicioResponse(null),
+                new VideoInicioResponse("https://vimeo.com/123/abc"));
         assertThat(controlador.consultar().vimeoUrl()).isNull();
         assertThat(controlador.consultar().vimeoUrl()).isEqualTo("https://vimeo.com/123/abc");
     }

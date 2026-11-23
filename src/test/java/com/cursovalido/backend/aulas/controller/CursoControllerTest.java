@@ -16,8 +16,11 @@ class CursoControllerTest {
     @Test
     void catalogoPublicoMantemTemaECapaSemExigirIdentidade() {
         var curso = curso();
-        var tema = new Tema(); tema.setId(5L); tema.setNome("Programacao");
-        curso.setTema(tema); curso.setCapaJpeg("data:image/jpeg;base64,imagem");
+        var tema = new Tema();
+        tema.setId(5L);
+        tema.setNome("Programacao");
+        curso.setTema(tema);
+        curso.setCapaJpeg("data:image/jpeg;base64,imagem");
         when(servico.listarPublicos()).thenReturn(List.of(curso));
         var item = controlador.catalogoPublico().getFirst();
         assertThat(item.id()).isEqualTo(10L);
