@@ -1,260 +1,216 @@
-# Curso Válido - Back-end
+# Curso Válido - Front-end
 
-O Curso Válido é uma plataforma web gratuita que apoia adultos iniciantes no estudo autônomo de tecnologia e programação. Este repositório contém a API da plataforma, responsável pelas regras de negócio, autenticação, controle de acesso e armazenamento dos dados. A interface web fica no [repositório do front-end](https://github.com/gustavorisio/cursovalido-frontend).
+Interface web do **Curso Válido**, plataforma gratuita de apoio à aprendizagem autônoma de tecnologia e programação por adultos iniciantes. O projeto é o Trabalho de Conclusão de Curso do Bacharelado em Engenharia de Software da Universidade de Mogi das Cruzes (UMC).
 
-- [Repositório do back-end](https://github.com/gustavorisio/cursovalido-backend)
+Quem aprende por conta própria costuma recorrer a videoaulas gratuitas, mas precisa definir sozinho o que estudar, em que ordem avançar e como verificar se compreendeu o conteúdo. Sugestões de vídeos podem desviar a atenção, aulas de autores diferentes nem sempre formam um percurso, e a visualização passiva oferece pouca prática e retorno sobre o aprendizado.
+
+O Curso Válido reúne cursos, módulos e aulas em sequência, registra a reprodução e a conclusão das aulas e oferece questionários com correção e explicações. O player permite alternar entre Vimeo e YouTube; o plano de estudos mostra os resultados das avaliações; XP, níveis, ranking e fórum apoiam a continuidade dos estudos e a troca de dúvidas.
+
+Este repositório contém a interface React e os clientes HTTP da plataforma. A API do back-end aplica as regras de negócio, controla o acesso, persiste os dados e realiza as integrações com os serviços externos.
+
 - [Repositório do front-end](https://github.com/gustavorisio/cursovalido-frontend)
+- [Repositório do back-end](https://github.com/gustavorisio/cursovalido-backend)
 
-## Problema
+## Funcionalidades implementadas
 
-Quem decide aprender tecnologia por conta própria, fora de uma faculdade ou de um curso pago, costuma recorrer a videoaulas gratuitas. Mesmo com muitos conteúdos disponíveis, o estudante precisa decidir sozinho o que estudar, em que ordem avançar e como verificar se realmente compreendeu o assunto. As sugestões laterais e a reprodução automática podem desviá-lo do conteúdo; aulas de autores diferentes nem sempre formam uma sequência; e assistir a um vídeo, por si só, oferece pouca prática e pouco retorno sobre o que foi aprendido.
+### Cadastro e conta
 
-Essas barreiras deixam o estudo passivo e dificultam a continuidade: falta um percurso organizado, oportunidades de aplicar o conteúdo e feedback que ajude a identificar o que precisa ser revisto.
+- Cadastro de alunos com nome, e-mail e senha, declaração de maioridade (18 anos ou mais) e aceite dos documentos legais. O formulário atual não coleta CPF nem data de nascimento.
+- Confirmação de e-mail, login com código enviado por e-mail quando o segundo fator está habilitado, recuperação e redefinição de senha. O segundo fator é obrigatório para professores e administradores e opcional para alunos.
+- Cadastro por convite para professores e administradores, com confirmação de e-mail e aprovação administrativa.
+- Consulta e exportação dos dados pessoais, histórico e revogação do aceite dos termos e solicitação de exclusão da conta mediante código enviado por e-mail. A autoexclusão não está disponível para contas administrativas.
+- Controle de sessão e proteção de rotas conforme os perfis `ALUNO`, `PROFESSOR` e `ADMINISTRADOR`.
 
-## Solução proposta
+### Cursos e aulas
 
-O Curso Válido reúne esses elementos em um único ambiente. Organiza videoaulas em cursos, módulos e aulas sequenciais, com catálogo filtrado por temas, e registra a posição de reprodução e as aulas concluídas para que o aluno possa retomar o estudo. O vídeo é exibido na página da aula, enquanto os controles de aula anterior e próxima seguem a sequência definida pelo professor.
+- Catálogo público e área do aluno com matrícula gratuita e consulta dos cursos em que está matriculado.
+- Organização em cursos, módulos e aulas, com pesquisa de conteúdo.
+- Área do professor para cadastrar, editar e excluir cursos, módulos e aulas.
+- Cadastro de aulas com vídeo Vimeo como servidor principal e YouTube como reserva. O player permite alternar entre os provedores e retomar a aula da posição salva.
+- Salvamento periódico da posição de reprodução e retomada da aula a partir do progresso registrado.
+- Conclusão manual da aula pelo botão **Marcar como concluída**, com atualização do progresso do curso. A conclusão registrada não comprova, por si só, tempo assistido ou aprendizagem.
+- Área administrativa para consultar, editar, arquivar e reabrir cursos e aulas.
+- Questionários por módulo, com correção automática, explicações por questão, resultados e novas tentativas. O plano de estudos apresenta as avaliações disponíveis e o percentual de acertos da tentativa mais recente. Acertos de 100% podem conceder XP uma única vez por questionário; o aluno acompanha níveis e ranking.
 
-Para apoiar a prática e o acompanhamento da aprendizagem, a plataforma oferece questionários por módulo e uma avaliação do curso, com correção automática, explicações por questão e novas tentativas. O plano de estudos apresenta as avaliações disponíveis e o percentual de acertos da tentativa mais recente, ajudando o aluno a decidir o que revisar. A conclusão de cursos concede pontos de experiência e níveis, e o ranking torna o avanço visível. Um fórum restrito a usuários autenticados permite compartilhar dúvidas durante o percurso.
+### Fórum
 
-A combinação de videoaulas e atividades acompanha evidências discutidas na monografia de que estratégias de aprendizagem ativa podem favorecer retenção e compreensão em comparação com a visualização passiva ([Zhang et al., 2025](https://doi.org/10.1016/j.edurev.2025.100708)).
+- Listagem e consulta de tópicos e comentários, com paginação.
+- Criação de tópicos e comentários por usuários autenticados, respeitando as restrições da conta.
+- Títulos com até 255 caracteres; descrições e comentários com até 5.000 caracteres.
+- Edição de tópicos e comentários pelo próprio autor.
+- Fechamento de tópicos pelo autor ou administrador.
+- Arquivamento por administradores ou pelo professor autor do tópico.
+- Exclusão de tópicos por administradores e de comentários pelo autor ou administrador.
 
-## Objetivo
+### Suporte
 
-Desenvolver uma plataforma web gratuita de apoio à aprendizagem autônoma de tecnologia por adultos iniciantes a partir de 18 anos, combinando videoaulas organizadas em cursos, módulos e aulas, acompanhamento de progresso, questionários com correção automática e explicações por questão e um fórum restrito a usuários autenticados.
+- Formulário público de suporte com validação dos campos, protocolo e encaminhamento por e-mail por meio da API.
 
-## Sobre o projeto
+### Administração
 
-O Curso Válido é o Projeto Final de Curso de Engenharia de Software da Universidade de Mogi das Cruzes (UMC). Alunos estudam e participam do fórum; professores organizam cursos, módulos e aulas; e administradores gerenciam acessos e operações administrativas.
+- Dashboard com indicadores e gráficos.
+- Consulta de usuários e aplicação ou revogação de suspensões. A exclusão administrativa de contas de alunos, professores e outros administradores é exclusiva do root; a conta root continua protegida contra exclusão.
+- Convites e aprovação de cadastros da equipe pelo administrador principal.
+- Gestão dos termos de uso e da política de privacidade pelo administrador principal.
+- Publicação de comunicados para os alunos, com título de até 255 caracteres e conteúdo de até 5.000 caracteres. Administradores podem editar e excluir comunicados.
 
-O projeto está em desenvolvimento. A versão atual do back-end oferece autenticação e gestão de contas, convites, termos e políticas, cursos, módulos, aulas, matrículas, progresso, questionários, gamificação, plano de estudos, ranking de alunos, fórum, moderação, comunicados, dashboard administrativo e formulário de suporte.
+### Notificações de comunicados
 
-## Funcionalidades
+- Administradores publicam em **Administração → Comunicados aos alunos** (`/administracao/comunicados`), preenchendo somente título e conteúdo.
+- Administradores podem editar qualquer comunicado publicado, mantendo os limites de título e conteúdo e as leituras já registradas. A exclusão exige confirmação na interface e remove o comunicado e seus registros de leitura.
+- Alunos acessam os comunicados pelo sino no cabeçalho (`/aluno/notificacoes`), com contador de notificações não lidas atualizado a cada minuto e ao retornar à página.
+- Abrir **Ler comunicado** registra a leitura no servidor somente para o aluno autenticado. Consultar a lista não marca automaticamente todos os comunicados como lidos.
+- Os comunicados são gerais e permanecem disponíveis para alunos que ingressarem posteriormente. Esta versão não envia e-mails nem notificações do navegador.
+- A API do backend utiliza `GET/POST /api/administracao/comunicados`, `PUT/DELETE /api/administracao/comunicados/{id}`, `GET /api/aluno/notificacoes`, `GET /api/aluno/notificacoes/nao-lidas` e `PUT /api/aluno/notificacoes/{id}/lida`. As listas aceitam `page` e `size` (de 1 a 50) e retornam `itens`, `pagina`, `totalPaginas`, `totalElementos` e `naoLidas`.
+- Ícone [Bell do Bootstrap Icons v1.13.1](https://icons.getbootstrap.com/icons/bell/), usado localmente sob licença MIT, incluída em `public/imagens/LICENCA-bootstrap-icons.txt`.
 
-### Cadastro e acesso
-
-O cadastro de aluno exige a declaração de que tem 18 anos ou mais, o aceite dos termos vigentes e a confirmação do e-mail; não coleta data de nascimento. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. O segundo fator é obrigatório para a equipe e pode ser habilitado pelo aluno. Depois da confirmação, a API emite o JWT usado nas requisições autenticadas.
-
-As senhas são armazenadas com BCrypt. Também há recuperação de senha e proteção contra tentativas repetidas de acesso. Professores e administradores entram por convite, com conclusão do cadastro e aprovação administrativa.
-
-### Comunidade
-
-O fórum permite criar tópicos sobre dúvidas de programação e responder às discussões de outros usuários. A consulta de tópicos e comentários é pública; a participação exige autenticação. A listagem de tópicos possui busca e paginação, e a edição de tópicos e comentários respeita a autoria de cada publicação.
-
-A descrição dos tópicos e o conteúdo dos comentários têm limite de 5.000 caracteres. Também é possível fechar tópicos para novas respostas e retirar conteúdos de circulação conforme as permissões do usuário.
-
-### Aulas e cursos
-
-O módulo de aprendizagem organiza cursos em módulos e aulas. Os professores podem cadastrar e gerenciar os conteúdos sob sua responsabilidade, vinculando vídeos do Vimeo como serviço principal e do YouTube como alternativa. O backend valida os links do Vimeo pela conta autorizada e os vídeos do YouTube pela API, incluindo canal, disponibilidade pública ou não listada e permissão de incorporação.
-
-Os alunos podem se matricular gratuitamente nos cursos disponíveis, salvar e retomar a posição de reprodução e marcar aulas como concluídas. A plataforma oferece questionários por módulo e avaliação do curso, com correção automática, explicação por questão e novas tentativas. O plano de estudos reúne as avaliações disponíveis e o resultado da tentativa mais recente. A conclusão de cursos concede XP e níveis, exibidos também no ranking de alunos. A reprodução e a troca entre os players Vimeo e YouTube são responsabilidade do front-end; o registro de conclusão não comprova, por si só, aprendizagem ou tempo assistido.
-
-### Administração e suporte
-
-A área administrativa reúne gestão de convites e aprovações, documentos legais, restrições de usuários, denúncias e moderação de cursos e aulas. O administrador pode publicar comunicados gerais para os alunos; o sistema registra a leitura individual na área de notificações. Algumas operações são exclusivas do administrador principal. O dashboard apresenta indicadores operacionais sobre usuários, cursos, aulas, matrículas e tópicos, além de matrículas por mês, cursos mais procurados e distribuição de usuários por perfil.
-
-O formulário público de suporte gera um protocolo e encaminha a solicitação por e-mail, sujeito à configuração e aos limites de envio. O recurso não mantém um sistema completo de acompanhamento de chamados.
-
-### Dados pessoais e termos de uso
-
-O sistema registra a versão e a data do aceite dos documentos e permite publicar novas políticas, solicitar novo aceite, revogar o consentimento e consultar e exportar os dados pessoais disponibilizados pela API. A exclusão da conta exige confirmação por código enviado por e-mail e segue regras próprias de remoção, anonimização e retenção de registros.
-
-As operações relevantes são registradas em auditoria com assinaturas HMAC-SHA256 encadeadas e verificação de integridade. Os JWTs são associados a sessões persistidas, permitindo verificar validade e revogar acessos.
+As operações dependem da API do back-end, responsável por validar permissões, persistir os dados e executar integrações como envio de e-mails pelo Resend e validação dos vídeos pelas APIs do Vimeo e do YouTube. As credenciais dessas integrações ficam no ambiente do backend, não no frontend.
 
 ## Tecnologias
 
-O back-end utiliza Java 21 com Spring Boot, Spring MVC, Spring Security e Spring Data JPA. Os dados são armazenados no PostgreSQL, com migrações gerenciadas pelo Flyway.
+| Tecnologia | Uso |
+| --- | --- |
+| React 19 e React DOM | Interface em JavaScript/JSX |
+| React Router DOM 7 | Navegação da SPA e organização de rotas |
+| Vite 8 | Servidor de desenvolvimento e build |
+| Tailwind CSS 4 e CSS próprio | Estilização da interface |
+| CoreUI React 5 | Componentes da área administrativa |
+| CoreUI React Chart.js | Gráficos do dashboard |
+| Fetch API | Comunicação HTTP com o back-end |
+| ESLint 10 | Análise estática do código |
+| Vitest, Istanbul e jsdom | Testes automatizados e cobertura |
 
-A autenticação utiliza JWT com a biblioteca JJWT, e as entradas são validadas com Jakarta Bean Validation. O Resend é utilizado para envio de e-mails. As APIs do Vimeo e do YouTube são utilizadas para validar os vídeos das aulas. Os testes utilizam JUnit, Mockito, Spring Boot Test, Spring Security Test, H2 e PostgreSQL, com suporte a Testcontainers. O JaCoCo gera relatórios de cobertura dos módulos de fórum e aulas.
+## Como executar localmente
 
-## Como executar
+### Pré-requisitos
 
-### 1. Preparar o ambiente
+- **Node.js** compatível com as dependências. Para a linha 22, utilize **22.22.2 ou superior**; para a linha 24, **24.15.0 ou superior**, considerando também o jsdom usado nos testes.
+- **npm**, normalmente incluído na instalação do Node.js, para instalar as dependências e executar os scripts.
+- **Git**, para clonar o repositório pelos comandos abaixo. Também é possível baixar e extrair o ZIP do projeto pelo GitHub.
+- **Navegador atualizado**, para acessar a interface.
+- Acesso à internet para instalar as dependências, utilizar as integrações e carregar os vídeos do Vimeo e do YouTube.
 
-Instale o JDK 21, Maven, Git e PostgreSQL. Configure `JAVA_HOME` para o JDK 21 e disponibilize o Maven no `PATH`. Se utilizar o VS Code, instale também o Extension Pack for Java.
-
-Confira a versão do Java:
-
-```powershell
-java -version
-mvn -version
-```
-
-Na primeira execução, é necessário acesso à internet para baixar as dependências. Os scripts `mvnw` e `mvnw.cmd` atuais apenas procuram uma distribuição previamente instalada em `~/.m2/wrapper/dists/apache-maven-3.9.16`; eles não fazem o download do Maven. Os comandos abaixo utilizam o Maven instalado no ambiente.
-
-### 2. Clonar o repositório
-
-```powershell
-git clone https://github.com/gustavorisio/cursovalido-backend.git
-cd cursovalido-backend
-```
-
-### 3. Preparar o banco
-
-Para PostgreSQL local, crie o banco no pgAdmin ou em outro cliente:
-
-No pgAdmin ou em outro cliente PostgreSQL, crie o banco:
-
-```sql
-CREATE DATABASE cursovalido;
-```
-
-Em um serviço PostgreSQL gerenciado, crie o banco pelo painel do provedor e use os dados de conexão fornecidos por ele. O Flyway aplica as migrações da aplicação durante a inicialização do backend.
-
-Utilize um usuário com permissão para conectar ao banco e criar os objetos das migrações. O Flyway cria as tabelas na inicialização, a partir dos scripts em `src/main/resources/db/migration`. Depois, o Hibernate valida a estrutura do banco.
-
-O Flyway aplica, em ordem, as migrações versionadas disponíveis em `src/main/resources/db/migration` durante a inicialização. Em um banco novo, todas as migrações são executadas; em um banco já existente, apenas as pendentes. O Hibernate valida a estrutura resultante. Não configure baseline manualmente para um banco novo.
-
-### 4. Configurar as variáveis de ambiente
-
-No Windows, pesquise **Editar as variáveis de ambiente do sistema**, clique em **Variáveis de Ambiente** e adicione os valores em **Variáveis de usuário**. Cadastre cada nome e valor separadamente, sem aspas.
-
-Configure a conexão com PostgreSQL pelas variáveis de ambiente abaixo. Elas funcionam com banco local, VPS ou serviço gerenciado:
-
-```text
-SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/banco?sslmode=require
-SPRING_DATASOURCE_USERNAME=usuario_do_banco
-SPRING_DATASOURCE_PASSWORD=senha_do_banco
-```
-
-Use `sslmode=require` quando o provedor exigir conexão TLS. Para validar também a identidade do servidor, use `sslmode=verify-full` e configure o certificado raiz conforme a documentação do provedor. Não coloque usuário ou senha dentro da URL: mantenha-os nas variáveis próprias. Defina também `DB_POOL_MAX_SIZE` e `DB_POOL_MIN_IDLE` para ajustar o pool de conexões quando necessário. Guarde os valores no ambiente do servidor ou em um arquivo `.env` local ignorado pelo Git; nunca os inclua no frontend nem em commits.
-
-Para autenticação e auditoria:
-
-```text
-JWT_SECRET=seu_segredo_jwt
-AUDITORIA_CHAVE=seu_segredo_de_auditoria
-```
-
-Esses valores são exemplos: gere as chaves com os comandos da próxima seção. O JWT exige pelo menos 32 bytes.
-
-Para envio de e-mails e integração com o front-end:
-
-```text
-RESEND_API_KEY=sua_chave_resend
-RESEND_FROM_EMAIL=remetente_autorizado
-APP_URL=http://localhost:3000
-FRONTEND_ORIGINS=http://localhost:3000
-```
-
-Utilize um remetente autorizado na sua conta Resend. Ajuste a URL e a origem para a porta utilizada pelo front-end. Se precisar permitir mais de uma origem, separe os endereços por vírgula, sem espaços.
-
-Para validar os vídeos vinculados às aulas e receber solicitações de suporte:
-
-```text
-VIMEO_ALLOWED_USER_ID=123456789
-VIMEO_ACCESS_TOKEN=seu_token_autenticado_vimeo
-YOUTUBE_API_KEY=sua_chave_da_api_youtube
-YOUTUBE_ALLOWED_CHANNEL_ID=UCabcdefghijklmnopqrstuv
-SUPPORT_EMAIL=email_de_atendimento
-```
-
-Configure `VIMEO_ALLOWED_USER_ID` com o ID **numérico** do proprietário dos vídeos, sem `/users/` e sem o nome do perfil. Para obtê-lo, consulte `GET https://api.vimeo.com/me` com o token autenticado: a propriedade `uri` retorna `/users/ID`. Configure `VIMEO_ACCESS_TOKEN` com um token autenticado dessa conta, criado em https://developer.vimeo.com/apps, com os escopos de leitura `public` e `private` (para vídeos não públicos). Não são necessários escopos de edição, upload ou exclusão. Consulte as [instruções oficiais do Vimeo](https://help.vimeo.com/hc/en-us/articles/12427789081745-How-to-generate-a-personal-access-token).
-
-As duas variáveis devem estar no ambiente do **processo do backend**: nas Variáveis de usuário do Windows em execução local ou nas configurações de ambiente/segredos do serviço de hospedagem em produção. Reinicie o backend após alterá-las. Não coloque o token no frontend, no repositório ou nas URLs. O Spring lê essas variáveis em `src/main/resources/application.properties`; arquivos `.env` não são carregados automaticamente.
-
-Exemplo no PowerShell, válido para o terminal atual e processos iniciados nele:
-
-```powershell
-$env:VIMEO_ALLOWED_USER_ID = "123456789"
-$env:VIMEO_ACCESS_TOKEN = "seu_token_autenticado_vimeo"
-mvn spring-boot:run
-```
-
-Ao cadastrar ou editar aulas (professor e administrador) ou atualizar o vídeo inicial, o backend consulta o Vimeo e compara `user.uri` com a conta autorizada antes de salvar. Links `https://vimeo.com/ID`, links com hash de privacidade e `https://player.vimeo.com/video/ID?h=HASH` são aceitos. Vídeos de outras contas são recusados. Configuração ausente/inválida, falhas da API ou respostas sem proprietário confirmado bloqueiam a gravação. Deixar o vídeo inicial vazio continua permitindo removê-lo. A validação ocorre na gravação; vídeos já existentes não são auditados nem removidos automaticamente.
-
-Utilize uma chave com acesso à YouTube Data API v3 e substitua o ID de exemplo pelo ID do canal da plataforma (formato `UC` seguido de 22 caracteres). A validação do YouTube confere se o vídeo está público ou não listado, permite incorporação e pertence a esse canal. As aulas exigem Vimeo como servidor principal e YouTube como reserva. Sem as respectivas credenciais, o cadastro/edição de aulas fica indisponível. Sem `SUPPORT_EMAIL`, o envio do formulário de suporte fica indisponível.
-
-Para criar o primeiro administrador em um banco novo:
-
-```text
-ADMIN_EMAIL=email_do_administrador
-ADMIN_PASSWORD=senha_do_administrador
-```
-
-A senha deve ter pelo menos oito caracteres, uma letra maiúscula, um caractere especial e no máximo 72 bytes em UTF-8. A inicialização é executada uma única vez por banco e não promove uma conta existente. Após criar a conta, remova essas duas variáveis do ambiente. O primeiro acesso exige regularizar o aceite dos documentos; o login utiliza confirmação por e-mail.
-
-Também é possível definir `SERVER_PORT`, cujo padrão é `8080`, `JWT_EXPIRATION`, cujo padrão é `86400000` milissegundos, ou 24 horas, e `BCRYPT_STRENGTH`, cujo padrão é `12` e cujo intervalo permitido é de `10` a `16`. A variável `REQUIRE_HTTPS` controla a exigência de HTTPS e possui padrão `false`.
-
-As configurações estão em `src/main/resources/application.properties`. Este procedimento utiliza as variáveis do Windows e dispensa um arquivo `.env`. O envio de e-mails utiliza o Resend. O backend não possui consulta de CEP pelo ViaCEP.
-
-Depois de salvar as variáveis, feche completamente e reabra o VS Code e os terminais. Se as alterações não forem reconhecidas, saia da sessão do Windows e entre novamente.
-
-### 5. Gerar as chaves
-
-Execute o bloco abaixo no PowerShell uma vez para `JWT_SECRET` e novamente para `AUDITORIA_CHAVE`. Copie cada resultado para sua respectiva variável; utilize valores diferentes.
-
-```powershell
-$bytes = New-Object byte[] 32
-$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-$rng.GetBytes($bytes)
-[Convert]::ToBase64String($bytes)
-$rng.Dispose()
-```
-
-Guarde as chaves e não as publique no repositório. Se já houver dados no banco, preserve a chave de auditoria utilizada anteriormente. A troca da chave JWT invalida os tokens emitidos.
-
-### 6. Iniciar a aplicação
-
-No PowerShell, na raiz do projeto:
-
-```powershell
-mvn spring-boot:run
-```
-
-No Linux ou macOS, com as variáveis configuradas no ambiente:
+Confira as instalações no terminal:
 
 ```bash
-mvn spring-boot:run
+node --version
+npm --version
+git --version
 ```
 
-No VS Code, também é possível executar a classe `com.cursovalido.CursovalidoBackendApplication` pelo depurador Java, herdando as variáveis do Windows.
+React, Vite, Tailwind CSS, CoreUI, Chart.js e as demais bibliotecas são instalados localmente pelo npm a partir do `package.json`. Não precisam de instalação global.
 
-A API estará disponível em `http://localhost:8080`, ou na porta definida em `SERVER_PORT`. Para conferir a execução, consulte:
+### Requisitos da plataforma completa
 
-```powershell
-Invoke-RestMethod http://localhost:8080/api/politicas/ativas
+Para utilizar os fluxos integrados, mantenha o back-end em execução e configure a API conforme a próxima seção. Segundo a arquitetura descrita na monografia, o ambiente do back-end utiliza:
+
+- **JDK 21** para executar a aplicação Java com Spring Boot.
+- **Maven** para construir e executar o back-end.
+- **PostgreSQL**, com banco e credenciais configurados; as migrações são gerenciadas pelo Flyway no back-end.
+- Configuração no backend das integrações **Resend** (e-mails de confirmação, login, recuperação e suporte), **Vimeo** (validação do proprietário dos vídeos) e **YouTube Data API** (validação e reserva dos vídeos). As credenciais dos serviços externos são mantidas no backend.
+
+Esses requisitos pertencem ao servidor. Se você utilizar uma API já hospedada, não precisa instalar Java, Maven ou PostgreSQL na máquina do front-end. As credenciais dos serviços externos devem ser configuradas no back-end.
+
+Consulte os comandos de inicialização, variáveis de ambiente e requisitos específicos no [repositório do back-end](https://github.com/gustavorisio/cursovalido-backend).
+
+### Instalação
+
+```bash
+git clone https://github.com/gustavorisio/cursovalido-frontend.git
+cd cursovalido-frontend
+npm install
 ```
 
-Para utilizar as telas da plataforma, clone o repositório do front-end em outra pasta e instale as dependências: `git clone https://github.com/gustavorisio/cursovalido-frontend.git`, `cd cursovalido-frontend` e `npm install`. Para iniciar a interface localmente, execute `npm run dev` e acesse `http://localhost:3000`. Se necessário, configure `VITE_API_URL=http://localhost:8080/api` em um arquivo `.env.local` na raiz do front-end. O backend precisa permitir a origem do front-end em `FRONTEND_ORIGINS`. O envio de e-mails pelo Resend precisa estar configurado para concluir o cadastro e o login.
+O comando `npm install` instala as dependências de desenvolvimento e da aplicação em `node_modules/`. Para uma instalação reproduzível a partir do `package-lock.json`, como em integração contínua, utilize `npm ci` como alternativa.
 
-## Testes
+### Configuração da API
 
-Execute na raiz do projeto:
+Crie um arquivo `.env.local` na raiz do projeto, se precisar definir o endereço da API:
 
-```powershell
-mvn test
+```dotenv
+VITE_API_URL=http://localhost:8080/api
 ```
 
-O projeto possui testes unitários e de integração para autenticação, cadastro, administração inicial, suporte, aulas e fórum. Há verificações do dashboard nos testes compartilhados.
+Esse também é o endereço padrão quando a variável não está definida. Informe a URL base com o prefixo `/api` e reinicie o servidor de desenvolvimento após alterar a configuração.
 
-O perfil `test` utiliza H2 como configuração base em `src/test/resources/application-test.properties`. Parte dos testes substitui essa configuração por um PostgreSQL temporário e isolado, incluindo verificações de migrações Flyway.
+O cliente HTTP utiliza tokens de sessão no cabeçalho `Authorization: Bearer ...` nas requisições autenticadas. O back-end deve permitir a origem do front-end na configuração de CORS.
 
-Para os testes com PostgreSQL, disponibilize os binários locais ou um ambiente Docker compatível com Testcontainers. No Windows, o suporte de testes procura instalações em `C:\Program Files\PostgreSQL`; também é possível definir `TEST_POSTGRES_BIN` com o caminho da pasta `bin`. Sem binários locais, o modo automático tenta iniciar um contêiner `postgres:18-alpine`.
+### Inicialização
 
-Para escolher explicitamente o modo de execução:
-
-```powershell
-mvn '-Dtest.postgres.mode=local' test
-mvn '-Dtest.postgres.mode=container' test
+```bash
+npm run dev
 ```
 
-Os bancos temporários dos testes não utilizam as credenciais de desenvolvimento. Os serviços externos são simulados nos testes correspondentes; a aprovação da suíte não confirma a configuração real de envio de e-mails ou das APIs do Vimeo e do YouTube.
+Acesse [http://localhost:3000](http://localhost:3000). A porta está fixada em `3000` com `strictPort: true` no `vite.config.js`: se estiver ocupada, o Vite encerra a inicialização em vez de escolher outra porta.
 
-Após executar os testes, os relatórios ficam em:
+## Scripts e verificações
 
-- `target/surefire-reports`: resultados dos testes.
-- `target/site/jacoco/index.html`: cobertura do fórum.
-- `target/site/jacoco-aulas/index.html`: cobertura de aulas.
+| Comando | Descrição |
+| --- | --- |
+| `npm install` | Instala as dependências do projeto |
+| `npm ci` | Instala as versões do lockfile em um ambiente limpo |
+| `npm run dev` | Inicia o servidor de desenvolvimento na porta 3000 |
+| `npm run build` | Gera os arquivos de produção em `dist/` |
+| `npm run preview` | Disponibiliza uma prévia local do build de produção |
+| `npm run lint` | Executa a análise estática com ESLint |
+| `npm test` | Executa os testes automatizados com Vitest |
+| `npm run test:coverage` | Gera o relatório Istanbul e verifica os mínimos de cobertura configurados no Vitest |
 
-## Organização e contexto acadêmico
+### Cobertura de testes
 
-O back-end segue uma organização em camadas, com controladores, serviços, repositórios, entidades e DTOs. Os principais pacotes são `authentication`, `aulas`, `forum` e `dashboard`. O desenvolvimento é organizado por Kanban com apoio do Asana e versionamento em Git/GitHub.
+A cobertura é verificada pela configuração nativa do Vitest em `vitest.config.js`, com o provedor Istanbul. O comando `npm run test:coverage` exige no mínimo 75% de linhas cobertas no projeto e 50% em cada um dos seis arquivos com regra específica. Não há limite máximo de cobertura.
 
-**Autor:** Gustavo Di Risio.
+Os mínimos por arquivo se aplicam ao player de aulas, à tabela de ranking, ao vídeo de apresentação, à página de ranking, à moderação de denúncias e ao formulário de denúncia. O relatório HTML fica em `coverage/index.html`, e o relatório JSON em `coverage/coverage-final.json`.
 
-**Orientador:** Prof. Lucas Santos da Silva.
+Para explicar à banca: “O Vitest executa os testes e usa o Istanbul para medir a cobertura. Os percentuais mínimos ficam na configuração do próprio Vitest. Se a cobertura ficar abaixo do mínimo, o comando retorna uma falha.” A configuração usa a opção oficial [coverage.thresholds do Vitest](https://vitest.dev/config/coverage#coverage-thresholds).
 
-**Coorientador:** Prof. Alessandro Aparecido da Silva Horas.
+Para visualizar o build localmente:
 
-**Instituição:** Universidade de Mogi das Cruzes - Engenharia de Software, 2026.
+```bash
+npm run build
+npm run preview
+```
+
+## Principais rotas
+
+| Área | Rotas |
+| --- | --- |
+| Conteúdo público | `/`, `/cursos`, `/forum`, `/forum/:idTopico`, `/suporte` |
+| Autenticação | `/login`, `/cadastro`, `/convites/cadastro`, `/confirmacao-email` |
+| Recuperação de senha | `/solicitar-alteracao-senha`, `/redefinir-senha` |
+| Documentos legais | `/termos`, `/termos-aceite`, `/privacidade` |
+| Conta autenticada | `/configuracoes`, `/configuracoes/alterar-senha`, `/notificacoes`, `/ranking` |
+| Aluno | `/aluno/cursos`, `/aluno/cursos/:idCurso`, `/aluno/cursos/:idCurso/aulas/:idAula`, `/aluno/cursos/:idCurso/modulos/:idModulo/questionario` |
+| Professor | `/professor/cursos`, `/professor/cursos/:idCurso/modulos`, `/professor/cursos/:idCurso/modulos/:idModulo/aulas`, `/professor/cursos/:idCurso/modulos/:idModulo/questionario` |
+| Administração | `/administracao`, `/administracao/dashboard`, `/administracao/comunicados`, `/administracao/termos`, `/administracao/privacidade`, `/administracao/usuarios`, `/administracao/forum/denuncias`, `/administracao/convites`, `/administracao/inicio`, `/administracao/cursos` |
+
+As rotas de conta autenticada exigem login. As rotas de aluno, professor e administração exigem o perfil correspondente. A rota `/aluno/notificacoes` redireciona para `/notificacoes`.
+
+## Estrutura do projeto
+
+```text
+src/
+├── assets/          # Imagens e recursos visuais
+├── componentes/     # Componentes comuns e módulos de aulas, fórum, suporte e administração
+├── contextos/       # Autenticação e restrições da conta
+├── paginas/         # Páginas de autenticação, conta e administração
+├── servicos/        # Cliente HTTP, sessão, validações e serviços compartilhados
+├── App.jsx          # Rotas e composição principal
+├── index.css        # Estilos globais
+└── main.jsx         # Entrada da aplicação
+tests/               # Testes automatizados
+```
+
+## Publicação
+
+O build gera uma SPA estática em `dist/`. Configure `VITE_API_URL` antes de executar `npm run build`, pois as variáveis do Vite são incorporadas ao bundle. O servidor de hospedagem deve encaminhar as rotas da aplicação para `index.html`, permitindo acesso direto às URLs gerenciadas pelo `BrowserRouter`.
+
+## Autoria
+
+**Desenvolvido por:** Gustavo Di Risio
+
+**Orientador:** Lucas Santos da Silva
+
+**Coorientador:** Alessandro Aparecido da Silva Horas
+
+**Instituição:** Universidade de Mogi das Cruzes (UMC) - Bacharelado em Engenharia de Software.
