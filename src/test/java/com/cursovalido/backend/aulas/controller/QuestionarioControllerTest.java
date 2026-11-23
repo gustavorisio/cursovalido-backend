@@ -30,9 +30,9 @@ class QuestionarioControllerTest {
     }
 
     @Test
-    void diagnosticoDoCursoAceitaAusenciaDeModulo() {
+    void consultaGestaoExigeModuloSelecionado() {
         var retorno = new QuestionarioGestaoResponse(3L, "Curso", true, 2, List.of());
-        when(servico.consultarGestao(10L, null, 7L)).thenReturn(retorno);
-        assertThat(controlador.consultarGestao(10L, null, usuario())).isSameAs(retorno);
+        when(servico.consultarGestao(10L, 20L, 7L)).thenReturn(retorno);
+        assertThat(controlador.consultarGestao(10L, 20L, usuario())).isSameAs(retorno);
     }
 }

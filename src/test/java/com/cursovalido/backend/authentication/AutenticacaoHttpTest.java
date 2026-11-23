@@ -35,6 +35,8 @@ import org.springframework.web.client.RestClient;
 @ActiveProfiles("test")
 class AutenticacaoHttpTest {
         @Autowired
+        private org.springframework.security.web.SecurityFilterChain cadeiaSeguranca;
+        @Autowired
         private com.cursovalido.backend.authentication.service.TokenEmailService tokensExclusao;
         @LocalServerPort
         private int porta;
@@ -65,7 +67,10 @@ class AutenticacaoHttpTest {
 
         @BeforeEach
         void preparar() {
-                cliente = RestClient.builder().baseUrl("http://localhost:" + porta)
+                cliente = RestClient.builder().requestInterceptor((request, corpo, execucao) -> {
+                        com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
+                        return execucao.execute(request, corpo);
+                }).baseUrl("http://localhost:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
                                 }).build();
                 if (politicas.findByVersao("teste-http").isEmpty())

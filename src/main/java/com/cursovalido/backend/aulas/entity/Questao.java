@@ -21,8 +21,11 @@ public class Questao {
     private Questionario questionario;
     @Column(nullable = false, length = 1000)
     private String enunciado;
-    @Column(nullable = false, length = 2000)
-    private String explicacao;
+    @ElementCollection
+    @CollectionTable(name = "tb_explicacoes_alternativa", joinColumns = @JoinColumn(name = "questao_id"))
+    @OrderColumn(name = "ordem")
+    @Column(name = "explicacao", nullable = false, length = 2000)
+    private List<String> explicacoes = new ArrayList<>();
     @Column(name = "alternativa_correta", nullable = false)
     private int alternativaCorreta;
     @Column(name = "aula_revisao_id")

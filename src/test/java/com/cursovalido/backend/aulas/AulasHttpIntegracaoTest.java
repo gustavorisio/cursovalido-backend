@@ -108,45 +108,37 @@ class AulasHttpIntegracaoTest {
         }
 
         @Test
-        void avaliacaoDoCursoAceitaDezPerguntasSemAulaDeRevisao() {
-                String rotaGestao = "/api/professor/cursos/" + idCurso + "/diagnostico";
-                var pergunta = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Incorreta"), 0,
-                                "Explicação", null);
-                var acimaDoLimite = new QuestionarioRequest("Avaliação do curso", true,
-                                java.util.Collections.nCopies(11, pergunta));
-                assertThat(enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, acimaDoLimite, String.class)
-                                .getStatusCode())
-                                .isEqualTo(HttpStatus.BAD_REQUEST);
+        void exportacaoRespeitaFiltroUnicoMesmoTrocandoTokenDaMesmaConta() {
+                var primeira = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", tokenAluno, null, String.class);
+                assertThat(primeira.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(primeira.getHeaders().getFirst("X-Intervalo-Acao")).isEqualTo("10");
+                String novoToken = tokens.gerar(aluno);
+                var repetida = enviar(HttpMethod.GET, "/api/autenticacao/exportar-dados", novoToken, null, String.class);
+                assertThat(repetida.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+                assertThat(repetida.getHeaders().getFirst("Retry-After")).isNotBlank();
+        }
 
-                var dados = new QuestionarioRequest("Avaliação do curso", true,
-                                java.util.Collections.nCopies(10, pergunta));
-                var salva = enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, dados, QuestionarioGestaoResponse.class);
+        @Test
+        void questionarioDoModuloPersisteExplicacaoPorAlternativa() {
+                String rota = "/api/professor/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
+                var pergunta = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Erro A", "Erro B"), 0,
+                                List.of("", "Motivo A", "Motivo B"), null);
+                var semExplicacao = new QuestionarioRequest.Pergunta("Pergunta", List.of("Correta", "Erro A", "Erro B"), 0, List.of("", "", "Motivo B"), null);
+                assertThat(enviar(HttpMethod.PUT, rota, tokenProfessor, new QuestionarioRequest("Questionário", true, List.of(semExplicacao)), String.class).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                var dados = new QuestionarioRequest("Questionário do módulo", true, List.of(pergunta));
+                var salva = enviar(HttpMethod.PUT, rota, tokenProfessor, dados, QuestionarioGestaoResponse.class);
                 assertThat(salva.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(salva.getBody().perguntas()).hasSize(10).allMatch(p -> p.idAulaRevisao() == null);
-
+                var consulta = enviar(HttpMethod.GET, rota, tokenProfessor, null, QuestionarioGestaoResponse.class);
+                assertThat(consulta.getBody().perguntas().getFirst().explicacoes()).containsExactly("", "Motivo A", "Motivo B");
                 matricular();
-                String rotaAluno = "/api/aluno/cursos/" + idCurso + "/diagnostico";
-                var respostas = new RespostasQuestionarioRequest(salva.getBody().versao(),
-                                java.util.Collections.nCopies(10, 1));
-                var resultado = enviar(HttpMethod.POST, rotaAluno + "/respostas", tokenAluno, respostas,
-                                ResultadoQuestionarioResponse.class);
+                String rotaAluno = "/api/aluno/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
+                assertThat(enviar(HttpMethod.GET, rotaAluno, tokenAluno, null, String.class).getBody()).doesNotContain("Motivo A", "Motivo B", "alternativaCorreta", "explicacoes");
+                var resultado = enviar(HttpMethod.POST, rotaAluno + "/respostas", tokenAluno,
+                                new RespostasQuestionarioRequest(salva.getBody().versao(), List.of(2)), ResultadoQuestionarioResponse.class);
                 assertThat(resultado.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(resultado.getBody().acertos()).isZero();
-                assertThat(resultado.getBody().revisoes()).isEmpty();
-
-                String rotaModulo = "/api/professor/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
-                var modulo = enviar(HttpMethod.PUT, rotaModulo, tokenProfessor, dados,
-                                QuestionarioGestaoResponse.class);
-                assertThat(modulo.getStatusCode()).isEqualTo(HttpStatus.OK);
-                String rotaAlunoModulo = "/api/aluno/cursos/" + idCurso + "/modulos/" + idModulo + "/questionario";
-                var respostasModulo = new RespostasQuestionarioRequest(modulo.getBody().versao(),
-                                java.util.Collections.nCopies(10, 1));
-                var resultadoModulo = enviar(HttpMethod.POST, rotaAlunoModulo + "/respostas", tokenAluno,
-                                respostasModulo,
-                                ResultadoQuestionarioResponse.class);
-                assertThat(resultadoModulo.getStatusCode()).isEqualTo(HttpStatus.OK);
-                assertThat(resultadoModulo.getBody().correcoes()).hasSize(10);
-                assertThat(resultadoModulo.getBody().revisoes()).isEmpty();
+                assertThat(resultado.getBody().correcoes().getFirst().explicacao()).isEqualTo("Motivo B");
+                assertThat(resultado.getBody().correcoes().getFirst().alternativaCorreta()).isNull();
+                assertThat(enviar(HttpMethod.GET, "/api/aluno/cursos/" + idCurso + "/diagnostico", tokenAluno, null, String.class).getStatusCode().is4xxClientError()).isTrue();
         }
 
         @Test

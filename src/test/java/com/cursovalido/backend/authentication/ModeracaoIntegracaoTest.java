@@ -47,6 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class ModeracaoIntegracaoTest {
         @Autowired
+        private org.springframework.security.web.SecurityFilterChain cadeiaSeguranca;
+        @Autowired
         private MockMvc mvc;
         @Autowired
         private UsuarioRepository usuarios;
@@ -97,6 +99,7 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isNoContent());
                 var captor = org.mockito.ArgumentCaptor.forClass(String.class);
                 verify(emails).enviarExclusaoConta(eq(aluno), captor.capture());
+                com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
                 mvc.perform(delete("/api/autenticacao/conta").with(como(aluno))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"codigo\":\"" + captor.getValue() + "\"}"))
@@ -516,6 +519,7 @@ class ModeracaoIntegracaoTest {
                                                 .not(org.hamcrest.Matchers.containsString("<script>teste"))))
                                 .andExpect(content().string(org.hamcrest.Matchers
                                                 .not(org.hamcrest.Matchers.containsString("teste</script>"))));
+                com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
                 mvc.perform(post("/api/politicas/privacidade").header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(documento.replace("privacidade-1", "privacidade-2")))
