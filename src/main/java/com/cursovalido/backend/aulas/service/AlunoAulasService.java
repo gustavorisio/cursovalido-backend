@@ -23,7 +23,7 @@ public class AlunoAulasService {
     private final MatriculaRepository matriculas;
     private final LogAuditoriaService auditoria;
 
-    // O catalogo mostra somente os dados dos cursos, sem os videos.
+    // O catálogo mostra somente os dados dos cursos, sem os vídeos.
     public List<Curso> listarCursos(Long idAluno) {
         verificarAluno(idAluno);
         return cursos.findByAtivoTrueOrderByIdDesc();
@@ -37,8 +37,7 @@ public class AlunoAulasService {
     @Transactional
     public Matricula matricular(Long idCurso, Long idAluno) {
         verificarAluno(idAluno);
-        // O bloqueio aguarda outra matricula no mesmo curso terminar antes de conferir
-        // duplicidade.
+        // Bloqueia o curso antes de verificar se a matrícula já existe.
         Curso curso = cursos.buscarParaMatricula(idCurso)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Curso nao encontrado"));
         verificarCursoAtivo(curso);

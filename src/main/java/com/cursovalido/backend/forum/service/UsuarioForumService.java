@@ -19,7 +19,7 @@ import java.util.List;
 public class UsuarioForumService {
     private final UsuarioForumRepository repositorioUsuarios;
 
-    // Busca um usuario ativo para as operacoes do forum.
+    // Busca um usuário ativo para as operações do fórum.
     public UsuarioForum buscarAtivo(Long idUsuario) {
         if (idUsuario == null) {
             throw RequisicaoInvalidaException.usuarioNaoInformado();
@@ -36,13 +36,12 @@ public class UsuarioForumService {
                 .orElseThrow(RecursoNaoEncontradoException::usuarioNaoEncontrado);
     }
 
-    // Lista os usuarios ativos que aparecem no forum.
+    // Lista os usuários ativos que aparecem no fórum.
     public List<UsuarioForum> listarAtivos() {
         return repositorioUsuarios.findByAtivoTrueOrderByIdAsc();
     }
 
-    // Atualiza no forum somente o necessario para exibir a autoria: alunos aparecem com
-    // nome abreviado e o e-mail fica mascarado.
+    // Sincroniza a autoria com nome abreviado para alunos e e-mail mascarado.
     public void sincronizar(Usuario usuario) {
         String nome = usuario.getPerfil() == Perfil.ALUNO
                 ? AnonimizacaoDados.abreviarNome(usuario.getNomeCompleto())
@@ -51,7 +50,7 @@ public class UsuarioForumService {
                 usuario.getPerfil().name(), usuario.isAtivo(), usuario.getGamertag());
     }
 
-    // Verifica se o usuario possui o perfil de administrador.
+    // Verifica se o usuário possui o perfil de administrador.
     public boolean ehAdministrador(UsuarioForum usuario) {
         return "ADMINISTRADOR".equalsIgnoreCase(usuario.getPerfil());
     }

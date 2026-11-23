@@ -7,6 +7,7 @@ import com.cursovalido.backend.aulas.repository.ProgressoAulaRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -56,8 +57,8 @@ public class AulaService {
         String youtubeAnterior = aula.getYoutubeVideoId();
         String vimeoAnterior = aula.getVimeoVideoUrl();
         preencher(aula, dados);
-        if (!java.util.Objects.equals(youtubeAnterior, aula.getYoutubeVideoId())
-                || !java.util.Objects.equals(vimeoAnterior, aula.getVimeoVideoUrl())) {
+        if (!Objects.equals(youtubeAnterior, aula.getYoutubeVideoId())
+                || !Objects.equals(vimeoAnterior, aula.getVimeoVideoUrl())) {
             progressos.deleteByIdAula(id);
         }
         repositorio.save(aula);
@@ -78,7 +79,7 @@ public class AulaService {
         String videoId = dados.youtubeUrl() == null || dados.youtubeUrl().isBlank()
                 ? null : youtube.validarVideo(dados.youtubeUrl());
         if (vimeoUrl == null || videoId == null) {
-            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Informe um vídeo válido para o Server 1 (Vimeo) e para o Server 2 (YouTube).");
         }
         aula.setTitulo(dados.titulo().trim());

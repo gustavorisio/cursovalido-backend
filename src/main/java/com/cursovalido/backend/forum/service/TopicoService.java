@@ -1,25 +1,24 @@
 package com.cursovalido.backend.forum.service;
 
-import lombok.RequiredArgsConstructor;
-
-import com.cursovalido.backend.forum.entity.UsuarioForum;
-import com.cursovalido.backend.forum.entity.Topico;
-import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
-import com.cursovalido.backend.forum.repository.TopicoRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
+import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
+import com.cursovalido.backend.forum.entity.Topico;
+import com.cursovalido.backend.forum.entity.UsuarioForum;
 import com.cursovalido.backend.forum.exception.AcessoNegadoException;
 import com.cursovalido.backend.forum.exception.RecursoNaoEncontradoException;
 import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.cursovalido.backend.forum.repository.TopicoRepository;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
+import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -29,17 +28,17 @@ public class TopicoService {
     private final LogAuditoriaService auditoria;
     private final FiltroConteudoOfensivo filtroConteudo = new FiltroConteudoOfensivo();
 
-    // Lista os topicos mais recentes.
+    // Lista os tópicos mais recentes.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho) {
         return listarRecentes(pagina, tamanho, "");
     }
 
-    // Lista os topicos recentes filtrando pelo texto informado.
+    // Lista os tópicos recentes filtrando pelo texto informado.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca) {
         return listarRecentes(pagina, tamanho, busca, null);
     }
 
-    // Lista os topicos e registra a consulta quando houver usuario.
+    // Lista os tópicos e registra a consulta quando houver usuário.
     public List<TopicoResumoDTO> listarRecentes(int pagina, int tamanho, String busca, Long idUsuario) {
         if (pagina < 0 || tamanho < 1 || tamanho > 100) {
             throw new RequisicaoInvalidaException(
@@ -70,7 +69,7 @@ public class TopicoService {
         return topico;
     }
 
-    // Cria um novo topico para o usuario informado.
+    // Cria um novo tópico para o usuário informado.
     @Transactional
     public Topico criar(Topico topico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.bloquearAtivo(idUsuario);
@@ -91,7 +90,7 @@ public class TopicoService {
         return topicoSalvo;
     }
 
-    // Edita um topico pelo autor ou administrador.
+    // Edita um tópico pelo autor ou administrador.
     @Transactional
     public Topico editar(Long idTopico, Topico dadosAtualizados, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
@@ -105,7 +104,7 @@ public class TopicoService {
         return topicoSalvo;
     }
 
-    // Arquiva um topico sem apagar seus dados.
+    // Arquiva um tópico sem apagar seus dados.
     @Transactional
     public void arquivar(Long idTopico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
@@ -116,7 +115,7 @@ public class TopicoService {
         registrar(idUsuario, "ARQUIVAMENTO_TOPICO", "Topico " + idTopico);
     }
 
-    // Fecha um topico para novos comentarios.
+    // Fecha um tópico para novos comentários.
     @Transactional
     public void fechar(Long idTopico, Long idUsuario) {
         UsuarioForum usuario = servicoUsuarios.buscarAtivo(idUsuario);
@@ -127,7 +126,7 @@ public class TopicoService {
         registrar(idUsuario, "FECHAMENTO_TOPICO", "Topico " + idTopico);
     }
 
-    // Busca um topico que ainda esta ativo.
+    // Busca um tópico que ainda esta ativo.
     public Topico buscarAtivo(Long idTopico) {
         Topico topico = repositorioTopicos.findById(idTopico)
                 .orElseThrow(RecursoNaoEncontradoException::topicoNaoEncontrado);
@@ -156,8 +155,8 @@ public class TopicoService {
     private void censurarConteudo(Topico topico, Long idUsuario) {
         String titulo = filtroConteudo.censurar(topico.getTitulo());
         String descricao = filtroConteudo.censurar(topico.getDescricao());
-        if (!java.util.Objects.equals(titulo, topico.getTitulo())
-                || !java.util.Objects.equals(descricao, topico.getDescricao())) {
+        if (!Objects.equals(titulo, topico.getTitulo())
+                || !Objects.equals(descricao, topico.getDescricao())) {
             registrar(idUsuario, "CONTEUDO_OFENSIVO_OCULTADO", "Topico");
         }
         topico.setTitulo(titulo);

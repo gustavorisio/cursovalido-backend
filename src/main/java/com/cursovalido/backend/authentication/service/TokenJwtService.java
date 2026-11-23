@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
+import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,7 @@ public class TokenJwtService {
         chave = Keys.hmacShaKeyFor(chaveTexto.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Gera um JWT com os dados basicos do usuario.
+    // Gera um JWT com os dados básicos do usuário.
     @Transactional
     public String gerar(Usuario usuario) {
         return criar(usuario, "ACESSO", Math.min(expiracaoMs, 86_400_000L));
@@ -102,7 +103,7 @@ public class TokenJwtService {
     }
 
     private Claims lerClaims(String token) {
-        return Jwts.parser().verifyWith((javax.crypto.SecretKey) chave).build()
+        return Jwts.parser().verifyWith((SecretKey) chave).build()
                 .parseSignedClaims(token).getPayload();
     }
 

@@ -223,7 +223,7 @@
 												</limit>
 											</limits>
 										</rule>
-										<!-- Faixa solicitada para classes principais; as já acima de 58% não entram nesta regra. -->
+										<!-- Cobertura mínima por classe. -->
 										<rule>
 											<element>CLASS</element>
 											<includes>
@@ -241,11 +241,9 @@
 													<counter>LINE</counter>
 													<value>COVEREDRATIO</value>
 													<minimum>0.50</minimum>
-													<maximum>0.58</maximum>
 												</limit>
 											</limits>
 										</rule>
-										<!-- Exceção autorizada: com cinco linhas, a cobertura mínima possível é 3/5 = 60%. -->
 										<rule>
 											<element>CLASS</element>
 											<includes>
@@ -257,11 +255,9 @@
 													<counter>LINE</counter>
 													<value>COVEREDRATIO</value>
 													<minimum>0.50</minimum>
-													<maximum>0.60</maximum>
 												</limit>
 											</limits>
 										</rule>
-										<!-- Exceção autorizada: classes pequenas sem faixa executável entre 50% e 58%. -->
 										<rule>
 											<element>CLASS</element>
 											<includes>
@@ -273,7 +269,6 @@
 													<counter>LINE</counter>
 													<value>COVEREDRATIO</value>
 													<minimum>0.50</minimum>
-													<maximum>1.00</maximum>
 												</limit>
 											</limits>
 										</rule>

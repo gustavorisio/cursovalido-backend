@@ -1,8 +1,40 @@
 package com.cursovalido.backend.authentication;
 
+import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
+import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.entity.StatusAprovacao;
-import org.springframework.test.util.ReflectionTestUtils;
+import com.cursovalido.backend.authentication.repository.*;
+import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import com.cursovalido.backend.authentication.service.*;
 import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
+import com.cursovalido.backend.forum.repository.TopicoRepository;
+import com.cursovalido.backend.forum.service.UsuarioForumService;
+import com.cursovalido.backend.support.TempoLimitesTeste;
+import jakarta.persistence.EntityManager;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -10,31 +42,6 @@ import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
-import com.cursovalido.backend.authentication.entity.*;
-import com.cursovalido.backend.authentication.repository.*;
-import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
-import com.cursovalido.backend.authentication.service.*;
-import com.cursovalido.backend.forum.repository.TopicoRepository;
-import com.cursovalido.backend.forum.service.UsuarioForumService;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(properties = {
                 "security.bcrypt.strength=10",
@@ -47,7 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class ModeracaoIntegracaoTest {
         @Autowired
-        private org.springframework.security.web.SecurityFilterChain cadeiaSeguranca;
+        private SecurityFilterChain cadeiaSeguranca;
         @Autowired
         private MockMvc mvc;
         @Autowired
@@ -97,9 +104,9 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isBadRequest());
                 mvc.perform(post("/api/autenticacao/conta/solicitar-exclusao").with(como(aluno)))
                                 .andExpect(status().isNoContent());
-                var captor = org.mockito.ArgumentCaptor.forClass(String.class);
+                var captor = ArgumentCaptor.forClass(String.class);
                 verify(emails).enviarExclusaoConta(eq(aluno), captor.capture());
-                com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
+                TempoLimitesTeste.avancar(cadeiaSeguranca);
                 mvc.perform(delete("/api/autenticacao/conta").with(como(aluno))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"codigo\":\"" + captor.getValue() + "\"}"))
@@ -116,16 +123,16 @@ class ModeracaoIntegracaoTest {
                 assertThatThrownBy(() -> tokensEmail.validarExclusao(aluno.getId(), anterior))
                                 .isInstanceOf(IllegalArgumentException.class);
                 jdbcExclusao.update("update tb_tokens_email set expira_em = ? where usuario_id = ?",
-                                java.time.LocalDateTime.now().minusMinutes(1), aluno.getId());
+                                LocalDateTime.now().minusMinutes(1), aluno.getId());
                 entidadesExclusao.clear();
                 assertThatThrownBy(() -> tokensEmail.validarExclusao(aluno.getId(), atual))
                                 .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Autowired
-        private org.springframework.jdbc.core.JdbcTemplate jdbcExclusao;
+        private JdbcTemplate jdbcExclusao;
         @Autowired
-        private jakarta.persistence.EntityManager entidadesExclusao;
+        private EntityManager entidadesExclusao;
 
         @Test
         void exclusaoExigeCodigoValidoDaPropriaConta() {
@@ -201,14 +208,14 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isOk()).andExpect(jsonPath("$.principal").value(true));
                 mvc.perform(get("/api/administracao/convites").with(como(administrador)))
                                 .andExpect(status().isOk());
-                String convite = "{\"email\":\"" + java.util.UUID.randomUUID()
+                String convite = "{\"email\":\"" + UUID.randomUUID()
                                 + "@example.com\",\"perfil\":\"PROFESSOR\"}";
                 mvc.perform(post("/api/administracao/convites").with(como(administrador))
                                 .contentType(MediaType.APPLICATION_JSON).content(convite))
                                 .andExpect(status().isNoContent());
                 mvc.perform(post("/api/administracao/convites").with(como(principal))
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"email\":\"outro-" + java.util.UUID.randomUUID()
+                                .content("{\"email\":\"outro-" + UUID.randomUUID()
                                                 + "@example.com\",\"perfil\":\"PROFESSOR\"}"))
                                 .andExpect(status().isNoContent());
                 String termos = "{\"nome\":\"Termos\",\"versao\":\"moderacao-v1\",\"conteudo\":\"Novos termos\"}";
@@ -249,7 +256,7 @@ class ModeracaoIntegracaoTest {
                                 .andExpect(status().isTooManyRequests())
                                 .andExpect(jsonPath("$.codigo").value("REENVIO_CONVITE_AGUARDE"));
                 var salvo = convites.findById(convite.getId()).orElseThrow();
-                ReflectionTestUtils.setField(salvo, "enviadoEm", java.time.LocalDateTime.now().minusMinutes(5));
+                ReflectionTestUtils.setField(salvo, "enviadoEm", LocalDateTime.now().minusMinutes(5));
                 convites.saveAndFlush(salvo);
                 mvc.perform(post("/api/administracao/convites/" + convite.getId() + "/reenviar").with(como(principal)))
                                 .andExpect(status().isNoContent());
@@ -380,7 +387,7 @@ class ModeracaoIntegracaoTest {
         void publicarTermosPersisteConteudoEPedeReautenticacaoDoAdministrador() throws Exception {
                 politicas.save(new Politica("Anterior", "antes-publicar", "Conteudo anterior"));
                 principal.setVersaoTermos("antes-publicar");
-                principal.setDataHoraAceite(java.time.LocalDateTime.now());
+                principal.setDataHoraAceite(LocalDateTime.now());
                 usuarios.saveAndFlush(principal);
                 String token = tokens.gerar(principal);
                 mvc.perform(post("/api/politicas").header("Authorization", "Bearer " + token)
@@ -393,7 +400,7 @@ class ModeracaoIntegracaoTest {
                 mvc.perform(get("/termos-aceite.html"))
                                 .andExpect(status().isOk())
                                 .andExpect(header().string("Cache-Control", "public, max-age=60"))
-                                .andExpect(content().string(org.hamcrest.Matchers
+                                .andExpect(content().string(Matchers
                                                 .containsString("Texto definido pelo administrador")));
                 mvc.perform(get("/api/administracao/permissoes").header("Authorization", "Bearer " + token))
                                 .andExpect(status().isOk());
@@ -467,7 +474,7 @@ class ModeracaoIntegracaoTest {
                 var anterior = politicas
                                 .saveAndFlush(new Politica("Anterior", "anterior-regressao", "Conteúdo anterior"));
                 aluno.setVersaoTermos(anterior.getVersao());
-                aluno.setDataHoraAceite(java.time.LocalDateTime.now().minusDays(1));
+                aluno.setDataHoraAceite(LocalDateTime.now().minusDays(1));
                 usuarios.saveAndFlush(aluno);
                 String tokenAdmin = tokens.gerar(principal);
                 String tokenAluno = tokens.gerar(aluno);
@@ -499,7 +506,7 @@ class ModeracaoIntegracaoTest {
                 var anterior = politicas
                                 .saveAndFlush(new Politica("Anterior", "anterior-regressao", "Conteúdo anterior"));
                 aluno.setVersaoTermos(anterior.getVersao());
-                aluno.setDataHoraAceite(java.time.LocalDateTime.now().minusDays(1));
+                aluno.setDataHoraAceite(LocalDateTime.now().minusDays(1));
                 usuarios.saveAndFlush(aluno);
                 String token = tokens.gerar(principal);
                 String documento = "{\"nome\":\"Privacidade\",\"versao\":\"privacidade-1\",\"conteudo\":\"Dados pessoais <script>teste</script>\"}";
@@ -514,12 +521,12 @@ class ModeracaoIntegracaoTest {
                 mvc.perform(get("/politica-privacidade.html"))
                                 .andExpect(status().isOk())
                                 .andExpect(content().string(
-                                                org.hamcrest.Matchers.containsString("Dados pessoais</article>")))
-                                .andExpect(content().string(org.hamcrest.Matchers
-                                                .not(org.hamcrest.Matchers.containsString("<script>teste"))))
-                                .andExpect(content().string(org.hamcrest.Matchers
-                                                .not(org.hamcrest.Matchers.containsString("teste</script>"))));
-                com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
+                                                Matchers.containsString("Dados pessoais</article>")))
+                                .andExpect(content().string(Matchers
+                                                .not(Matchers.containsString("<script>teste"))))
+                                .andExpect(content().string(Matchers
+                                                .not(Matchers.containsString("teste</script>"))));
+                TempoLimitesTeste.avancar(cadeiaSeguranca);
                 mvc.perform(post("/api/politicas/privacidade").header("Authorization", "Bearer " + token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(documento.replace("privacidade-1", "privacidade-2")))

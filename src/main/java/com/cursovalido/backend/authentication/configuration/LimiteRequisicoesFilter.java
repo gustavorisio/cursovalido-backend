@@ -1,19 +1,20 @@
 package com.cursovalido.backend.authentication.configuration;
 
+import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.security.RespostaErroHttp;
+import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.web.filter.OncePerRequestFilter;
-import com.cursovalido.backend.authentication.security.RespostaErroHttp;
-import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
-import com.cursovalido.backend.authentication.entity.Perfil;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 public class LimiteRequisicoesFilter extends OncePerRequestFilter {
     private static final Set<String> ALTERACOES = Set.of("POST", "PUT", "PATCH", "DELETE");
@@ -100,7 +101,7 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
         String metodo = "HEAD".equals(request.getMethod()) ? "GET" : request.getMethod();
         Integer intervaloConta = INTERVALOS_CONTA.get(metodo + " " + caminho);
         if (intervaloConta != null) return intervaloConta;
-        // Estas ações já têm prazo persistido no banco, válido entre reinícios e instâncias.
+        // Usa o prazo salvo no banco para estas ações.
         if (("POST".equals(metodo) && (caminho.equals("/api/administracao/comunicados")
                 || caminho.equals("/api/administracao/convites")))
                 || caminho.matches("^/api/administracao/convites/[^/]+/reenviar$")) return 0;
@@ -140,7 +141,7 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
         return request.getRequestURI().substring(request.getContextPath().length());
     }
 
-    // Somente grupos fixos: IDs e caminhos arbitrários nunca criam novos contadores.
+    // Agrupa as rotas em contadores fixos.
     private static String grupo(HttpServletRequest request, String caminho) {
         if (ROTAS_AUTENTICACAO_RESTRITAS.contains(caminho)) return caminho;
         if (caminho.equals("/api/autenticacao/exportar-dados")) return "EXPORTACAO_DADOS";
@@ -153,7 +154,7 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
         Janela janela = janelas.get(ip);
         if (janela == null || !agora.isBefore(janela.inicio.plusSeconds(60))) {
             if (janela == null && janelas.size() >= CAPACIDADE) {
-                // Substitui a origem menos recente; capacidade cheia não bloqueia novos usuários.
+                // Substitui a origem menos recente quando o mapa está cheio.
                 janelas.remove(janelas.keySet().iterator().next());
             }
             janela = new Janela(agora);
@@ -161,7 +162,7 @@ public class LimiteRequisicoesFilter extends OncePerRequestFilter {
         }
         int usadas = janela.grupos.getOrDefault(grupo, 0);
         if (janela.quantidade >= limite || usadas >= limiteDoGrupo) {
-            long milissegundos = java.time.Duration.between(agora, janela.inicio.plusSeconds(60)).toMillis();
+            long milissegundos = Duration.between(agora, janela.inicio.plusSeconds(60)).toMillis();
             return (int) Math.max(1, (milissegundos + 999) / 1000);
         }
         janela.quantidade++;

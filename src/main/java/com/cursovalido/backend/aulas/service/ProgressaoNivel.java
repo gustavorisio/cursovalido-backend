@@ -8,7 +8,7 @@ public final class ProgressaoNivel {
     private ProgressaoNivel() {
     }
 
-    // Meta do nivel: 100, 150, 230, 340, 510... cada nivel exige mais XP que o anterior.
+    // Aumenta a meta de XP a cada nível.
     public static long meta(int nivel) {
         int atual = Math.max(1, Math.min(nivel, NIVEL_MAXIMO));
         double bruto = META_INICIAL * Math.pow(FATOR_CRESCIMENTO, atual - 1);

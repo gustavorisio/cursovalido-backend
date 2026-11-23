@@ -3,9 +3,11 @@ package com.cursovalido.backend.forum.service;
 import com.cursovalido.backend.forum.exception.ConteudoOfensivoException;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +24,7 @@ public class FiltroConteudoOfensivo {
             "lixo", "lixo humano", "fodace", "foda-se", "pau no cu", "fuck", "fucking", "fucker", "motherfucker", "shit", "bitch", "asshole", "cunt",
             "nigger", "niggers", "nigga", "niggas", "faggot", "faggots", "retard"));
 
-    // Radicais que cobrem variacoes como plural, diminutivo e aumentativo.
+    // Radicais que cobrem variações como plural, diminutivo e aumentativo.
     private static final List<String> RADICAIS = normalizarLista(List.of(
             "caralh", "arromb", "desgracad", "fodid", "fudid", "otari", "retardad", "escrot", "viadinh",
             "bucet", "bocet", "putinh", "putaria", "cuza", "merdinh", "babac", "imbecil", "idiot", "vagabund",
@@ -39,11 +41,11 @@ public class FiltroConteudoOfensivo {
         return texto != null && !texto.equals(censurar(texto));
     }
 
-    // Mantém os índices do texto original para preservar acentos e pontuação fora das ofensas.
+    // Preserva os índices do texto ao ocultar ofensas.
     public String censurar(String texto) {
         if (texto == null || texto.isBlank()) return texto;
         var tokens = new ArrayList<Token>();
-        var matcher = java.util.regex.Pattern.compile("[\\p{L}\\p{M}\\p{N}@$]+").matcher(texto);
+        var matcher = Pattern.compile("[\\p{L}\\p{M}\\p{N}@$]+").matcher(texto);
         while (matcher.find()) {
             tokens.add(new Token(colapsar(normalizar(matcher.group())), matcher.start(), matcher.end()));
         }
@@ -75,7 +77,7 @@ public class FiltroConteudoOfensivo {
     private record Token(String valor, int inicio, int fim) {}
 
     private static void marcar(boolean[] ocultos, int inicio, int fim) {
-        java.util.Arrays.fill(ocultos, inicio, fim, true);
+        Arrays.fill(ocultos, inicio, fim, true);
     }
 
     private boolean ofensiva(String palavra) {

@@ -1,13 +1,14 @@
 package com.cursovalido.backend.authentication;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.service.AdministradorInicialService;
 import com.cursovalido.backend.authentication.service.EmailService;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -15,6 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
                 "spring.datasource.url=jdbc:h2:mem:admin_inicio;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
@@ -48,8 +51,8 @@ class AdministradorInicialHttpTest {
 
                 assertEquals(200, resposta.getStatusCode().value());
                 assertNull(resposta.getBody().get("token"));
-                var codigo = org.mockito.ArgumentCaptor.forClass(String.class);
-                org.mockito.Mockito.verify(emails).enviarCodigo2fa(org.mockito.ArgumentMatchers.any(),
+                var codigo = ArgumentCaptor.forClass(String.class);
+                Mockito.verify(emails).enviarCodigo2fa(ArgumentMatchers.any(),
                                 codigo.capture());
                 resposta = cliente.post().uri("/api/autenticacao/confirmar-2fa")
                                 .body(Map.of("email", "primeiro-admin@example.com", "codigo", codigo.getValue()))

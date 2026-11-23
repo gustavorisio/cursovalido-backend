@@ -4,12 +4,13 @@ import com.cursovalido.backend.authentication.dto.ConviteAcessoRequest;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.senha.RegrasSenha;
+import jakarta.validation.Validator;
 
 public final class AdministradorInicialValidation {
     private AdministradorInicialValidation() {
     }
 
-    public static void validarConfiguracao(String endereco, String senha, jakarta.validation.Validator validador,
+    public static void validarConfiguracao(String endereco, String senha, Validator validador,
             UsuarioRepository usuarios) {
         var configuracao = new ConviteAcessoRequest(endereco, Perfil.ADMINISTRADOR);
         if (!validador.validate(configuracao).isEmpty()) {

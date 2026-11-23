@@ -2,17 +2,25 @@ package com.cursovalido.backend.aulas;
 
 import com.cursovalido.backend.aulas.dto.*;
 import com.cursovalido.backend.aulas.repository.*;
+import com.cursovalido.backend.aulas.service.VimeoClient;
 import com.cursovalido.backend.aulas.service.YoutubeClient;
+import com.cursovalido.backend.authentication.dto.DadosPessoaisResponse;
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.service.PoliticaService;
+import com.cursovalido.backend.authentication.service.ResponsabilidadeService;
 import com.cursovalido.backend.authentication.service.TokenJwtService;
 import com.cursovalido.backend.dashboard.dto.DashboardResponse.AtividadeDia;
 import com.cursovalido.backend.forum.support.PostgresTeste;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -29,7 +37,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.*;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -60,12 +71,12 @@ class AulasHttpIntegracaoTest {
         @Autowired
         private JdbcTemplate jdbc;
         @MockitoBean
-        private com.cursovalido.backend.aulas.service.VimeoClient vimeoClient;
+        private VimeoClient vimeoClient;
 
         @MockitoBean
         private YoutubeClient youtube;
         @Autowired
-        private com.cursovalido.backend.authentication.service.ResponsabilidadeService responsabilidade;
+        private ResponsabilidadeService responsabilidade;
         private RestClient cliente;
         private Usuario aluno;
         private String tokenAluno;
@@ -167,7 +178,7 @@ class AulasHttpIntegracaoTest {
                 assertThat(perfeitas).allSatisfy(resposta -> assertThat(resposta.getStatusCode()).isEqualTo(HttpStatus.OK));
                 assertThat(perfeitas.stream().filter(resposta -> resposta.getBody().recompensa() != null).count()).isEqualTo(1);
                 assertThat(perfeitas.stream().map(ResponseEntity::getBody).map(ResultadoQuestionarioResponse::recompensa)
-                                .filter(java.util.Objects::nonNull).findFirst().orElseThrow().xpGanho()).isEqualTo(100);
+                                .filter(Objects::nonNull).findFirst().orElseThrow().xpGanho()).isEqualTo(100);
                 var novaVersao = enviar(HttpMethod.PUT, rotaGestao, tokenProfessor, dados, QuestionarioGestaoResponse.class);
                 assertThat(novaVersao.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(enviar(HttpMethod.POST, rota + "/respostas", tokenAluno,
@@ -217,10 +228,10 @@ class AulasHttpIntegracaoTest {
         @Test
         void dadosPessoaisNaoIncluemTelefoneNemPermitemEdicao() {
                 var resposta = enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokenAluno, null,
-                                com.cursovalido.backend.authentication.dto.DadosPessoaisResponse.class);
+                                DadosPessoaisResponse.class);
                 assertThat(resposta.getBody().nomeCompleto()).isEqualTo(aluno.getNomeCompleto());
                 assertThat(resposta.getBody().email()).isEqualTo(aluno.getEmail());
-                var contato = java.util.Map.of("telefone", "21988888888");
+                var contato = Map.of("telefone", "21988888888");
                 assertThat(
                                 enviar(HttpMethod.PATCH, "/api/autenticacao/meus-dados", null, contato, String.class)
                                                 .getStatusCode())
@@ -244,7 +255,7 @@ class AulasHttpIntegracaoTest {
         @Test
         void segurancaRejeitaIdentidadeInventadaMesmoComTokenAssinado() {
                 var identidade = new Usuario();
-                org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
+                ReflectionTestUtils.setField(identidade, "id", aluno.getId());
                 identidade.setEmail("inexistente-" + System.nanoTime() + "@example.invalid");
                 identidade.setPerfil(Perfil.ADMINISTRADOR);
                 String token = tokens.gerar(identidade);
@@ -260,7 +271,7 @@ class AulasHttpIntegracaoTest {
         void segurancaRejeitaEmailDeOutraContaComIdValidoDiferente() {
                 Usuario outra = criarUsuario(Perfil.ALUNO);
                 var identidade = new Usuario();
-                org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
+                ReflectionTestUtils.setField(identidade, "id", aluno.getId());
                 identidade.setEmail(outra.getEmail());
                 identidade.setPerfil(Perfil.ALUNO);
                 assertThat(enviar(HttpMethod.GET, "/api/autenticacao/meus-dados", tokens.gerar(identidade), null,
@@ -271,7 +282,7 @@ class AulasHttpIntegracaoTest {
         @Test
         void segurancaIgnoraPerfilAdministrativoInventadoNoTokenAssinado() {
                 var identidade = new Usuario();
-                org.springframework.test.util.ReflectionTestUtils.setField(identidade, "id", aluno.getId());
+                ReflectionTestUtils.setField(identidade, "id", aluno.getId());
                 identidade.setEmail(aluno.getEmail());
                 identidade.setPerfil(Perfil.ADMINISTRADOR);
                 assertThat(enviar(HttpMethod.GET, "/api/administracao/usuarios", tokens.gerar(identidade), null,
@@ -282,11 +293,11 @@ class AulasHttpIntegracaoTest {
         @Test
         void segurancaRejeitaTokenAdulteradoSemAssinaturaValida() {
                 String[] partes = tokenAluno.split("[.]");
-                String payload = new String(java.util.Base64.getUrlDecoder().decode(partes[1]),
-                                java.nio.charset.StandardCharsets.UTF_8);
+                String payload = new String(Base64.getUrlDecoder().decode(partes[1]),
+                                StandardCharsets.UTF_8);
                 payload = payload.replace("ALUNO", "ADMINISTRADOR");
-                String adulterado = partes[0] + "." + java.util.Base64.getUrlEncoder().withoutPadding()
-                                .encodeToString(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8)) + "."
+                String adulterado = partes[0] + "." + Base64.getUrlEncoder().withoutPadding()
+                                .encodeToString(payload.getBytes(StandardCharsets.UTF_8)) + "."
                                 + partes[2];
                 for (String token : List.of(adulterado, "token-inventado", "eyJhbGciOiJub25lIn0.e30.")) {
                         assertThat(
@@ -308,7 +319,7 @@ class AulasHttpIntegracaoTest {
                 var comToken = cliente.get().uri("/api/autenticacao/meus-dados?idUsuario=" + outra.getId())
                                 .header("X-User-Id", outra.getId().toString()).headers(h -> h.setBearerAuth(tokenAluno))
                                 .retrieve()
-                                .toEntity(com.cursovalido.backend.authentication.dto.DadosPessoaisResponse.class);
+                                .toEntity(DadosPessoaisResponse.class);
                 assertThat(comToken.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(comToken.getBody().id()).isEqualTo(aluno.getId());
         }
@@ -414,7 +425,7 @@ class AulasHttpIntegracaoTest {
                 // PostgreSQL armazena microssegundos; a resposta inicial pode conter
                 // nanossegundos.
                 assertThat(respostas.get(0).getBody().concluidaEm()).isCloseTo(respostas.get(1).getBody().concluidaEm(),
-                                within(1, java.time.temporal.ChronoUnit.MICROS));
+                                within(1, ChronoUnit.MICROS));
                 assertThat(jdbc.queryForObject(
                                 "select count(*) from tb_logs_auditoria where usuario_id = ? and tipo_acao = 'CONCLUSAO_AULA'",
                                 Long.class, aluno.getId())).isEqualTo(1);
@@ -442,7 +453,7 @@ class AulasHttpIntegracaoTest {
                 matricular();
                 enviar(HttpMethod.PUT, rotaProgresso(), tokenAluno, new ProgressoAulaRequest(120L),
                                 ProgressoAulaResponse.class);
-                doThrow(new org.springframework.web.server.ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE))
+                doThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE))
                                 .when(youtube).validarVideo("abcdefghijk");
                 var falha = enviar(HttpMethod.PUT, "/api/aulas/" + idAula, tokenProfessor,
                                 new AulaRequest("Nao salvar", "Novo", 2, "https://youtu.be/abcdefghijk",

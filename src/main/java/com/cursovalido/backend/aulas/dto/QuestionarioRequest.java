@@ -1,5 +1,6 @@
 package com.cursovalido.backend.aulas.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.List;
@@ -10,7 +11,7 @@ public record QuestionarioRequest(@NotBlank @Size(max = 255) String titulo, bool
                         @NotNull @Size(min = 2, max = 6, message = "Cada pergunta deve ter de 2 a 6 alternativas.") List<@NotBlank @Size(max = 500) String> alternativas,
                         @NotNull @Min(0) @Max(5) Integer alternativaCorreta,
                         @NotNull @Size(min = 2, max = 6) List<@NotNull @Size(max = 2000) String> explicacoes, @Positive Long idAulaRevisao) {
-                @com.fasterxml.jackson.annotation.JsonIgnore
+                @JsonIgnore
                 @AssertTrue(message = "Informe uma explicação para cada alternativa incorreta.")
                 public boolean isExplicacoesValidas() {
                         if (alternativas == null || explicacoes == null || alternativaCorreta == null

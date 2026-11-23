@@ -6,9 +6,12 @@ import com.cursovalido.backend.authentication.service.*;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import static com.cursovalido.backend.authentication.support.UsuarioAutenticadoFixture.usuario;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static com.cursovalido.backend.authentication.support.UsuarioAutenticadoFixture.usuario;
 
 class AdministracaoControllerTest {
     private final ConviteAcessoService convites = mock(ConviteAcessoService.class);
@@ -23,11 +26,11 @@ class AdministracaoControllerTest {
         var ordem = inOrder(privilegios, auditoria);
         ordem.verify(privilegios).verificarPrincipal(7L);
         ordem.verify(auditoria).verificarIntegridade();
-        doThrow(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN))
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN))
                 .when(privilegios).verificarPrincipal(7L);
         clearInvocations(auditoria);
         assertThatThrownBy(() -> controlador.verificarIntegridadeAuditoria(usuario()))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+                .isInstanceOf(ResponseStatusException.class);
         verifyNoInteractions(auditoria);
     }
 

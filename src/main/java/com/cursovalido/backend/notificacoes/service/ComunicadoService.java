@@ -6,6 +6,7 @@ import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.notificacoes.dto.*;
 import com.cursovalido.backend.notificacoes.repository.ComunicadoRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class ComunicadoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "O limite de 30 comunicados foi atingido. Exclua um comunicado antes de publicar outro.");
         }
-        if (repositorio.publicouRecentemente(administrador, java.time.LocalDateTime.now().minusSeconds(30))) {
+        if (repositorio.publicouRecentemente(administrador, LocalDateTime.now().minusSeconds(30))) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
                     "Aguarde 30 segundos entre a criação de comunicados.");
         }

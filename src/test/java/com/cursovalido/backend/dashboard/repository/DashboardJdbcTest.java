@@ -6,11 +6,13 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class DashboardJdbcTest {
     private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
@@ -22,7 +24,7 @@ class DashboardJdbcTest {
         when(rs.getLong(anyString())).thenAnswer(invocacao -> Map.of("matriculas", 4L, "cursos_concluidos", 3L,
                 "alunos", 8L, "alunos_engajados", 2L).getOrDefault(invocacao.getArgument(0), 0L));
         when(rs.getObject("nivel_medio")).thenReturn(2.25);
-        when(jdbc.queryForObject(anyString(), org.mockito.ArgumentMatchers.<RowMapper<Resumo>>any()))
+        when(jdbc.queryForObject(anyString(), ArgumentMatchers.<RowMapper<Resumo>>any()))
                 .thenAnswer(invocacao -> invocacao.<RowMapper<Resumo>>getArgument(1).mapRow(rs, 0));
         var resumo = repositorio.resumo();
         assertThat(resumo.alunosAtivos()).isEqualTo(8);
@@ -42,7 +44,7 @@ class DashboardJdbcTest {
         when(rs.getLong("matriculas")).thenReturn(3L);
         when(rs.getLong("aulas_concluidas")).thenReturn(4L);
         var dia = LocalDate.of(2026, 11, 22);
-        when(jdbc.queryForObject(anyString(), org.mockito.ArgumentMatchers.<RowMapper<AtividadeDia>>any(), any(Object[].class)))
+        when(jdbc.queryForObject(anyString(), ArgumentMatchers.<RowMapper<AtividadeDia>>any(), any(Object[].class)))
                 .thenAnswer(invocacao -> invocacao.<RowMapper<AtividadeDia>>getArgument(1).mapRow(rs, 0));
         var resultado = repositorio.atividadeDia(dia, dia.atStartOfDay(), dia.plusDays(1).atStartOfDay());
         assertThat(resultado.data()).isEqualTo(dia);
@@ -50,7 +52,7 @@ class DashboardJdbcTest {
         assertThat(resultado.aulasConcluidas()).isEqualTo(4);
         var inicio = Timestamp.valueOf(dia.atStartOfDay());
         var fim = Timestamp.valueOf(dia.plusDays(1).atStartOfDay());
-        verify(jdbc).queryForObject(anyString(), org.mockito.ArgumentMatchers.<RowMapper<AtividadeDia>>any(),
+        verify(jdbc).queryForObject(anyString(), ArgumentMatchers.<RowMapper<AtividadeDia>>any(),
                 eq(inicio), eq(fim), eq(inicio), eq(fim), eq(inicio), eq(fim), eq(inicio), eq(fim), eq(inicio), eq(fim), eq(inicio), eq(fim));
     }
 }

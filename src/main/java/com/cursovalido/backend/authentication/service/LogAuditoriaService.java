@@ -29,7 +29,7 @@ public class LogAuditoriaService {
         AuditoriaValidation.validarChave(chaveTexto);
     }
 
-    // Registra uma acao e liga o registro ao anterior.
+    // Registra uma ação e liga o registro ao anterior.
     public synchronized void registrar(Long usuarioId, String tipoAcao, String detalhes, String enderecoIp) {
         String hashAnterior = repositorio.findTopByOrderByIdDesc()
                 .map(LogAuditoria::getAssinatura)

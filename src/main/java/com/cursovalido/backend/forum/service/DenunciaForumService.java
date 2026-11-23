@@ -1,8 +1,9 @@
 package com.cursovalido.backend.forum.service;
 
+import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
+import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
 import com.cursovalido.backend.authentication.service.ModeracaoUsuarioService;
-import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import com.cursovalido.backend.forum.dto.DenunciaDtos.DecisaoDenunciaRequest;
 import com.cursovalido.backend.forum.dto.DenunciaDtos.DenunciaRegistradaResponse;
@@ -20,8 +21,8 @@ import com.cursovalido.backend.forum.exception.RequisicaoInvalidaException;
 import com.cursovalido.backend.forum.repository.ComentarioRepository;
 import com.cursovalido.backend.forum.repository.DenunciaForumRepository;
 import com.cursovalido.backend.forum.repository.TopicoRepository;
-import java.util.List;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,7 +70,7 @@ public class DenunciaForumService {
         return denuncias.findByStatusOrderByCriadaEmAscIdAsc(filtro).stream().map(this::converter).toList();
     }
 
-    // Uma decisao com remocao encerra todas as denuncias pendentes do mesmo conteudo.
+    // Uma decisão com remocao encerra todas as denúncias pendentes do mesmo conteúdo.
     @Transactional
     public DenunciaResponse decidir(Long idDenuncia, DecisaoDenunciaRequest decisao, Long idAdministrador) {
         privilegios.verificarAdministrador(idAdministrador);
@@ -81,8 +82,8 @@ public class DenunciaForumService {
         boolean remover = procedente && Boolean.TRUE.equals(decisao.removerConteudo());
         if (Boolean.TRUE.equals(decisao.aplicarRestricao())) {
             if (!procedente) throw new RequisicaoInvalidaException("A restrição só pode ser aplicada a uma denúncia procedente.");
-            if (decisao.escopoRestricao() != com.cursovalido.backend.authentication.entity.EscopoSuspensao.CONTA
-                    && decisao.escopoRestricao() != com.cursovalido.backend.authentication.entity.EscopoSuspensao.FORUM) {
+            if (decisao.escopoRestricao() != EscopoSuspensao.CONTA
+                    && decisao.escopoRestricao() != EscopoSuspensao.FORUM) {
                 throw new RequisicaoInvalidaException("Escolha acesso à conta ou ao fórum para a restrição.");
             }
             moderacao.aplicar(denuncia.getIdAutorConteudo(),

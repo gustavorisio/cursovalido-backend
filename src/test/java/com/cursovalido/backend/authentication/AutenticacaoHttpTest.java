@@ -1,31 +1,43 @@
 package com.cursovalido.backend.authentication;
 
-import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import com.cursovalido.backend.authentication.entity.*;
 import com.cursovalido.backend.authentication.repository.*;
 import com.cursovalido.backend.authentication.service.*;
+import com.cursovalido.backend.authentication.service.TokenEmailService;
+import com.cursovalido.backend.authentication.validation.email.ValidacaoEmailService;
 import com.cursovalido.backend.forum.service.UsuarioForumService;
+import com.cursovalido.backend.support.TempoLimitesTeste;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
+import org.springframework.http.HttpMethod;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
                 "security.bcrypt.strength=10",
@@ -35,9 +47,9 @@ import org.springframework.web.client.RestClient;
 @ActiveProfiles("test")
 class AutenticacaoHttpTest {
         @Autowired
-        private org.springframework.security.web.SecurityFilterChain cadeiaSeguranca;
+        private SecurityFilterChain cadeiaSeguranca;
         @Autowired
-        private com.cursovalido.backend.authentication.service.TokenEmailService tokensExclusao;
+        private TokenEmailService tokensExclusao;
         @LocalServerPort
         private int porta;
         @Autowired
@@ -68,7 +80,7 @@ class AutenticacaoHttpTest {
         @BeforeEach
         void preparar() {
                 cliente = RestClient.builder().requestInterceptor((request, corpo, execucao) -> {
-                        com.cursovalido.backend.support.TempoLimitesTeste.avancar(cadeiaSeguranca);
+                        TempoLimitesTeste.avancar(cadeiaSeguranca);
                         return execucao.execute(request, corpo);
                 }).baseUrl("http://localhost:" + porta)
                                 .defaultStatusHandler(status -> true, (request, response) -> {
@@ -157,15 +169,15 @@ class AutenticacaoHttpTest {
         @Test
         void loginsSimultaneosEnviamUmUnicoCodigo2fa() throws Exception {
                 var credenciais = Map.of("email", usuario.getEmail(), "senha", "SenhaTeste123!");
-                var inicio = new java.util.concurrent.CountDownLatch(1);
-                try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
-                        var tarefas = java.util.stream.IntStream.range(0, 2).mapToObj(i -> executor.submit(() -> {
+                var inicio = new CountDownLatch(1);
+                try (var executor = Executors.newFixedThreadPool(2)) {
+                        var tarefas = IntStream.range(0, 2).mapToObj(i -> executor.submit(() -> {
                                 inicio.await();
                                 return post("login", credenciais).getStatusCode().value();
                         })).toList();
                         inicio.countDown();
                         for (var tarefa : tarefas)
-                                assertEquals(200, tarefa.get(10, java.util.concurrent.TimeUnit.SECONDS));
+                                assertEquals(200, tarefa.get(10, TimeUnit.SECONDS));
                 }
                 verify(emails, times(1)).enviarCodigo2fa(any(), anyString());
                 assertEquals(429, post("reenviar-2fa", Map.of("email", usuario.getEmail())).getStatusCode().value());
@@ -193,16 +205,16 @@ class AutenticacaoHttpTest {
 
         @Test
         void emissoesSimultaneasMantemUmaUnicaSessaoAtiva() throws Exception {
-                try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
-                        var inicio = new java.util.concurrent.CountDownLatch(1);
-                        var tarefas = java.util.stream.IntStream.range(0, 2).mapToObj(i -> executor.submit(() -> {
+                try (var executor = Executors.newFixedThreadPool(2)) {
+                        var inicio = new CountDownLatch(1);
+                        var tarefas = IntStream.range(0, 2).mapToObj(i -> executor.submit(() -> {
                                 inicio.await();
                                 return tokens.gerar(usuario);
                         })).toList();
                         inicio.countDown();
-                        var emitidos = new java.util.ArrayList<String>();
+                        var emitidos = new ArrayList<String>();
                         for (var tarefa : tarefas)
-                                emitidos.add(tarefa.get(10, java.util.concurrent.TimeUnit.SECONDS));
+                                emitidos.add(tarefa.get(10, TimeUnit.SECONDS));
                         int ativos = 0;
                         for (String token : emitidos) {
                                 try {
@@ -291,8 +303,8 @@ class AutenticacaoHttpTest {
                 assertNotNull(entrar());
         }
 
-        @org.junit.jupiter.params.ParameterizedTest
-        @org.junit.jupiter.params.provider.ValueSource(booleans = { true, false })
+        @ParameterizedTest
+        @ValueSource(booleans = { true, false })
         void trocaDeTermosRegistraAceiteSomenteAposNovoLogin(boolean aceitou) {
                 String anterior = entrar();
                 jdbc.update("update tb_politicas set ativa = false where versao = 'teste-http'");
@@ -426,7 +438,7 @@ class AutenticacaoHttpTest {
                 String token = entrar();
                 String codigo = tokensExclusao.criarExclusao(usuario);
                 assertEquals(204,
-                                cliente.method(org.springframework.http.HttpMethod.DELETE)
+                                cliente.method(HttpMethod.DELETE)
                                                 .uri("/api/autenticacao/conta")
                                                 .headers(h -> h.setBearerAuth(token)).body(Map.of("codigo", codigo))
                                                 .retrieve().toBodilessEntity().getStatusCode().value());
@@ -435,8 +447,8 @@ class AutenticacaoHttpTest {
                                 .retrieve().toBodilessEntity().getStatusCode().value());
         }
 
-        @org.junit.jupiter.params.ParameterizedTest
-        @org.junit.jupiter.params.provider.EnumSource(value = Perfil.class, names = { "PROFESSOR", "ADMINISTRADOR" })
+        @ParameterizedTest
+        @EnumSource(value = Perfil.class, names = { "PROFESSOR", "ADMINISTRADOR" })
         void perfilElevadoExigeResponsabilidadeNoLoginENasSessoesExistentes(Perfil perfil) {
                 usuario.setPerfil(perfil);
                 usuarios.saveAndFlush(usuario);
@@ -479,8 +491,8 @@ class AutenticacaoHttpTest {
                 }
         }
 
-        @org.junit.jupiter.params.ParameterizedTest
-        @org.junit.jupiter.params.provider.EnumSource(Perfil.class)
+        @ParameterizedTest
+        @EnumSource(Perfil.class)
         void todosOsPerfisAlteramSenhaERevogamSessoes(Perfil perfil) {
                 usuario.setPerfil(perfil);
                 usuarios.save(usuario);
@@ -506,7 +518,7 @@ class AutenticacaoHttpTest {
                                 "NovaSenha123!");
                 assertEquals(401, post("alterar-senha-autenticado", valido).getStatusCode().value());
                 String token = tokens.gerar(usuario);
-                for (var corpo : java.util.List.of(
+                for (var corpo : List.of(
                                 Map.of("senhaAtual", "errada", "novaSenha", "NovaSenha123!", "confirmacaoSenha",
                                                 "NovaSenha123!"),
                                 Map.of("senhaAtual", "SenhaTeste123!", "novaSenha", "NovaSenha123!", "confirmacaoSenha",

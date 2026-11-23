@@ -1,38 +1,45 @@
 package com.cursovalido.backend.aulas;
 
-import com.cursovalido.backend.forum.support.PostgresTeste;
-import com.cursovalido.backend.aulas.dto.CursoRequest;
-import com.cursovalido.backend.aulas.service.CursoService;
-import com.cursovalido.backend.aulas.service.AlunoAulasService;
-import com.cursovalido.backend.aulas.service.ModuloService;
-import com.cursovalido.backend.aulas.service.AulaService;
-import com.cursovalido.backend.aulas.service.ProgressoAulaService;
-import com.cursovalido.backend.aulas.dto.ModuloRequest;
 import com.cursovalido.backend.aulas.dto.AulaRequest;
+import com.cursovalido.backend.aulas.dto.CursoRequest;
+import com.cursovalido.backend.aulas.dto.ModuloRequest;
+import com.cursovalido.backend.aulas.service.AlunoAulasService;
+import com.cursovalido.backend.aulas.service.AulaService;
+import com.cursovalido.backend.aulas.service.CursoService;
+import com.cursovalido.backend.aulas.service.ModuloService;
+import com.cursovalido.backend.aulas.service.ProgressoAulaService;
 import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import com.cursovalido.backend.authentication.service.ContaUsuarioService;
-import com.cursovalido.backend.authentication.service.AdministradorInicialService;
 import com.cursovalido.backend.authentication.repository.InicializacaoAdministradorRepository;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
+import com.cursovalido.backend.authentication.service.AdministradorInicialService;
+import com.cursovalido.backend.authentication.service.ContaUsuarioService;
+import com.cursovalido.backend.authentication.service.ResponsabilidadeService;
+import com.cursovalido.backend.authentication.service.TokenEmailService;
+import com.cursovalido.backend.forum.configuration.FlywayConfig;
+import com.cursovalido.backend.forum.support.PostgresTeste;
 import jakarta.persistence.EntityManager;
-import org.springframework.test.util.ReflectionTestUtils;
+import java.util.UUID;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
-import com.cursovalido.backend.forum.configuration.FlywayConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
 import static org.assertj.core.api.Assertions.*;
 
 // Repete o fluxo HTTP em PostgreSQL temporario, com as migracoes e validacao JPA reais.
@@ -57,7 +64,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         @Autowired
         private ContaUsuarioService contas;
         @Autowired
-        private com.cursovalido.backend.authentication.service.TokenEmailService tokensEmail;
+        private TokenEmailService tokensEmail;
         @Autowired
         private JdbcTemplate jdbc;
         @Autowired
@@ -69,7 +76,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         @Autowired
         private ProgressoAulaService progressos;
         @Autowired
-        private com.cursovalido.backend.authentication.service.ResponsabilidadeService responsabilidade;
+        private ResponsabilidadeService responsabilidade;
 
         @Test
         void excluirContaDoAlunoPreservaMatriculaEHistoricoDoCurso() {
@@ -108,7 +115,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 assertThatThrownBy(() -> jdbc.update(
                                 "insert into tb_matriculas (aluno_id, curso_id, matriculado_em) values (?, ?, CURRENT_TIMESTAMP)",
                                 aluno.getId(), curso.getId()))
-                                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+                                .isInstanceOf(DataIntegrityViolationException.class);
         }
 
         @Test
@@ -154,7 +161,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                         "insert into tb_progresso_aulas (matricula_id, aula_id, posicao_segundos, atualizado_em) values (-1, -1, 0, CURRENT_TIMESTAMP)" })
         void bancoRejeitaVinculosInexistentes(String sql) {
                 assertThatThrownBy(() -> jdbc.update(sql))
-                                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+                                .isInstanceOf(DataIntegrityViolationException.class);
         }
 
         @Test
@@ -164,7 +171,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 assertThatThrownBy(() -> jdbc.update(
                                 "insert into tb_modulos (titulo, descricao, curso_id, ordem, criado_em) values ('Teste', 'Teste', ?, 0, CURRENT_TIMESTAMP)",
                                 curso.getId()))
-                                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+                                .isInstanceOf(DataIntegrityViolationException.class);
         }
 
         @Test
@@ -182,7 +189,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
                 assertThatThrownBy(() -> jdbc.update(
                                 "insert into tb_progresso_aulas (matricula_id, aula_id, atualizado_em) values (?, ?, CURRENT_TIMESTAMP)",
                                 matricula.getId(), aula.getId()))
-                                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+                                .isInstanceOf(DataIntegrityViolationException.class);
         }
 
         @Test
@@ -211,9 +218,9 @@ class AulasPostgresTest extends AulasIntegracaoTest {
         }
 
         @Test
-        @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
         void migracaoPreservaExplicacoesEArquivaAvaliacaoExterna() {
-                String schema = "explicacoes_" + java.util.UUID.randomUUID().toString().replace("-", "");
+                String schema = "explicacoes_" + UUID.randomUUID().toString().replace("-", "");
                 FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).target("4").load().migrate();
                 jdbc.update("insert into " + schema + ".tb_cursos (id, titulo, descricao, criado_em) values (1, 'Curso', 'Descrição', current_timestamp)");
                 jdbc.update("insert into " + schema + ".tb_modulos (id, titulo, descricao, curso_id, ordem, criado_em) values (20, 'Módulo', 'Descrição', 1, 1, current_timestamp)");
@@ -230,7 +237,7 @@ class AulasPostgresTest extends AulasIntegracaoTest {
 
         @Test
         void bancoNovoAplicaSchemaUnificadoSemConteudoLegalPadrao() {
-                String schema = "v3_" + java.util.UUID.randomUUID().toString().replace("-", "");
+                String schema = "v3_" + UUID.randomUUID().toString().replace("-", "");
                 var flyway = FlywayConfig.configuracao().dataSource(fonte).schemas(schema).defaultSchema(schema).load();
                 var pendentes = flyway.info().pending();
                 assertThat(pendentes).extracting(item -> item.getVersion().getVersion())

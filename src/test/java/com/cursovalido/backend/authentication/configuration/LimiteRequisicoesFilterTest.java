@@ -2,9 +2,12 @@ package com.cursovalido.backend.authentication.configuration;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.util.ReflectionTestUtils;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -39,7 +42,7 @@ class LimiteRequisicoesFilterTest {
         var filtro = new LimiteRequisicoesFilter(30, 5);
         for (int i = 0; i < 10000; i++) enviar(filtro, "POST", "/api/forum/topicos/" + i + "/comentarios", "192.0.2.1");
         assertThat(enviar(filtro, "POST", "/api/autenticacao/login", "192.0.2.2").getStatus()).isEqualTo(200);
-        var cache = (java.util.Map<?, ?>) org.springframework.test.util.ReflectionTestUtils.getField(filtro, "janelas");
+        var cache = (Map<?, ?>) ReflectionTestUtils.getField(filtro, "janelas");
         assertThat(cache).hasSize(2);
     }
 
@@ -48,7 +51,7 @@ class LimiteRequisicoesFilterTest {
         var filtro = new LimiteRequisicoesFilter();
         for (int i = 0; i < 10001; i++) enviar(filtro, "POST", "/api/forum/topicos", "198.51." + i / 256 + "." + i % 256);
         assertThat(enviar(filtro, "POST", "/api/autenticacao/login", "192.0.2.2").getStatus()).isEqualTo(200);
-        var cache = (java.util.Map<?, ?>) org.springframework.test.util.ReflectionTestUtils.getField(filtro, "janelas");
+        var cache = (Map<?, ?>) ReflectionTestUtils.getField(filtro, "janelas");
         assertThat(cache).hasSize(10000);
     }
 

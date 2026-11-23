@@ -1,6 +1,5 @@
 package com.cursovalido.backend.forum.repository;
 
-import static org.assertj.core.api.Assertions.*;
 import com.cursovalido.backend.forum.entity.*;
 import com.cursovalido.backend.forum.support.PostgresTeste;
 import jakarta.persistence.EntityManager;
@@ -11,9 +10,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.*;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.*;
+
+import static org.assertj.core.api.Assertions.*;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -189,7 +191,7 @@ class ForumRepositoriesTest {
         topico.setIdAutor(999999L);
         topico.setCriadoEm(base);
         assertThatThrownBy(() -> topicos.saveAndFlush(topico))
-                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private Topico topico(String titulo, int minuto) {

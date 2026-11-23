@@ -1,38 +1,39 @@
 package com.cursovalido.backend.forum.controller;
 
-import lombok.RequiredArgsConstructor;
-
+import com.cursovalido.backend.authentication.entity.Perfil;
+import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import com.cursovalido.backend.authentication.security.VisibilidadeEmail;
+import com.cursovalido.backend.forum.dto.ComentarioRequest;
+import com.cursovalido.backend.forum.dto.ComentarioResponse;
+import com.cursovalido.backend.forum.dto.PaginaComentariosResponse;
+import com.cursovalido.backend.forum.dto.TopicoRequest;
+import com.cursovalido.backend.forum.dto.TopicoResponse;
+import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
+import com.cursovalido.backend.forum.dto.UsuarioForumResponse;
+import com.cursovalido.backend.forum.dto.UsuariosForumResponse;
 import com.cursovalido.backend.forum.entity.Comentario;
 import com.cursovalido.backend.forum.entity.Topico;
 import com.cursovalido.backend.forum.entity.UsuarioForum;
-import com.cursovalido.backend.forum.dto.ComentarioRequest;
-import com.cursovalido.backend.forum.dto.ComentarioResponse;
-import com.cursovalido.backend.forum.dto.TopicoResumoDTO;
-import com.cursovalido.backend.forum.dto.TopicoRequest;
-import com.cursovalido.backend.forum.dto.TopicoResponse;
-import com.cursovalido.backend.forum.dto.UsuariosForumResponse;
-import com.cursovalido.backend.forum.dto.UsuarioForumResponse;
 import com.cursovalido.backend.forum.service.ComentarioService;
+import com.cursovalido.backend.forum.service.FiltroConteudoOfensivo;
 import com.cursovalido.backend.forum.service.TopicoService;
 import com.cursovalido.backend.forum.service.UsuarioForumService;
-import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
-import com.cursovalido.backend.authentication.security.VisibilidadeEmail;
-import com.cursovalido.backend.authentication.entity.Perfil;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/forum")
 @RequiredArgsConstructor
 public class ForumController {
-    private final com.cursovalido.backend.forum.service.FiltroConteudoOfensivo filtroConteudo =
-            new com.cursovalido.backend.forum.service.FiltroConteudoOfensivo();
+    private final FiltroConteudoOfensivo filtroConteudo =
+            new FiltroConteudoOfensivo();
     private static final ZoneId BRASILIA = ZoneId.of("America/Sao_Paulo");
 
     private final TopicoService servicoTopicos;
@@ -51,7 +52,7 @@ public class ForumController {
     }
 
     @GetMapping("/topicos/meus")
-    public org.springframework.data.domain.Page<TopicoResumoDTO> listarMeusTopicos(
+    public Page<TopicoResumoDTO> listarMeusTopicos(
             @AuthenticationPrincipal UsuarioAutenticado usuario,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -97,11 +98,11 @@ public class ForumController {
     }
 
     @GetMapping("/topicos/{idTopico}/comentarios")
-    public com.cursovalido.backend.forum.dto.PaginaComentariosResponse listarComentarios(
+    public PaginaComentariosResponse listarComentarios(
             @AuthenticationPrincipal UsuarioAutenticado usuario, @PathVariable Long idTopico,
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         var pagina = servicoComentarios.listarPaginaPorTopico(idTopico, usuario == null ? null : usuario.getId(), page, size);
-        return new com.cursovalido.backend.forum.dto.PaginaComentariosResponse(
+        return new PaginaComentariosResponse(
                 pagina.getContent().stream().map(this::converter).toList(), pagina.getNumber(),
                 pagina.getTotalPages(), pagina.getTotalElements());
     }

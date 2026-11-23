@@ -43,7 +43,7 @@ public class AutenticacaoService {
                 protecaoForcaBruta, moderacao, politicas, responsabilidade, privacidade, null);
     }
 
-    // Valida a senha e pede codigo quando o 2FA esta ativo ou o e-mail ainda nao foi confirmado.
+    // Valida a senha e pede código quando o 2FA está ativo ou o e-mail ainda não foi confirmado.
     public AutenticacaoResponse autenticar(LoginRequest requisicao, String enderecoIp) {
         String identificador = identificador(requisicao.email());
         protecaoForcaBruta.verificar(identificador);
@@ -61,14 +61,13 @@ public class AutenticacaoService {
         return concluirLogin(usuario, enderecoIp, false);
     }
 
-    // Confirma o codigo 2FA e gera o token de acesso.
+    // Confirma o código 2FA e gera o token de acesso.
     public AutenticacaoResponse confirmarCodigo(String email, String codigo, String enderecoIp) {
         String identificador = identificador(email);
         protecaoForcaBruta.verificar(identificador);
         Usuario usuario;
         try {
-            // Primeiro o codigo e conferido sem ser consumido; a situacao da conta e validada
-            // antes de inutiliza-lo, para que uma recusa nao obrigue o envio de outro codigo.
+            // Consome o código somente após validar a situação da conta.
             Long idUsuario = tokensEmail.conferirCodigo2fa(email, codigo);
             Usuario dono = repositorio.findById(idUsuario).orElse(null);
             AutenticacaoValidation.validarConfirmacao(dono, moderacao);
@@ -102,7 +101,7 @@ public class AutenticacaoService {
                 usuario.getPerfil(), false);
     }
 
-    // Envia um novo codigo 2FA para o usuario ativo.
+    // Envia um novo código 2FA para o usuário ativo.
     public void reenviarCodigo2fa(String email, String enderecoIp) {
         repositorio.findByEmail(email)
                 .filter(Usuario::isAtivo)

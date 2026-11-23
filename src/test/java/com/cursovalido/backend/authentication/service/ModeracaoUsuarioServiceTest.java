@@ -1,19 +1,19 @@
 package com.cursovalido.backend.authentication.service;
 
-import com.cursovalido.backend.authentication.entity.Perfil;
-import com.cursovalido.backend.authentication.entity.Usuario;
-import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import java.util.List;
-import java.util.Optional;
 import com.cursovalido.backend.authentication.dto.SuspensaoRequest;
 import com.cursovalido.backend.authentication.dto.UsuarioAdministracaoResposta;
 import com.cursovalido.backend.authentication.entity.EscopoSuspensao;
+import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.entity.SuspensaoUsuario;
+import com.cursovalido.backend.authentication.entity.Usuario;
 import com.cursovalido.backend.authentication.repository.SessaoRepository;
 import com.cursovalido.backend.authentication.repository.SuspensaoUsuarioRepository;
+import com.cursovalido.backend.authentication.repository.UsuarioRepository;
 import com.cursovalido.backend.authentication.validation.administracao.PrivilegiosAdministrativosService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -69,6 +69,22 @@ class ModeracaoUsuarioServiceTest {
 
         assertTrue(service.restrito(2L, EscopoSuspensao.CONTA));
         assertTrue(service.mensagemBanimento(2L, EscopoSuspensao.CONTA).contains("permanentemente"));
+    }
+
+    @Test
+    void administradorComumPodeModerarProfessorEAlunoMasNaoExcluir() {
+        Usuario administrador = usuario(1L, Perfil.ADMINISTRADOR);
+        when(privilegios.verificarAdministrador(1L)).thenReturn(administrador);
+        when(usuarios.findByExcluidoEmIsNull()).thenReturn(List.of(
+                usuario(2L, Perfil.PROFESSOR), usuario(3L, Perfil.ALUNO)));
+
+        var resultado = service.listarUsuarios(1L, null);
+
+        assertEquals(2, resultado.size());
+        resultado.forEach(alvo -> {
+            assertTrue(alvo.podeModerar());
+            assertFalse(alvo.podeExcluir());
+        });
     }
 
     @Test

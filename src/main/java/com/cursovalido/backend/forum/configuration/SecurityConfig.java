@@ -6,6 +6,7 @@ import com.cursovalido.backend.authentication.configuration.TokenJwtFilter;
 import com.cursovalido.backend.authentication.security.RespostaErroHttp;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -69,7 +70,7 @@ public class SecurityConfig {
                                 .authorizeHttpRequests(authorize -> authorize
                                                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                                // Rotas publicas de autenticacao e cadastro.
+                                                // Rotas públicas de autenticação e cadastro.
                                                 .requestMatchers(HttpMethod.POST, "/api/suporte/solicitacoes")
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/autenticacao/cadastro",
@@ -89,8 +90,7 @@ public class SecurityConfig {
                                                                 "/api/politicas/responsabilidade/*",
                                                                 "/politica-privacidade.html", "/termos-aceite.html")
                                                 .permitAll()
-                                                // Administracao; os servicos exigem o principal nas operacoes
-                                                // exclusivas.
+                                                // Delega aos serviços as operações exclusivas do root.
                                                 .requestMatchers(HttpMethod.GET, "/api/administracao/dashboard/resumo",
                                                                 "/api/administracao/dashboard/atividade-diaria",
                                                                 "/api/administracao/dashboard/matriculas-por-mes",
@@ -132,12 +132,12 @@ public class SecurityConfig {
                                                 .hasAnyAuthority("TERMOS_REAUTENTICACAO", "TERMOS_PENDENTES")
                                                 .requestMatchers(HttpMethod.POST, "/api/autenticacao/logout")
                                                 .authenticated()
-                                                // Operacoes da propria conta, para os tres perfis.
+                                                // Operações da própria conta, para os tres perfis.
                                                 .requestMatchers(HttpMethod.GET, "/api/autenticacao/meus-dados",
                                                                 "/api/autenticacao/exportar-dados",
                                                                 "/api/autenticacao/restricoes")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                                                // Denuncias do forum.
+                                                // Denúncias do fórum.
                                                 .requestMatchers(HttpMethod.GET, "/api/administracao/forum/denuncias")
                                                 .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.PUT, "/api/administracao/forum/denuncias/*")
@@ -188,7 +188,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT,
                                                                 "/api/administracao/cursos/*/modulos/*/questionario")
                                                 .hasRole("ADMINISTRADOR")
-                                                // Comunicados: gestao administrativa e leitura por conta.
+                                                // Separa a gestão e a leitura dos comunicados.
                                                 .requestMatchers(HttpMethod.PUT, "/api/administracao/comunicados/*")
                                                 .hasRole("ADMINISTRADOR")
                                                 .requestMatchers(HttpMethod.DELETE, "/api/administracao/comunicados/*")
@@ -205,7 +205,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.PUT, "/api/notificacoes/*/lida",
                                                                 "/api/aluno/notificacoes/*/lida")
                                                 .hasAnyRole("ALUNO", "PROFESSOR", "ADMINISTRADOR")
-                                                // Catalogo, matriculas e progresso pessoais do aluno.
+                                                // Catálogo, matrículas e progresso pessoais do aluno.
                                                 .requestMatchers(HttpMethod.POST, "/api/aluno/cursos/*/matriculas")
                                                 .hasRole("ALUNO")
                                                 .requestMatchers(HttpMethod.PUT, "/api/aluno/aulas/*/progresso")
@@ -235,7 +235,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, "/api/cursos/*", "/api/modulos/*",
                                                                 "/api/aulas/*")
                                                 .hasRole("PROFESSOR")
-                                                // Forum: autoria e moderacao sao verificadas pelos servicos.
+                                                // Valida autoria e moderação nos serviços do fórum.
                                                 .requestMatchers(HttpMethod.GET, "/api/forum/topicos",
                                                                 "/api/forum/topicos/*",
                                                                 "/api/forum/topicos/*/comentarios",
@@ -279,7 +279,7 @@ public class SecurityConfig {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuracao = new CorsConfiguration();
-                configuracao.setAllowedOrigins(java.util.Arrays.stream(origensFrontend.split(","))
+                configuracao.setAllowedOrigins(Arrays.stream(origensFrontend.split(","))
                                 .map(String::trim).filter(origem -> !origem.isEmpty()).distinct().toList());
                 configuracao.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"));
                 configuracao.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "Cache-Control"));

@@ -1,24 +1,35 @@
 package com.cursovalido.backend.authentication.configuration;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class LimiteAcoesFilterTest {
     private final Clock relogio = mock(Clock.class);
     private final LimiteRequisicoesFilter intervalo = new LimiteRequisicoesFilter(10000, 10000, relogio);
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void configurarRelogio() { when(relogio.instant()).thenAnswer(invocacao -> Instant.ofEpochMilli(relogio.millis())); }
 
     @AfterEach
@@ -26,7 +37,7 @@ class LimiteAcoesFilterTest {
 
     private MockHttpServletResponse enviar(String metodo, String caminho, String corpo) throws Exception {
         var request = new MockHttpServletRequest(metodo, caminho);
-        request.setContent(corpo.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        request.setContent(corpo.getBytes(StandardCharsets.UTF_8));
         var response = new MockHttpServletResponse();
         intervalo.doFilter(request, response, (req, res) -> {});
         return response;
@@ -133,11 +144,11 @@ class LimiteAcoesFilterTest {
 
     @Test
     void exportacoesSimultaneasAdmitemUmaUnicaRequisicao() throws Exception {
-        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(8)) {
-            var tarefas = java.util.stream.IntStream.range(0, 20)
-                    .<java.util.concurrent.Callable<Integer>>mapToObj(i -> () -> enviar("GET", "/api/autenticacao/exportar-dados", "").getStatus())
+        try (var executor = Executors.newFixedThreadPool(8)) {
+            var tarefas = IntStream.range(0, 20)
+                    .<Callable<Integer>>mapToObj(i -> () -> enviar("GET", "/api/autenticacao/exportar-dados", "").getStatus())
                     .toList();
-            var respostas = new java.util.ArrayList<Integer>();
+            var respostas = new ArrayList<Integer>();
             for (var resultado : executor.invokeAll(tarefas)) respostas.add(resultado.get());
             assertThat(respostas).containsOnly(200, 429);
             assertThat(respostas.stream().filter(status -> status == 200).count()).isEqualTo(1);
@@ -147,22 +158,22 @@ class LimiteAcoesFilterTest {
     @Test
     void httpRepetidoRetorna429SemExecutarControladorNovamente() throws Exception {
         var controlador = new ControladorTeste();
-        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(controlador)
+        var mvc = MockMvcBuilders.standaloneSetup(controlador)
                 .addFilters(intervalo).build();
-        var requisicao = org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/administracao/usuarios/7/suspensoes");
-        mvc.perform(requisicao).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+        var requisicao = MockMvcRequestBuilders.post("/api/administracao/usuarios/7/suspensoes");
+        mvc.perform(requisicao).andExpect(MockMvcResultMatchers.status().isOk());
         mvc.perform(requisicao)
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isTooManyRequests())
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Retry-After", "10"))
-                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.codigo").value("LIMITE_REQUISICOES_ATINGIDO"));
+                .andExpect(MockMvcResultMatchers.status().isTooManyRequests())
+                .andExpect(MockMvcResultMatchers.header().string("Retry-After", "10"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.codigo").value("LIMITE_REQUISICOES_ATINGIDO"));
         assertThat(controlador.chamadas).isEqualTo(1);
     }
 
-    @org.springframework.web.bind.annotation.RestController
+    @RestController
     static class ControladorTeste {
         int chamadas;
 
-        @org.springframework.web.bind.annotation.PostMapping("/api/administracao/usuarios/7/suspensoes")
+        @PostMapping("/api/administracao/usuarios/7/suspensoes")
         public String enviar() { chamadas++; return "ok"; }
     }
 }

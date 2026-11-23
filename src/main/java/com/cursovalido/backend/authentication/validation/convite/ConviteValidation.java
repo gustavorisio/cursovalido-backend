@@ -33,7 +33,7 @@ public final class ConviteValidation {
         }
     }
 
-    // Um segundo clique em "Enviar convite" nao gera outro e-mail: o convite pendente deve ser reenviado.
+    // Rejeita um novo convite quando já existe outro pendente.
     public static void validarConvitePendente(ConviteAcesso pendente) {
         if (pendente == null || pendente.expirado())
             return;

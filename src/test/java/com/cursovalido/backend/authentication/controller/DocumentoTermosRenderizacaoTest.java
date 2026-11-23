@@ -3,8 +3,11 @@ package com.cursovalido.backend.authentication.controller;
 import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.service.PoliticaService;
 import com.cursovalido.backend.authentication.service.PrivacidadeService;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -42,13 +45,13 @@ class DocumentoTermosRenderizacaoTest {
     void versoesPublicadasPreservamBotoesEEstilosDoDocumento() throws Exception {
         for (String recurso : new String[] { "termos-aceite.html", "politica-privacidade.html" }) {
             String modelo;
-            try (var entrada = new org.springframework.core.io.ClassPathResource("static/" + recurso)
+            try (var entrada = new ClassPathResource("static/" + recurso)
                     .getInputStream()) {
-                modelo = new String(entrada.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                modelo = new String(entrada.readAllBytes(), StandardCharsets.UTF_8);
             }
-            var politica = new com.cursovalido.backend.authentication.dto.PoliticaResponse("Documento", "1.0",
+            var politica = new PoliticaResponse("Documento", "1.0",
                     "<!DOCTYPE html><html><body><h1>Titulo antigo</h1><p><strong>Versao 1.0</strong></p><h2>Objeto</h2><p>Texto vigente</p></body></html>",
-                    java.time.LocalDateTime.now());
+                    LocalDateTime.now());
             String html = DocumentoTermosController.renderizarDocumento(modelo, politica);
             assertTrue(html.contains("onclick=\"voltar()\""));
             assertTrue(html.contains("class=\"navegacao\""));

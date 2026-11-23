@@ -4,10 +4,12 @@ import com.cursovalido.backend.authentication.dto.PoliticaRequest;
 import com.cursovalido.backend.authentication.dto.PoliticaResponse;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.PoliticaService;
+import com.cursovalido.backend.authentication.service.PrivacidadeService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,13 +18,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class PoliticaController {
     private final PoliticaService servico;
-    private final com.cursovalido.backend.authentication.service.PrivacidadeService privacidade;
+    private final PrivacidadeService privacidade;
 
     @GetMapping("/privacidade/ativa")
-    public org.springframework.http.ResponseEntity<PoliticaResponse> privacidadeAtiva() {
+    public ResponseEntity<PoliticaResponse> privacidadeAtiva() {
         PoliticaResponse atual = privacidade.buscarAtiva();
-        return atual == null ? org.springframework.http.ResponseEntity.noContent().build()
-                : org.springframework.http.ResponseEntity.ok(atual);
+        return atual == null ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(atual);
     }
 
     @GetMapping("/historico")

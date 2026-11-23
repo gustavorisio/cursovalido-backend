@@ -4,6 +4,7 @@ import com.cursovalido.backend.authentication.exception.SuporteIndisponivelExcep
 import com.cursovalido.backend.authentication.suporte.LimiteSuporteException;
 import java.time.Duration;
 import java.time.Instant;
+import org.slf4j.Logger;
 
 public final class SuporteValidation {
     private SuporteValidation() {
@@ -16,7 +17,7 @@ public final class SuporteValidation {
         }
     }
 
-    public static void validarDisponibilidade(String destinatario, org.slf4j.Logger log) {
+    public static void validarDisponibilidade(String destinatario, Logger log) {
         if (destinatario.isBlank()) {
             log.warn("Suporte indisponivel: configure SUPPORT_EMAIL no ambiente do processo e reinicie o backend.");
             throw new SuporteIndisponivelException();

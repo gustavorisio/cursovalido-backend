@@ -2,6 +2,7 @@ package com.cursovalido.backend.authentication.validation.token;
 
 import com.cursovalido.backend.authentication.entity.Sessao;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 public final class TokenJwtValidation {
     private TokenJwtValidation() {
@@ -12,7 +13,7 @@ public final class TokenJwtValidation {
             throw new IllegalArgumentException("Sessao encerrada");
         if (!sessao.getExpiraEm().isAfter(LocalDateTime.now()))
             throw new IllegalArgumentException("Sessao expirada");
-        if (!java.util.Objects.equals(sessao.getUsuarioId(), dados.get("idUsuario", Long.class)))
+        if (!Objects.equals(sessao.getUsuarioId(), dados.get("idUsuario", Long.class)))
             throw new IllegalArgumentException("Sessao de outro usuario");
     }
 }

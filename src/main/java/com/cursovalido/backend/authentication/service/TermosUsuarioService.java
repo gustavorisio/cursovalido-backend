@@ -30,7 +30,7 @@ public class TermosUsuarioService {
     private final TokenJwtService tokens;
 
     @Transactional
-    // Bloqueia a conta quando o usuario revoga os termos.
+    // Bloqueia a conta quando o usuário revoga os termos.
     public void revogarTermos(Long idUsuario) {
         Usuario usuario = buscarUsuario(idUsuario);
         if (possuiAceiteRegistrado(usuario))

@@ -6,11 +6,14 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class ComunicadosJdbcTest {
     private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
@@ -29,19 +32,19 @@ class ComunicadosJdbcTest {
     @Test
     void consultaPaginadaMantemUsuarioLimiteOffsetEEstadoDeLeitura() throws Exception {
         var rs = linha(); when(rs.getBoolean("lida")).thenReturn(true);
-        when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<ComunicadoResponse>>any(), eq(7L), eq(20), eq(40L)))
+        when(jdbc.query(anyString(), ArgumentMatchers.<RowMapper<ComunicadoResponse>>any(), eq(7L), eq(20), eq(40L)))
                 .thenAnswer(invocacao -> List.of(invocacao.<RowMapper<ComunicadoResponse>>getArgument(1).mapRow(rs, 0)));
         var itens = repositorio.listar(7L, 2, 20);
         assertThat(itens).containsExactly(new ComunicadoResponse(5L, "Aviso", "Texto", data, true));
-        var sql = org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(jdbc).query(sql.capture(), org.mockito.ArgumentMatchers.<RowMapper<ComunicadoResponse>>any(), eq(7L), eq(20), eq(40L));
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(jdbc).query(sql.capture(), ArgumentMatchers.<RowMapper<ComunicadoResponse>>any(), eq(7L), eq(20), eq(40L));
         assertThat(sql.getValue()).contains("l.usuario_id = ?", "LIMIT ? OFFSET ?");
     }
 
     @Test
     void editarDevolveRegistroOuAusenciaSemInventarUmaPublicacao() throws Exception {
         var rs = linha();
-        when(jdbc.query(anyString(), org.mockito.ArgumentMatchers.<RowMapper<ComunicadoResponse>>any(), eq("Aviso"), eq("Texto"), eq(5L)))
+        when(jdbc.query(anyString(), ArgumentMatchers.<RowMapper<ComunicadoResponse>>any(), eq("Aviso"), eq("Texto"), eq(5L)))
                 .thenAnswer(invocacao -> List.of(invocacao.<RowMapper<ComunicadoResponse>>getArgument(1).mapRow(rs, 0)));
         assertThat(repositorio.editar(5L, "Aviso", "Texto")).contains(new ComunicadoResponse(5L, "Aviso", "Texto", data, false));
         assertThat(repositorio.editar(99L, "Aviso", "Texto")).isEmpty();

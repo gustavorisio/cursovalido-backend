@@ -1,8 +1,8 @@
 package com.cursovalido.backend.authentication.controller;
 
 import com.cursovalido.backend.authentication.dto.AceiteTermosRequest;
-import com.cursovalido.backend.authentication.dto.AlteracaoSenhaRequest;
 import com.cursovalido.backend.authentication.dto.AlteracaoSenhaAutenticadoRequest;
+import com.cursovalido.backend.authentication.dto.AlteracaoSenhaRequest;
 import com.cursovalido.backend.authentication.dto.AutenticacaoResponse;
 import com.cursovalido.backend.authentication.dto.CadastroUsuarioRequest;
 import com.cursovalido.backend.authentication.dto.Codigo2faRequest;
@@ -10,6 +10,7 @@ import com.cursovalido.backend.authentication.dto.ConfiguracaoSegundoFatorReques
 import com.cursovalido.backend.authentication.dto.DadosPessoaisResponse;
 import com.cursovalido.backend.authentication.dto.DecisaoTermosRequest;
 import com.cursovalido.backend.authentication.dto.EmailRequest;
+import com.cursovalido.backend.authentication.dto.ExclusaoContaRequest;
 import com.cursovalido.backend.authentication.dto.LoginRequest;
 import com.cursovalido.backend.authentication.security.UsuarioAutenticado;
 import com.cursovalido.backend.authentication.service.AutenticacaoService;
@@ -146,7 +147,7 @@ public class AutenticacaoController {
     @DeleteMapping("/conta")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluirConta(@AuthenticationPrincipal UsuarioAutenticado usuario,
-            @Valid @RequestBody com.cursovalido.backend.authentication.dto.ExclusaoContaRequest requisicao) {
+            @Valid @RequestBody ExclusaoContaRequest requisicao) {
         contaUsuarios.excluirConta(usuario.getId(), requisicao.codigo());
     }
 }

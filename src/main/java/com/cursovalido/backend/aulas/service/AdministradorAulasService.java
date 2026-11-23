@@ -1,17 +1,18 @@
 package com.cursovalido.backend.aulas.service;
 
+import com.cursovalido.backend.aulas.dto.AulaRequest;
+import com.cursovalido.backend.aulas.dto.CursoRequest;
 import com.cursovalido.backend.aulas.entity.*;
 import com.cursovalido.backend.aulas.repository.*;
 import com.cursovalido.backend.authentication.entity.Perfil;
 import com.cursovalido.backend.authentication.repository.UsuarioRepository;
-import java.util.List;
-import com.cursovalido.backend.aulas.dto.AulaRequest;
-import com.cursovalido.backend.aulas.dto.CursoRequest;
 import com.cursovalido.backend.authentication.service.LogAuditoriaService;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -94,10 +95,10 @@ public class AdministradorAulasService {
         String videoId = dados.youtubeUrl() == null || dados.youtubeUrl().isBlank()
                 ? null : youtube.validarVideo(dados.youtubeUrl());
         if (vimeoUrl == null || videoId == null)
-            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Informe um vídeo válido para o Server 1 (Vimeo) e para o Server 2 (YouTube).");
-        if (!java.util.Objects.equals(videoId, aula.getYoutubeVideoId())
-                || !java.util.Objects.equals(vimeoUrl, aula.getVimeoVideoUrl()))
+        if (!Objects.equals(videoId, aula.getYoutubeVideoId())
+                || !Objects.equals(vimeoUrl, aula.getVimeoVideoUrl()))
             progressos.deleteByIdAula(id);
         aula.setTitulo(dados.titulo().trim());
         aula.setDescricao(dados.descricao().trim());
