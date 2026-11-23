@@ -1,27 +1,39 @@
 # Curso Válido - Back-end
 
-O Curso Válido é uma plataforma web gratuita de aprendizagem em tecnologia, desenvolvida como Projeto Final de Curso de Engenharia de Software da Universidade de Mogi das Cruzes (UMC).
-
-A ideia surgiu da dificuldade de organizar os estudos quando as videoaulas e os espaços para tirar dúvidas estão espalhados em diferentes sites. O projeto propõe reunir esses recursos em um mesmo ambiente, permitindo que o aluno acompanhe os conteúdos e converse com professores e outros alunos durante o aprendizado.
-
-Este repositório contém a API da plataforma, responsável pelas regras de negócio, autenticação, controle de acesso e armazenamento dos dados. A interface é desenvolvida separadamente em React e Tailwind CSS.
+O Curso Válido é uma plataforma web gratuita que apoia adultos iniciantes no estudo autônomo de tecnologia e programação. Este repositório contém a API da plataforma, responsável pelas regras de negócio, autenticação, controle de acesso e armazenamento dos dados. A interface web fica no [repositório do front-end](https://github.com/gustavorisio/cursovalido-frontend).
 
 - [Repositório do back-end](https://github.com/gustavorisio/cursovalido-backend)
 - [Repositório do front-end](https://github.com/gustavorisio/cursovalido-frontend)
 
+## Problema
+
+Quem decide aprender tecnologia por conta própria, fora de uma faculdade ou de um curso pago, costuma recorrer a videoaulas gratuitas. Mesmo com muitos conteúdos disponíveis, o estudante precisa decidir sozinho o que estudar, em que ordem avançar e como verificar se realmente compreendeu o assunto. As sugestões laterais e a reprodução automática podem desviá-lo do conteúdo; aulas de autores diferentes nem sempre formam uma sequência; e assistir a um vídeo, por si só, oferece pouca prática e pouco retorno sobre o que foi aprendido.
+
+Essas barreiras deixam o estudo passivo e dificultam a continuidade: falta um percurso organizado, oportunidades de aplicar o conteúdo e feedback que ajude a identificar o que precisa ser revisto.
+
+## Solução proposta
+
+O Curso Válido reúne esses elementos em um único ambiente. Organiza videoaulas em cursos, módulos e aulas sequenciais, com catálogo filtrado por temas, e registra a posição de reprodução e as aulas concluídas para que o aluno possa retomar o estudo. O vídeo é exibido na página da aula, enquanto os controles de aula anterior e próxima seguem a sequência definida pelo professor.
+
+Para apoiar a prática e o acompanhamento da aprendizagem, a plataforma oferece questionários por módulo e uma avaliação do curso, com correção automática, explicações por questão e novas tentativas. O plano de estudos apresenta as avaliações disponíveis e o percentual de acertos da tentativa mais recente, ajudando o aluno a decidir o que revisar. A conclusão de cursos concede pontos de experiência e níveis, e o ranking torna o avanço visível. Um fórum restrito a usuários autenticados permite compartilhar dúvidas durante o percurso.
+
+A combinação de videoaulas e atividades acompanha evidências discutidas na monografia de que estratégias de aprendizagem ativa podem favorecer retenção e compreensão em comparação com a visualização passiva ([Zhang et al., 2025](https://doi.org/10.1016/j.edurev.2025.100708)).
+
+## Objetivo
+
+Desenvolver uma plataforma web gratuita de apoio à aprendizagem autônoma de tecnologia por adultos iniciantes a partir de 18 anos, combinando videoaulas organizadas em cursos, módulos e aulas, acompanhamento de progresso, questionários com correção automática e explicações por questão e um fórum restrito a usuários autenticados.
+
 ## Sobre o projeto
 
-A plataforma é voltada a interessados em aprender sobre tecnologia e programação. Seu escopo está organizado em duas partes: aulas e comunidade.
+O Curso Válido é o Projeto Final de Curso de Engenharia de Software da Universidade de Mogi das Cruzes (UMC). Alunos estudam e participam do fórum; professores organizam cursos, módulos e aulas; e administradores gerenciam acessos e operações administrativas.
 
-Os alunos podem estudar por meio de cursos e videoaulas e participar do fórum. Os professores organizam os cursos, módulos e aulas sob sua responsabilidade e participam das discussões. Os administradores gerenciam acessos e operações administrativas da plataforma.
-
-O projeto está em desenvolvimento. A versão atual do back-end possui autenticação, gestão de convites, termos e políticas, cursos, módulos, aulas, matrículas, progresso, fórum, moderação, dashboard administrativo e formulário de suporte.
+O projeto está em desenvolvimento. A versão atual do back-end oferece autenticação e gestão de contas, convites, termos e políticas, cursos, módulos, aulas, matrículas, progresso, questionários, gamificação, plano de estudos, ranking de alunos, fórum, moderação, comunicados, dashboard administrativo e formulário de suporte.
 
 ## Funcionalidades
 
 ### Cadastro e acesso
 
-A idade é validada localmente pela data de nascimento informada. O cadastro de aluno exige confirmação de maioridade, aceite dos termos vigentes e confirmação do e-mail. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. Depois dessa confirmação, a API emite o JWT usado nas requisições autenticadas.
+O cadastro de aluno exige a declaração de que tem 18 anos ou mais, o aceite dos termos vigentes e a confirmação do e-mail; não coleta data de nascimento. O login é feito com e-mail e senha, seguido de um código enviado por e-mail. O segundo fator é obrigatório para a equipe e pode ser habilitado pelo aluno. Depois da confirmação, a API emite o JWT usado nas requisições autenticadas.
 
 As senhas são armazenadas com BCrypt. Também há recuperação de senha e proteção contra tentativas repetidas de acesso. Professores e administradores entram por convite, com conclusão do cadastro e aprovação administrativa.
 
@@ -33,13 +45,13 @@ A descrição dos tópicos e o conteúdo dos comentários têm limite de 5.000 c
 
 ### Aulas e cursos
 
-O módulo de aprendizagem organiza cursos em módulos e aulas. Os professores podem cadastrar e gerenciar os conteúdos sob sua responsabilidade, vinculando vídeos do YouTube às aulas. O backend valida o vídeo pela API do YouTube antes de associá-lo à aula.
+O módulo de aprendizagem organiza cursos em módulos e aulas. Os professores podem cadastrar e gerenciar os conteúdos sob sua responsabilidade, vinculando vídeos do Vimeo como serviço principal e do YouTube como alternativa. O backend valida os links do Vimeo pela conta autorizada e os vídeos do YouTube pela API, incluindo canal, disponibilidade pública ou não listada e permissão de incorporação.
 
-Os alunos podem se matricular gratuitamente nos cursos disponíveis, acessar as videoaulas, salvar a posição de reprodução e marcar aulas como concluídas. A reprodução pelo player do YouTube é responsabilidade do front-end; o registro de conclusão não comprova, por si só, aprendizagem ou tempo assistido.
+Os alunos podem se matricular gratuitamente nos cursos disponíveis, salvar e retomar a posição de reprodução e marcar aulas como concluídas. A plataforma oferece questionários por módulo e avaliação do curso, com correção automática, explicação por questão e novas tentativas. O plano de estudos reúne as avaliações disponíveis e o resultado da tentativa mais recente. A conclusão de cursos concede XP e níveis, exibidos também no ranking de alunos. A reprodução e a troca entre os players Vimeo e YouTube são responsabilidade do front-end; o registro de conclusão não comprova, por si só, aprendizagem ou tempo assistido.
 
 ### Administração e suporte
 
-A área administrativa reúne gestão de convites, aprovações, documentos, restrições de usuários e consulta e moderação de aulas. Algumas operações são exclusivas do administrador principal. O dashboard apresenta indicadores operacionais, como quantidades de usuários, cursos, aulas, matrículas e tópicos, além de matrículas por mês, cursos mais procurados e distribuição de usuários por perfil.
+A área administrativa reúne gestão de convites e aprovações, documentos legais, restrições de usuários, denúncias e moderação de cursos e aulas. O administrador pode publicar comunicados gerais para os alunos; o sistema registra a leitura individual na área de notificações. Algumas operações são exclusivas do administrador principal. O dashboard apresenta indicadores operacionais sobre usuários, cursos, aulas, matrículas e tópicos, além de matrículas por mês, cursos mais procurados e distribuição de usuários por perfil.
 
 O formulário público de suporte gera um protocolo e encaminha a solicitação por e-mail, sujeito à configuração e aos limites de envio. O recurso não mantém um sistema completo de acompanhamento de chamados.
 
@@ -53,7 +65,7 @@ As operações relevantes são registradas em auditoria com assinaturas HMAC-SHA
 
 O back-end utiliza Java 21 com Spring Boot, Spring MVC, Spring Security e Spring Data JPA. Os dados são armazenados no PostgreSQL, com migrações gerenciadas pelo Flyway.
 
-A autenticação utiliza JWT com a biblioteca JJWT, e as entradas são validadas com Jakarta Bean Validation. O Resend é utilizado para envio de e-mails e a API do YouTube para validação dos vídeos. Os testes utilizam JUnit, Mockito, Spring Boot Test, Spring Security Test, H2 e PostgreSQL, com suporte a Testcontainers. O JaCoCo gera relatórios de cobertura dos módulos de fórum e aulas.
+A autenticação utiliza JWT com a biblioteca JJWT, e as entradas são validadas com Jakarta Bean Validation. O Resend é utilizado para envio de e-mails. As APIs do Vimeo e do YouTube são utilizadas para validar os vídeos das aulas. Os testes utilizam JUnit, Mockito, Spring Boot Test, Spring Security Test, H2 e PostgreSQL, com suporte a Testcontainers. O JaCoCo gera relatórios de cobertura dos módulos de fórum e aulas.
 
 ## Como executar
 
@@ -91,7 +103,7 @@ Em um serviço PostgreSQL gerenciado, crie o banco pelo painel do provedor e use
 
 Utilize um usuário com permissão para conectar ao banco e criar os objetos das migrações. O Flyway cria as tabelas na inicialização, a partir dos scripts em `src/main/resources/db/migration`. Depois, o Hibernate valida a estrutura do banco.
 
-O banco novo é criado pela migração única `V1__schema_inicial.sql`. O Flyway aplica essa migração na inicialização, e o Hibernate valida a estrutura resultante. Não é necessário configurar baseline nem versões antigas de migração.
+O Flyway aplica, em ordem, as migrações versionadas disponíveis em `src/main/resources/db/migration` durante a inicialização. Em um banco novo, todas as migrações são executadas; em um banco já existente, apenas as pendentes. O Hibernate valida a estrutura resultante. Não configure baseline manualmente para um banco novo.
 
 ### 4. Configurar as variáveis de ambiente
 
@@ -162,7 +174,7 @@ ADMIN_PASSWORD=senha_do_administrador
 
 A senha deve ter pelo menos oito caracteres, uma letra maiúscula, um caractere especial e no máximo 72 bytes em UTF-8. A inicialização é executada uma única vez por banco e não promove uma conta existente. Após criar a conta, remova essas duas variáveis do ambiente. O primeiro acesso exige regularizar o aceite dos documentos; o login utiliza confirmação por e-mail.
 
-Também é possível definir `SERVER_PORT`, cujo padrão é `8080`, `JWT_EXPIRATION`, cujo padrão é `3600000` milissegundos, ou uma hora, e `BCRYPT_STRENGTH`, cujo padrão é `12` e cujo intervalo permitido é de `10` a `16`. A variável `REQUIRE_HTTPS` controla a exigência de HTTPS e possui padrão `false`.
+Também é possível definir `SERVER_PORT`, cujo padrão é `8080`, `JWT_EXPIRATION`, cujo padrão é `86400000` milissegundos, ou 24 horas, e `BCRYPT_STRENGTH`, cujo padrão é `12` e cujo intervalo permitido é de `10` a `16`. A variável `REQUIRE_HTTPS` controla a exigência de HTTPS e possui padrão `false`.
 
 As configurações estão em `src/main/resources/application.properties`. Este procedimento utiliza as variáveis do Windows e dispensa um arquivo `.env`. O envio de e-mails utiliza o Resend. O backend não possui consulta de CEP pelo ViaCEP.
 
@@ -204,7 +216,7 @@ A API estará disponível em `http://localhost:8080`, ou na porta definida em `S
 Invoke-RestMethod http://localhost:8080/api/politicas/ativas
 ```
 
-Para utilizar as telas da plataforma, execute também o front-end seguindo as instruções do seu repositório. O envio de e-mails pelo Resend precisa estar configurado para concluir o cadastro e o login.
+Para utilizar as telas da plataforma, clone o repositório do front-end em outra pasta e instale as dependências: `git clone https://github.com/gustavorisio/cursovalido-frontend.git`, `cd cursovalido-frontend` e `npm install`. Para iniciar a interface localmente, execute `npm run dev` e acesse `http://localhost:3000`. Se necessário, configure `VITE_API_URL=http://localhost:8080/api` em um arquivo `.env.local` na raiz do front-end. O backend precisa permitir a origem do front-end em `FRONTEND_ORIGINS`. O envio de e-mails pelo Resend precisa estar configurado para concluir o cadastro e o login.
 
 ## Testes
 
@@ -227,7 +239,7 @@ mvn '-Dtest.postgres.mode=local' test
 mvn '-Dtest.postgres.mode=container' test
 ```
 
-Os bancos temporários dos testes não utilizam as credenciais de desenvolvimento. Os serviços externos são simulados nos testes correspondentes; a aprovação da suíte não confirma a configuração real de envio de e-mails ou da API do YouTube.
+Os bancos temporários dos testes não utilizam as credenciais de desenvolvimento. Os serviços externos são simulados nos testes correspondentes; a aprovação da suíte não confirma a configuração real de envio de e-mails ou das APIs do Vimeo e do YouTube.
 
 Após executar os testes, os relatórios ficam em:
 
